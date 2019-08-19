@@ -7,6 +7,10 @@
 #include <winhttp.h>
 
 
+// size of download -> file buffer
+#define BUFFERSIZE 4096
+
+
 struct netw
 {
 	HINTERNET session;
@@ -124,7 +128,33 @@ struct task
 	void *payload;
 	size_t payload_bytes;
 	uint16_t port;
+	bool is_download;
 };
+
+
+static HANDLE
+create_temp_file(wchar_t out_path[MAX_PATH])
+{
+	// funny how GetTempPath() requires up to MAX_PATH+1 characters without
+	// the terminating \0, while GetTempFileName(), which appends to this
+	// very string requires its output-buffer to be MAX_PATH only (including
+	// \0). And in fact GetTempFileName() fails with ERROR_BUFFER_OVERFLOW
+	// when its first argument is > MAX_PATH-14.
+	// Well done Microsoft.
+	wchar_t temp_dir[MAX_PATH+1+1] = {0};
+	GetTempPathW(MAX_PATH+1, temp_dir);
+	GetTempFileName(temp_dir, L"mmi", 0, out_path);
+	wprintf(L"[netw] Setting up temporary file: %s\n", out_path);
+	HANDLE hfile = CreateFile(
+		out_path,
+		GENERIC_WRITE,
+		FILE_SHARE_READ | FILE_SHARE_DELETE,
+		NULL,
+		CREATE_ALWAYS,
+		FILE_ATTRIBUTE_TEMPORARY,
+		NULL);
+	return hfile;
+}
 
 
 static DWORD
@@ -194,8 +224,22 @@ task_handler(LPVOID context)
 	}
 	printf("[netw] status code of response: %lu\n", status_code);
 
+	wchar_t temp_path[MAX_PATH] = {0};
+	HANDLE hfile = NULL;
+	if (task->is_download)
+	{
+		printf("[netw] Setting up temporary file\n");
+
+		hfile = create_temp_file(temp_path);
+		if (!hfile)
+		{
+			printf("[netw] Failed to create temporary file\n");
+			return false;
+		}
+	}
+
 	printf("[netw] Read content...\n");
-	uint8_t *buffer = NULL;
+	uint8_t *buffer = task->is_download ? malloc(BUFFERSIZE) : NULL;
 	size_t bytes = 0;
 	DWORD avail_bytes = 0;
 	do
@@ -208,16 +252,50 @@ task_handler(LPVOID context)
 		}
 		if (avail_bytes > 0)
 		{
-			buffer = realloc(buffer, bytes + avail_bytes);
-			DWORD actual_bytes = 0;
-			WinHttpReadData(hrequest, buffer + bytes, avail_bytes, &actual_bytes);
-			bytes += actual_bytes;
-			printf("[netw] Read %lu from %lu bytes -> %zu bytes\n", actual_bytes, avail_bytes, bytes);
+			if (!task->is_download)
+			{
+				buffer = realloc(buffer, bytes + avail_bytes);
+			}
+			DWORD actual_bytes_read = 0;
+			WinHttpReadData(
+				hrequest,
+				buffer + (task->is_download ? 0 : bytes),
+				task->is_download ? BUFFERSIZE : avail_bytes,
+				&actual_bytes_read);
+			bytes += actual_bytes_read;
+			printf("[netw] Read %lu from %lu bytes\n", actual_bytes_read, avail_bytes);
+			if (task->is_download)
+			{
+				DWORD actual_bytes_written = 0;
+				do
+				{
+					WriteFile(hfile, buffer, actual_bytes_read, &actual_bytes_written, NULL);
+					actual_bytes_read -= actual_bytes_written;
+				} while (actual_bytes_read > 0);
+				printf("[netw] Written %lu from %lu bytes\n", actual_bytes_written, actual_bytes_read);
+			}
 		}
 	}
 	while (avail_bytes > 0);
 
-	l_netw.callbacks.completion(task->udata, buffer, bytes, (int)status_code);
+	if (task->is_download)
+	{
+		// convert path to utf8
+		size_t pathlen = sys_utf8_from_wchar(temp_path, NULL, 0);
+		char *u8path = malloc(pathlen);
+		sys_utf8_from_wchar(temp_path, u8path, pathlen);
+
+		l_netw.callbacks.downloaded(task->udata, u8path, (int)status_code);
+
+		CloseHandle(hfile);
+		DeleteFile(temp_path);
+
+		free(u8path);
+	}
+	else
+	{
+		l_netw.callbacks.completion(task->udata, buffer, bytes, (int)status_code);
+	}
 
 	// free local data
 	free(buffer);
@@ -354,158 +432,6 @@ netw_post_request(
 }
 
 
-static DWORD
-download_task(LPVOID context)
-{
-	struct task *task = context;
-
-	HINTERNET hconnection =
-		WinHttpConnect(l_netw.session, task->host, task->port, 0);
-	if (!hconnection)
-	{
-		printf("[netw] ERR: HttpConnect %lu (0x%lx)\n", GetLastError(), GetLastError());
-		return false;
-	}
-
-	HINTERNET hrequest = WinHttpOpenRequest(
-		hconnection,
-		task->verb,
-		task->path,
-		NULL,
-		WINHTTP_NO_REFERER,
-		WINHTTP_DEFAULT_ACCEPT_TYPES,
-		WINHTTP_FLAG_SECURE);
-	if (!hrequest)
-	{
-		printf("[netw] ERR: HttpOpenRequest: %lu (0x%lx)\n", GetLastError(), GetLastError());
-		return false;
-	}
-
-	printf("[netw] Sending request (payload: %zuB)...\n", task->payload_bytes);
-	BOOL ok = WinHttpSendRequest(
-		hrequest,
-		task->header,
-		(DWORD)-1,
-		task->payload,
-		(DWORD)task->payload_bytes,
-		(DWORD)task->payload_bytes,
-		1);
-	if (!ok)
-	{
-		printf("[netw] ERR: HttpSendRequest: %lu (0x%lx)\n", GetLastError(), GetLastError());
-		return false;
-	}
-
-	printf("[netw] Waiting for response...\n");
-	ok = WinHttpReceiveResponse(hrequest, NULL);
-	if (!ok)
-	{
-		printf("[netw] ERR: HttpReceiveResponse: %lu (0x%lx)\n", GetLastError(), GetLastError());
-		return false;
-	}
-
-	printf("[netw] Query headers...\n");
-	DWORD status_code;
-	DWORD sc_bytes = sizeof status_code;
-	ok = WinHttpQueryHeaders(
-		hrequest,
-		WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
-		WINHTTP_HEADER_NAME_BY_INDEX,
-		&status_code,
-		&sc_bytes,
-		WINHTTP_NO_HEADER_INDEX);
-	if (!ok)
-	{
-		printf("[netw] ERR: HttpQueryHeaders: %lu (0x%lx)\n", GetLastError(), GetLastError());
-		return false;
-	}
-	printf("[netw] status code of response: %lu\n", status_code);
-
-	printf("[netw] Setting up temporary file\n");
-
-	// funny how GetTempPath() requires up to MAX_PATH+1 characters without
-	// the terminating \0, while GetTempFileName(), which appends to this
-	// very string requires its output-buffer to be MAX_PATH only (including
-	// \0). And in fact GetTempFileName() fails with ERROR_BUFFER_OVERFLOW
-	// when its first argument is > MAX_PATH-14.
-	// Well done Microsoft.
-	wchar_t temp_dir[MAX_PATH+1+1] = {0};
-	GetTempPathW(MAX_PATH+1, temp_dir);
-	wchar_t temp_path[MAX_PATH] = {0};
-	GetTempFileName(temp_dir, L"mmi", 0, temp_path);
-	wprintf(L"[netw] Setting up temporary file: %s\n", temp_path);
-	HANDLE hfile = CreateFile(
-		temp_path,
-		GENERIC_WRITE,
-		FILE_SHARE_READ | FILE_SHARE_DELETE,
-		NULL,
-		CREATE_ALWAYS,
-		FILE_ATTRIBUTE_TEMPORARY,
-		NULL);
-	if (!hfile)
-	{
-		printf("[netw] Failed to create temporary file\n");
-		return false;
-	}
-
-	printf("[netw] Read content...\n");
-#define BUFFERSIZE 4096
-	uint8_t *buffer = malloc(BUFFERSIZE);
-	DWORD avail_bytes = 0;
-	do
-	{
-		ok = WinHttpQueryDataAvailable(hrequest, &avail_bytes);
-		if (!ok)
-		{
-			printf("[netw] ERR: QueryDataAvailable: %lu (0x%lx)\n", GetLastError(), GetLastError());
-			return false;
-		}
-		if (avail_bytes > 0)
-		{
-			DWORD actual_bytes_read = 0;
-			WinHttpReadData(hrequest, buffer, BUFFERSIZE, &actual_bytes_read);
-			printf("[netw] Read %lu from %lu bytes\n", actual_bytes_read, avail_bytes);
-			DWORD actual_bytes_written = 0;
-			do
-			{
-				WriteFile(hfile, buffer, actual_bytes_read, &actual_bytes_written, NULL);
-				actual_bytes_read -= actual_bytes_written;
-			} while (actual_bytes_read > 0);
-			printf("[netw] Written %lu from %lu bytes\n", actual_bytes_written, actual_bytes_read);
-		}
-	}
-	while (avail_bytes > 0);
-
-	// convert path to utf8
-	size_t pathlen = sys_utf8_from_wchar(temp_path, NULL, 0);
-	char *u8path = malloc(pathlen);
-	sys_utf8_from_wchar(temp_path, u8path, pathlen);
-
-	l_netw.callbacks.downloaded(task->udata, u8path, (int)status_code);
-
-	CloseHandle(hfile);
-	DeleteFile(temp_path);
-
-	free(u8path);
-
-	// free local data
-	free(buffer);
-	WinHttpCloseHandle(hrequest);
-	WinHttpCloseHandle(hconnection);
-
-	// free task data
-	free(task->host);
-	free(task->path);
-	free(task->header);
-	free(task->payload);
-
-	// free actual task
-	free(task);
-
-	return true;
-}
-
-
 bool
 netw_download(char const *in_uri, void *udata)
 {
@@ -514,6 +440,7 @@ netw_download(char const *in_uri, void *udata)
 	struct task *task = calloc(sizeof *task, 1);
 	task->udata = udata;
 	task->verb = L"GET";
+	task->is_download = true;
 
 	// convert/extract URI information
 	size_t urilen = sys_wchar_from_utf8(in_uri, NULL, 0);
@@ -536,7 +463,7 @@ netw_download(char const *in_uri, void *udata)
 
 	free(uri);
 
-	HANDLE h = CreateThread(NULL, 0, download_task, task, 0, NULL);
+	HANDLE h = CreateThread(NULL, 0, task_handler, task, 0, NULL);
 	if (h)
 	{
 		CloseHandle(h);
