@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
 
 
 #ifdef _WIN32
@@ -50,6 +51,9 @@ get_games_callback(
 	for (size_t i = 0; i < ngames; ++i)
 	{
 		printf("- %s {%llu}\n", games[i].name, games[i].id);
+		printf("\t+ https://%s.mod.io\n", minimod_get_more_string(games[i].more, "name_id"));
+		time_t added = (time_t)minimod_get_more_int(games[i].more, "date_added");
+		printf("\t+ date added: %s\n", ctime(&added));
 	}
 
 	++(*(int *)udata);

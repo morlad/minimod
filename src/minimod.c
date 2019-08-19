@@ -162,6 +162,7 @@ handle_get_games(
 
 		games[i].id = QAJ4C_get_uint(QAJ4C_object_get(item, "id"));
 		games[i].name = QAJ4C_get_string(QAJ4C_object_get(item, "name"));
+		games[i].more = item;
 
 	}
 
@@ -893,4 +894,40 @@ minimod_install(
 		in_modfileid,
 		on_install_download,
 		task);
+}
+
+
+char const *
+minimod_get_more_string(void const *more, char const *name)
+{
+	assert(QAJ4C_is_object(more));
+	QAJ4C_Value const *obj = QAJ4C_object_get(more, name);
+	return QAJ4C_is_string(obj) ? QAJ4C_get_string(obj) : NULL;
+}
+
+
+int64_t
+minimod_get_more_int(void const *more, char const *name)
+{
+	assert(QAJ4C_is_object(more));
+	QAJ4C_Value const *obj = QAJ4C_object_get(more, name);
+	return QAJ4C_is_int64(obj) ? QAJ4C_get_int64(obj) : 0;
+}
+
+
+double
+minimod_get_more_float(void const *more, char const *name)
+{
+	assert(QAJ4C_is_object(more));
+	QAJ4C_Value const *obj = QAJ4C_object_get(more, name);
+	return QAJ4C_is_double(obj) ? QAJ4C_get_double(obj) : 0;
+}
+
+
+bool
+minimod_get_more_bool(void const *more, char const *name)
+{
+	assert(QAJ4C_is_object(more));
+	QAJ4C_Value const *obj = QAJ4C_object_get(more, name);
+	return QAJ4C_is_bool(obj) ? QAJ4C_get_bool(obj) : 0;
 }

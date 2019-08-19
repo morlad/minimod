@@ -48,6 +48,7 @@ struct minimod_game
 {
 	uint64_t id;
 	char const *name;
+	void const *more;
 };
 
 
@@ -213,6 +214,22 @@ minimod_install(
 	uint64_t in_modfileid,
 	minimod_install_fptr in_callback,
 	void *in_udata);
+
+
+MINIMOD_LIB char const *
+minimod_get_more_string(void const *more, char const *name);
+
+
+MINIMOD_LIB int64_t
+minimod_get_more_int(void const *more, char const *name);
+
+
+MINIMOD_LIB double
+minimod_get_more_float(void const *more, char const *name);
+
+
+MINIMOD_LIB bool
+minimod_get_more_bool(void const *more, char const *name);
 
 
 #ifdef __cplusplus
