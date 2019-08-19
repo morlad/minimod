@@ -36,6 +36,7 @@ static struct netw l_netw;
 	CFDictionaryRemoveValue(l_netw.udata_dict, task);
 }
 
+
 - (void)URLSession:(NSURLSession *)session
 	dataTask:(NSURLSessionDataTask *)task
 	didReceiveData:(NSData *)in_data
@@ -47,6 +48,7 @@ static struct netw l_netw;
 	NSMutableData *data = l_netw.buffer_dict[task];
 	[data appendData:in_data];
 }
+
 
 - (void)URLSession:(NSURLSession *)session
 	downloadTask:(NSURLSessionDownloadTask *)task
@@ -75,8 +77,8 @@ netw_init(struct netw_callbacks *in_callbacks)
 	NSURLSessionConfiguration *config =
 		[NSURLSessionConfiguration defaultSessionConfiguration];
 	l_netw.session = [NSURLSession sessionWithConfiguration:config
-												 delegate:l_netw.delegate
-											delegateQueue:nil];
+		delegate:l_netw.delegate
+		delegateQueue:nil];
 	return true;
 }
 

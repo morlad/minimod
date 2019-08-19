@@ -18,13 +18,17 @@ struct netw_callbacks
 		int error);
 };
 
-bool netw_init(struct netw_callbacks *callbacks);
+bool
+netw_init(struct netw_callbacks *callbacks);
 
-void netw_deinit(void);
+void
+netw_deinit(void);
 
+// send GET request. Calls *completion* callback when done.
 bool
 netw_get_request(char const *uri, char const *const headers[], void *udata);
 
+// send POST request. Calls *completion* callback when done.
 bool
 netw_post_request(
 	char const *uri,
@@ -33,11 +37,14 @@ netw_post_request(
 	size_t nbody_bytes,
 	void *udata);
 
+// GET request writing response to temporary file.
+// Calls *downloaded* callback first, then *completion*.
+bool
+netw_download(char const *in_uri, void *udata);
+
+// percent-encode *input*. Do not forget to free() the returned string.
 char *
 netw_percent_encode(
 	char const *input,
 	size_t len,
 	size_t *out_len);
-
-bool
-netw_download(char const *in_uri, void *udata);

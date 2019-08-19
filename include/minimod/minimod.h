@@ -214,6 +214,7 @@ minimod_install(
 	minimod_install_fptr in_callback,
 	void *in_udata);
 
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

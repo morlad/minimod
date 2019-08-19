@@ -50,7 +50,8 @@ netw_deinit(void)
 }
 
 
-static char *combine_headers(char const *const in_headers[], size_t *out_len)
+static char *
+combine_headers(char const *const in_headers[], size_t *out_len)
 {
 	size_t len_headers = 0;
 	char const *const *h = in_headers;
@@ -229,7 +230,7 @@ data_task(LPVOID context)
 
 	// free actual task
 	free(task);
-	
+
 	return true;
 }
 
@@ -394,7 +395,7 @@ post_task(LPVOID context)
 
 	// free actual task
 	free(task);
-	
+
 	return true;
 }
 
@@ -609,7 +610,7 @@ download_task(LPVOID context)
 
 	// free actual task
 	free(task);
-	
+
 	return true;
 }
 

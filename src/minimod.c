@@ -71,19 +71,22 @@ static char const *endpoints[2] =
 };
 
 
-static struct task *alloc_task(void)
+static struct task *
+alloc_task(void)
 {
 	return malloc(sizeof(struct task));
 }
 
 
-static void free_task(struct task *task)
+static void
+free_task(struct task *task)
 {
 	free(task);
 }
 
 
-static char *get_tokenpath(void)
+static char *
+get_tokenpath(void)
 {
 	assert(l_mmi.root_path);
 
@@ -397,7 +400,7 @@ handle_email_exchange(
 	char const *tok = QAJ4C_get_string(token);
 	size_t tok_bytes = QAJ4C_get_string_length(token);
 
-	FILE *f = util_fopen(get_tokenpath(), "wb");
+	FILE *f = fsu_fopen(get_tokenpath(), "wb");
 	fwrite(tok, tok_bytes, 1, f);
 	fclose(f);
 
@@ -443,7 +446,7 @@ on_completion(void const *in_udata, void const *data, size_t bytes, int error)
 	{
 		printf("[mm] on_completion(%i):\n%s\n--\n", error, (char const *)data);
 	}
-	FILE *f = util_fopen("tmp.json", "wb");
+	FILE *f = fsu_fopen("tmp.json", "wb");
 	fwrite(data, bytes, 1, f);
 	fclose(f);
 
@@ -497,7 +500,7 @@ minimod_init(
 	int64_t fsize = fsu_fsize(get_tokenpath());
 	if (fsize > 0)
 	{
-		FILE *f = util_fopen(get_tokenpath(), "rb");
+		FILE *f = fsu_fopen(get_tokenpath(), "rb");
 		l_mmi.token = malloc((size_t)(fsize + 1));
 		l_mmi.token[fsize] = '\0';
 		fread(l_mmi.token, (size_t)fsize, 1, f);
@@ -544,11 +547,11 @@ minimod_get_games(
 		task->type = MINIMOD_TASKTYPE_GET_GAMES;
 		task->callback.fptr.get_games = in_callback;
 		task->callback.userdata = in_udata;
-  }
+	}
 	else
 	{
-	  free_task(task);
-  }
+		free_task(task);
+	}
 
 	free(path);
 }
@@ -579,11 +582,11 @@ minimod_get_mods(
 		task->type = MINIMOD_TASKTYPE_GET_MODS;
 		task->callback.fptr.get_mods = in_callback;
 		task->callback.userdata = in_udata;
-  }
+	}
 	else
 	{
-	  free_task(task);
-  }
+		free_task(task);
+	}
 
 	free(path);
 }
@@ -618,11 +621,11 @@ minimod_email_request(
 		task->type = MINIMOD_TASKTYPE_EMAIL_REQUEST;
 		task->callback.fptr.email_request = in_callback;
 		task->callback.userdata = in_udata;
-  }
+	}
 	else
 	{
-	  free_task(task);
-  }
+		free_task(task);
+	}
 
 	free(payload);
 	free(path);
@@ -656,11 +659,11 @@ minimod_email_exchange(
 		task->type = MINIMOD_TASKTYPE_EMAIL_EXCHANGE;
 		task->callback.fptr.email_exchange = in_callback;
 		task->callback.userdata = in_udata;
-  }
+	}
 	else
 	{
-	  free_task(task);
-  }
+		free_task(task);
+	}
 
 	free(payload);
 	free(path);
@@ -700,11 +703,11 @@ minimod_get_user(
 		task->type = MINIMOD_TASKTYPE_GET_USERS;
 		task->callback.fptr.get_users = in_callback;
 		task->callback.userdata = in_udata;
-  }
+	}
 	else
 	{
-	  free_task(task);
-  }
+		free_task(task);
+	}
 
 	free(path);
 }
@@ -768,11 +771,11 @@ minimod_get_modfiles(
 		task->type = MINIMOD_TASKTYPE_GET_MODFILES;
 		task->callback.fptr.get_modfiles = in_callback;
 		task->callback.userdata = in_udata;
-  }
+	}
 	else
 	{
-	  free_task(task);
-  }
+		free_task(task);
+	}
 
 	free(path);
 }
@@ -828,11 +831,11 @@ minimod_download(
 		task->type = MINIMOD_TASKTYPE_DOWNLOAD;
 		task->callback.fptr.download = in_callback;
 		task->callback.userdata = in_udata;
-  }
+	}
 	else
 	{
-	  free_task(task);
-  }
+		free_task(task);
+	}
 }
 
 
@@ -853,7 +856,7 @@ on_install_download(void *in_udata, char const *in_path)
 		asprintf(&path, "%s/mods/%llu.zip", l_mmi.root_path, task->meta64);
 		printf("[mm] installing mod to %s\n", path);
 		// always overwrites
-		if (util_mvfile(in_path, path, true))
+		if (fsu_mvfile(in_path, path, true))
 		{
 			printf("[mm] file moved\n");
 		}	
