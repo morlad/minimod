@@ -7,6 +7,7 @@
 #ifdef _WIN32
 #	include <windows.h>
 #else
+#	include <unistd.h>
 #	include <sys/stat.h>
 #	include <errno.h>
 #endif
@@ -47,6 +48,25 @@ size_t sys_wchar_from_utf8(char const *in, wchar_t *out, size_t chars)
   );
 }
 #endif
+
+#ifdef _WIN32
+bool fsu_rmfile(char const *in_path)
+{
+  size_t nchars = sys_wchar_from_utf8(in_path, NULL, 0);
+  assert(nchars > 0);
+  wchar_t *utf16 = malloc(nchars * sizeof *utf16);
+  sys_wchar_from_utf8(in_path, utf16, nchars);
+  bool result = (DeleteFileW(utf16) == TRUE);
+  free(utf16);
+  return result;
+}
+#else
+bool fsu_rmfile(char const *in_path)
+{
+	return (unlink(in_path) == 0);
+}
+#endif
+
 
 #ifdef _WIN32
 static bool fsu_recursive_mkdir(wchar_t *in_dir)

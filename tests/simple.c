@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <ctype.h>
 
 
@@ -14,6 +15,7 @@ static sys_sleep(uint32_t ms)
 	Sleep(ms);
 }
 #else
+#include <unistd.h>
 void
 static sys_sleep(uint32_t ms)
 {
