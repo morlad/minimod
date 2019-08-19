@@ -416,8 +416,16 @@ handle_download(
 	size_t in_len,
 	int error)
 {
-	printf("[mm] Downloaded a file %s\n", (char const *)in_data);
-	in_callback.fptr.download(in_callback.userdata, in_data);
+	if (error == 200)
+	{
+		printf("[mm] Downloaded a file %s\n", (char const *)in_data);
+		in_callback.fptr.download(in_callback.userdata, in_data);
+	}
+	else
+	{
+		printf("[mm] Failed to download file %s\n", (char const *)in_data);
+		in_callback.fptr.download(in_callback.userdata, NULL);
+	}
 }
 
 
