@@ -3,9 +3,23 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <ctype.h>
 
+
+#ifdef _WIN32
+#include <Windows.h>
+void
+static sys_sleep(uint32_t ms)
+{
+	Sleep(ms);
+}
+#else
+void
+static sys_sleep(uint32_t ms)
+{
+	usleep(ms * 1000);
+}
+#endif
 
 // just init
 // ---------
@@ -56,7 +70,7 @@ test_2(void)
 
 	while (nrequests_completed == 0)
 	{
-		usleep(1000);
+		sys_sleep(10);
 	}
 
 	minimod_deinit();
@@ -97,7 +111,7 @@ test_3(uint64_t game_id)
 
 	while (nrequests_completed < 1)
 	{
-		usleep(1000);
+		sys_sleep(10);
 	}
 
 	minimod_deinit();
@@ -117,7 +131,7 @@ test_3(uint64_t game_id)
 
 	while (nrequests_completed < 1)
 	{
-		usleep(1000);
+		sys_sleep(10);
 	}
 
 	minimod_deinit();
@@ -165,17 +179,21 @@ test_4(void)
 
 	// get e-mail address
 	printf("Enter email: ");
-	char *email = NULL;
-	size_t email_nbytes = 0;
-	ssize_t len = getline(&email, &email_nbytes, stdin);
+	char email[128] = {0};
+	fgets(email, sizeof email, stdin);
+	size_t len = strlen(email);
 
 	// mail address needs to be at least a@b.cc
 	// and truncate accordingly
 	if (len > 6)
 	{
-		for (ssize_t i = len - 1; i >= 0 && isspace(email[i]); --i)
+		for (size_t i = 0; i < len; ++i)
 		{
-			email[i] = '\0';
+			if (isspace(email[i]))
+			{
+				email[i] = '\0';
+				break;
+			}
 		}
 		printf("Sending email to '%s'...\n", email);
 	}
@@ -192,7 +210,7 @@ test_4(void)
 
 	while (success == 0)
 	{
-		usleep(100 * 1000);
+		sys_sleep(10);
 	}
 
 	if (success == 1)
@@ -205,7 +223,7 @@ test_4(void)
 			return false;
 		}
 
-		for (ssize_t i = sizeof code - 1; i >= 0; --i)
+		for (size_t i = 0; i < sizeof code; ++i)
 		{
 			code[i] = isalnum(code[i]) ? (char)toupper(code[i]) : '\0';
 		}
@@ -216,7 +234,7 @@ test_4(void)
 
 		while (success == 0)
 		{
-			usleep(100 * 1000);
+			sys_sleep(10);
 		}
 	}
 
@@ -254,7 +272,7 @@ test_5(void)
 
 	while (wait)
 	{
-		usleep(100 * 1000);
+		sys_sleep(10);
 	}
 
 	minimod_deinit();
@@ -288,7 +306,7 @@ test_6(void)
 
 	while (wait)
 	{
-		usleep(100 * 1000);
+		sys_sleep(10);
 	}
 
 	minimod_deinit();
@@ -317,7 +335,7 @@ test_7(void)
 
 	while (wait)
 	{
-		usleep(100 * 1000);
+		sys_sleep(10);
 	}
 
 	minimod_deinit();
@@ -346,7 +364,7 @@ test_8(void)
 
 	while (wait)
 	{
-		usleep(100 * 1000);
+		sys_sleep(10);
 	}
 
 	minimod_deinit();

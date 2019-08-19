@@ -47,15 +47,18 @@ Q = @
 ifeq ($(os),macos)
 LIBRARY_NAME = libminimod.dylib
 TEST_NAME = testsuite
-TEST_PATH = $(OUTPUT_DIR)/$(TEST_NAME)
-LIB_PATH = $(OUTPUT_DIR)/$(LIBRARY_NAME)
 endif
 ifeq ($(os),windows)
 LIBRARY_NAME = minimod.dll
+TEST_NAME = testsuite.exe
 endif
 ifeq ($(os),linux)
 LIBRARY_NAME = libminimod.so
+TEST_NAME = testsuite
 endif
+
+TEST_PATH = $(OUTPUT_DIR)/$(TEST_NAME)
+LIB_PATH = $(OUTPUT_DIR)/$(LIBRARY_NAME)
 
 ifneq ($(os),linux)
 WARNINGS += -Weverything
@@ -98,30 +101,21 @@ endif
 # ------------
 srcs += deps/qajson4c/src/qajson4c/qajson4c.c
 srcs += deps/qajson4c/src/qajson4c/qajson4c_internal.c
-deps/qajson4c/src/qajson4c/%.o: deps/qajson4c/src/qajson4c/%.h
 
 srcs += deps/miniz/miniz.c
-deps/miniz/miniz.o: deps/miniz/miniz.h
 
 srcs += src/minimod.c
-src/minimod.o: include/minimod/minimod.h
-src/minimod.o: src/netw.h
-src/minimod.o: src/util.h
 
 srcs += src/util.c
-src/util.o: src/util.h
 
 srcs += src/netw.c
-src/netw.o: src/netw.h
 
 ifeq ($(os),macos)
 srcs += src/netw-macos.m
-src/netw-macos.o: src/netw.h
 endif
 
 ifeq ($(os),windows)
 srcs += src/netw-win.c
-src/netw-win.o: src/netw.h
 endif
 
 test_srcs += tests/simple.c
@@ -134,6 +128,18 @@ objs += $(subst .m,.o,$(addprefix $(OUTPUT_DIR)/,$(filter %.m,$(srcs))))
 $(objs): CPPFLAGS += -DMINIMOD_BUILD_LIB
 
 test_objs += $(subst .c,.o,$(addprefix $(OUTPUT_DIR)/,$(filter %.c,$(test_srcs))))
+
+# HEADER DEPENDENCIES
+# -------------------
+src/minimod.o: include/minimod/minimod.h
+src/minimod.o: src/netw.h
+src/minimod.o: src/util.h
+deps/qajson4c/src/qajson4c/%.o: deps/qajson4c/src/qajson4c/%.h
+deps/miniz/miniz.o: deps/miniz/miniz.h
+src/util.o: src/util.h
+src/netw.o: src/netw.h
+src/netw-macos.o: src/netw.h
+src/netw-win.o: src/netw.h
 
 # LINKER OPTIONS
 # --------------
@@ -154,15 +160,14 @@ endif
 ifeq ($(os),windows)
 TARGET_ARCH += -gcodeview
 LDFLAGS += /NOLOGO /MACHINE:X64 /NODEFAULTLIB /INCREMENTAL:NO
-LDFLAGS += /SUBSYSTEM:WINDOWS /DEBUG
+$(LIB_PATH): LDFLAGS += /SUBSYSTEM:WINDOWS
+$(TEST_PATH): LDFLAGS += /SUBSYSTEM:CONSOLE
 LDLIBS += libucrt.lib
+$(TEST_PATH): LDLIBS += $(subst .dll,.lib,$(LIB_PATH))
 LDLIBS += libvcruntime.lib
 LDLIBS += libcmt.lib
-LDLIBS += libcpmt.lib
-LDLIBS += ws2_32.lib
 LDLIBS += kernel32.lib
-LDLIBS += advapi32.lib
-LDLIBS += crypt32.lib
+LDLIBS += winhttp.lib
 endif
 
 ifeq ($(os),linux)
@@ -229,6 +234,9 @@ endif
 ifeq ($(os),macos)
 	$(Q)$(CC) $(TARGET_ARCH) $(LDFLAGS) $(filter %.o,$^) $(LIB_PATH) $(LDLIBS) $(OUTPUT_OPTION)
 endif
+ifeq ($(os),windows)
+	$(Q)$(LINKER) $(LDFLAGS) /OUT:$@ $(filter %.o,$^) $(filter %.res,$^) $(LDLIBS)
+endif
 
 test: $(TEST_PATH)
 	$(Q)$(TEST_PATH)
@@ -243,13 +251,8 @@ ifeq ($(os),macos)
 	$(Q)$(CC) -dynamiclib $(TARGET_ARCH) $(LDFLAGS) $(filter %.o,$^) $(LDLIBS) $(OUTPUT_OPTION) -Wl,-install_name,@loader_path/$(notdir $@)
 endif
 
-# linker command line exceeds what windows can handle, so split object
-# files and load them via @ into the linker
-# thank you windows...
 ifeq ($(os),windows)
-	$(Q)del $(OUTPUT_DIR)\linker-input-files-1.txt
-	$(Q)echo $(objs) >> $(OUTPUT_DIR)\linker-input-files-1.txt
-	$(Q)$(LINKER) /DLL $(LDFLAGS) $(LDLIBS) /OUT:$(subst /,\,$@) @$(OUTPUT_DIR)\linker-input-files-1.txt
+	$(Q)$(LINKER) /DLL $(LDFLAGS) $(LDLIBS) $(filter %.o,$^) /OUT:$(subst /,\,$@)
 endif
 
 ifeq ($(os),linux)
@@ -285,6 +288,8 @@ $(OUTPUT_DIR)/src/minimod.o: NOWARNINGS += -Wno-documentation
 
 ifeq ($(os),windows)
 $(OUTPUT_DIR)/src/%.o: CPPFLAGS += -Ideps/dirent/include
+$(OUTPUT_DIR)/src/%.o: NOWARNINGS += -Wno-reserved-id-macro
+$(OUTPUT_DIR)/src/%.o: NOWARNINGS += -Wno-nonportable-system-include-path
 endif
 
 # clang implied

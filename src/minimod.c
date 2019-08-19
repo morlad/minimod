@@ -8,7 +8,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <unistd.h>
 
 #define NTASKS 32
 
@@ -292,7 +291,7 @@ populate_modfile(struct minimod_modfile *modfile, QAJ4C_Value const *node)
 	assert(QAJ4C_is_object(node));
 
 	modfile->id = QAJ4C_get_uint64(QAJ4C_object_get(node, "id"));
-	modfile->filesize = QAJ4C_get_int64(QAJ4C_object_get(node, "filesize"));
+	modfile->filesize = QAJ4C_get_uint64(QAJ4C_object_get(node, "filesize"));
 
 	QAJ4C_Value const *filehash = QAJ4C_object_get(node, "filehash");
 	modfile->md5 = QAJ4C_get_string(QAJ4C_object_get(filehash, "md5"));
@@ -490,7 +489,7 @@ minimod_init(
 	l_mmi.tasks = malloc(sizeof *l_mmi.tasks * NTASKS);
 
 	// attempt to load token
-	off_t fsize = fsu_filesize(get_tokenpath());
+	int64_t fsize = fsu_fsize(get_tokenpath());
 	if (fsize > 0)
 	{
 		FILE *f = util_fopen(get_tokenpath(), "rb");
@@ -796,7 +795,7 @@ minimod_download(
 
 	while (uri[sizeof uri - 1])
 	{
-		usleep(100 * 1000);
+		sys_sleep(10);
 	}
 
 	// meta data received
@@ -836,7 +835,7 @@ on_install_download(void *in_udata, char const *in_path)
 		asprintf(&path, "%s/mods/%llu.zip", l_mmi.root_path, udata->mod_id);
 		printf("[mm] installing mod to %s\n", path);
 		// always overwrites
-		util_mvfile(in_path, path);
+		util_mvfile(in_path, path, true);
 	}
 
 	// callback

@@ -5,13 +5,31 @@
 #include <stdlib.h>
 #include <string.h>
 #ifdef _WIN32
+#	include <windows.h>
 #else
 #	include <sys/stat.h>
 #	include <errno.h>
 #endif
 
 #ifdef _WIN32
-static bool util_recursive_mkdir(wchar_t *in_dir)
+size_t sys_wchar_from_utf8(char const *in, wchar_t *out, size_t chars)
+{
+  // CAST chars: size_t -> int = assert range
+  assert(chars <= INT_MAX);
+  // CAST retval: int -> size_t = MBTWC always returns >= 0 (error == 0)
+  return (size_t)MultiByteToWideChar(
+    CP_UTF8,
+    0, // MB_PRECOMPOSED is default.
+    in,
+    -1, // length of 'in'. -1: NUL-terminated
+    out,
+    (int)chars // size in characters, not bytes!
+  );
+}
+#endif
+
+#ifdef _WIN32
+static bool fsu_recursive_mkdir(wchar_t *in_dir)
 {
   // store the first directory to be created, for early outs
   wchar_t *first_hit = NULL;
@@ -31,12 +49,12 @@ static bool util_recursive_mkdir(wchar_t *in_dir)
       *ptr = '\0';
       BOOL result = CreateDirectory(in_dir, NULL);
       DWORD err = GetLastError();
-      LOGD("<CreateDirectory(%ls) %lu", in_dir, err);
+      printf("<CreateDirectory(%ls) %lu\n", in_dir, err);
       *ptr = old;
 
       if (result || err == ERROR_ALREADY_EXISTS)
       {
-        LOGD("- done");
+        printf("- done\n");
         break;
       }
     }
@@ -64,15 +82,15 @@ static bool util_recursive_mkdir(wchar_t *in_dir)
       *ptr = '\0';
       BOOL result = CreateDirectory(in_dir, NULL);
       DWORD err = GetLastError();
-      LOGD(">CreateDirectory(%ls) %lu", in_dir, err);
+      printf(">CreateDirectory(%ls) %lu\n", in_dir, err);
       *ptr = old;
 
       if (result || err == ERROR_ALREADY_EXISTS)
       {
-        LOGD("- done");
+        printf("- done\n");
         if (ptr == end)
         {
-          LOGD("- final");
+          printf("- final\n");
           return true;
         }
         ++ptr;
@@ -88,11 +106,11 @@ static bool util_recursive_mkdir(wchar_t *in_dir)
 
 bool util_mkdir(char const *in_path)
 {
-	size_t nchars = ml_wchar_from_utf8(in_path, NULL, 0);
+	size_t nchars = sys_wchar_from_utf8(in_path, NULL, 0);
 	assert(nchars > 0);
 	wchar_t *utf16 = malloc(nchars * sizeof *utf16);
-	ml_wchar_from_utf8(in_path, utf16, nchars);
-	bool result = mlfs__recursive_mkdir(utf16);
+	sys_wchar_from_utf8(in_path, utf16, nchars);
+	bool result = fsu_recursive_mkdir(utf16);
 	free(utf16);
 	return result;
 }
@@ -131,6 +149,37 @@ bool util_mkdir(char const *in_dir)
 
 
 #ifdef _WIN32
+FILE *util_fopen(char const *in_path, char const *in_mode)
+{
+	assert(in_mode);
+
+  // convert to utf16
+  size_t nchars = sys_wchar_from_utf8(in_path, NULL, 0);
+  assert(nchars > 0);
+  wchar_t *utf16 = malloc(nchars * sizeof *utf16);
+  sys_wchar_from_utf8(in_path, utf16, nchars);
+
+  bool has_write = false;
+	// convert mode
+	wchar_t wmode[32] = {0};
+	size_t i = 0;
+	while (i < sizeof wmode && in_mode[i])
+	{
+	  wmode[i] = (unsigned char)in_mode[i];
+	  if (in_mode[i] == 'w')
+	  {
+			has_write = true;
+	}
+  }
+
+	// create directory if mode contains 'w'
+	if (has_write)
+	{
+		util_mkdir(in_path);
+	}
+
+	return _wfopen(utf16, wmode);
+}
 #else
 FILE *util_fopen(char const *path, char const *mode)
 {
@@ -145,8 +194,43 @@ FILE *util_fopen(char const *path, char const *mode)
 
 
 #ifdef _WIN32
+bool util_mvfile(char const *in_srcpath, char const *in_dstpath, bool in_replace)
+{
+  // copy allowed: don't care when destination is on another volume
+  // write through: make sure the move is finished before proceeding
+  //                'security' over speed
+  DWORD flags = MOVEFILE_COPY_ALLOWED | MOVEFILE_WRITE_THROUGH;
+  if (in_replace)
+  {
+    flags |= MOVEFILE_REPLACE_EXISTING;
+  }
+
+  // convert in_srcpath to utf16
+  size_t nchars = sys_wchar_from_utf8(in_srcpath, NULL, 0);
+  assert(nchars > 0);
+  wchar_t *srcpath = malloc(nchars * sizeof *srcpath);
+  sys_wchar_from_utf8(in_srcpath, srcpath, nchars);
+
+  // convert in_dstpath to utf16
+  nchars = sys_wchar_from_utf8(in_dstpath, NULL, 0);
+  assert(nchars > 0);
+  wchar_t *dstpath = malloc(nchars * sizeof *dstpath);
+  sys_wchar_from_utf8(in_dstpath, dstpath, nchars);
+
+  BOOL result = MoveFileExW(srcpath, dstpath, flags);
+  if (result == FALSE && GetLastError() == ERROR_PATH_NOT_FOUND)
+  {
+    fsu_recursive_mkdir(dstpath);
+    result = MoveFileExW(srcpath, dstpath, flags);
+  }
+
+  free(srcpath);
+  free(dstpath);
+
+  return (result == TRUE);
+}
 #else
-bool util_mvfile(char const *from, char const *to)
+bool util_mvfile(char const *from, char const *to, bool in_replace)
 {
 	util_mkdir(to);
 	rename(from, to);
@@ -155,11 +239,100 @@ bool util_mvfile(char const *from, char const *to)
 #endif
 
 #ifdef _WIN32
+int64_t fsu_fsize(char const *in_path)
+{
+  // convert to utf16
+  size_t nchars = sys_wchar_from_utf8(in_path, NULL, 0);
+  assert(nchars);
+  wchar_t *utf16 = malloc(nchars * sizeof *utf16);
+  sys_wchar_from_utf8(in_path, utf16, nchars);
+
+  HANDLE file = CreateFile(
+    utf16,
+    GENERIC_READ,
+    FILE_SHARE_READ | FILE_SHARE_WRITE,
+    NULL,
+    OPEN_EXISTING,
+    FILE_ATTRIBUTE_NORMAL,
+    NULL);
+  free(utf16);
+
+  // early out on failure
+  if (file == INVALID_HANDLE_VALUE)
+  {
+    return -1;
+  }
+
+  LARGE_INTEGER size = {.QuadPart = 0};
+  GetFileSizeEx(file, &size);
+  CloseHandle(file);
+  return size.QuadPart;
+}
 #else
-off_t fsu_filesize(char const *in_path)
+int64_t fsu_fsize(char const *in_path)
 {
   struct stat st;
   bool ok = (0 == stat(in_path, &st) && S_ISREG(st.st_mode));
   return ok ? st.st_size : -1;
+}
+#endif
+
+#ifdef _WIN32
+void
+sys_sleep(uint32_t ms)
+{
+	Sleep(ms);
+}
+#else
+void
+sys_sleep(uint32_t ms)
+{
+	usleep(ms * 1000);
+}
+#endif
+
+#ifdef _WIN32
+int asprintf(char **strp, const char *fmt, ...)
+{
+  va_list args;
+  va_start(args, fmt);
+
+  int size = vasprintf(strp, fmt, args);
+
+  va_end(args);
+
+  return size;
+
+}
+
+
+int
+vasprintf (char **strp, const char *fmt, va_list args)
+{
+  va_list tmpa;
+
+  // copy
+  va_copy(tmpa, args);
+
+  // apply variadic arguments to
+  // sprintf with format to get size
+  int size = vsnprintf(NULL, 0, fmt, tmpa);
+
+  // toss args
+  va_end(tmpa);
+
+  // return -1 to be compliant if
+  // size is less than 0
+  if (size < 0) { return -1; }
+
+  *strp = malloc((size_t)size + 1 /*NUL*/);
+
+  // return -1 to be compliant
+  // if pointer is `NULL'
+  if (NULL == *strp) { return -1; }
+
+  // format string with original
+  // variadic arguments and set new size
+  return vsprintf(*strp, fmt, args);
 }
 #endif

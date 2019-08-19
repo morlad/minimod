@@ -168,7 +168,7 @@ struct minimod_modfile
 	uint64_t id;
 	char const *md5;
 	char const *url;
-	off_t filesize;
+	uint64_t filesize;
 };
 
 
