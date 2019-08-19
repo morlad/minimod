@@ -24,6 +24,11 @@ netw_init(struct netw_callbacks *callbacks);
 void
 netw_deinit(void);
 
+
+// headers are specified as NULL terminated array of NULL terminated strings
+// where key and value are one element in the array each.
+// i.e. { "Accept", "application/json", NULL }
+
 // send GET request. Calls *completion* callback when done.
 bool
 netw_get_request(char const *uri, char const *const headers[], void *udata);
