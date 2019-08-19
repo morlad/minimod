@@ -44,7 +44,7 @@ struct task
 {
 	struct callback callback;
 
-	uintptr_t meta64;
+	uint64_t meta64;
 
 	enum task_type type;
 	int32_t meta32;
@@ -731,7 +731,7 @@ minimod_is_authenticated(void)
 void
 minimod_deauthenticate(void)
 {
-	unlink(get_tokenpath());
+	fsu_rmfile(get_tokenpath());
 	free(l_mmi.token);
 	l_mmi.token = NULL;
 }
