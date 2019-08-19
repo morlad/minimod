@@ -9,6 +9,8 @@
 
 // size of download -> file buffer
 #define BUFFERSIZE 4096
+#define USER_AGENT L"minimod/0.1"
+#define TEMPFILE_PREFIX L"mmi"
 
 
 struct netw
@@ -25,7 +27,7 @@ netw_init(struct netw_callbacks *in_callbacks)
 	l_netw.callbacks = *in_callbacks;
 
 	l_netw.session = WinHttpOpen(
-		L"minimod-client",
+		USER_AGENT,
 
 // TODO if windows < 8.1
 		WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
@@ -143,7 +145,7 @@ create_temp_file(wchar_t out_path[MAX_PATH])
 	// Well done Microsoft.
 	wchar_t temp_dir[MAX_PATH+1+1] = {0};
 	GetTempPathW(MAX_PATH+1, temp_dir);
-	GetTempFileName(temp_dir, L"mmi", 0, out_path);
+	GetTempFileName(temp_dir, TEMPFILE_PREFIX, 0, out_path);
 	wprintf(L"[netw] Setting up temporary file: %s\n", out_path);
 	HANDLE hfile = CreateFile(
 		out_path,
