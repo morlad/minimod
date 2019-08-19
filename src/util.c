@@ -181,16 +181,15 @@ FILE *util_fopen(char const *in_path, char const *in_mode)
 
   bool has_write = false;
 	// convert mode
-	wchar_t wmode[32] = {0};
-	size_t i = 0;
-	while (i < sizeof wmode && in_mode[i])
+	wchar_t wmode[8] = {0};
+	for (size_t i = 0; i < 8 && in_mode[i]; ++i)
 	{
-	  wmode[i] = (unsigned char)in_mode[i];
-	  if (in_mode[i] == 'w')
-	  {
+		wmode[i] = (unsigned char)in_mode[i];
+		if (in_mode[i] == 'w')
+		{
 			has_write = true;
+		}
 	}
-  }
 
 	// create directory if mode contains 'w'
 	if (has_write)
@@ -198,7 +197,9 @@ FILE *util_fopen(char const *in_path, char const *in_mode)
 		util_mkdir(in_path);
 	}
 
-	return _wfopen(utf16, wmode);
+	FILE *f = _wfopen(utf16, wmode);
+	free(utf16);
+	return f;
 }
 #else
 FILE *util_fopen(char const *path, char const *mode)
@@ -238,10 +239,18 @@ bool util_mvfile(char const *in_srcpath, char const *in_dstpath, bool in_replace
   sys_wchar_from_utf8(in_dstpath, dstpath, nchars);
 
   BOOL result = MoveFileExW(srcpath, dstpath, flags);
+	if (!result)
+	{
+		printf("[util] MoveFileEx#1 failed %lu (%lx)\n", GetLastError(), GetLastError());
+	}
   if (result == FALSE && GetLastError() == ERROR_PATH_NOT_FOUND)
   {
     fsu_recursive_mkdir(dstpath);
     result = MoveFileExW(srcpath, dstpath, flags);
+		if (!result)
+		{
+			printf("[util] MoveFileEx#2 failed %lu (%lx)\n", GetLastError(), GetLastError());
+		}
   }
 
   free(srcpath);
