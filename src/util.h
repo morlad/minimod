@@ -20,4 +20,5 @@ int vasprintf(char **strp, const char *fmt, va_list ap);
 // sleep in millseconds
 void sys_sleep(uint32_t ms);
 size_t sys_wchar_from_utf8(char const *in, wchar_t *out, size_t chars);
+size_t sys_utf8_from_wchar(wchar_t const *in, char *out, size_t bytes);
 #endif

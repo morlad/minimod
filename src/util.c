@@ -12,6 +12,26 @@
 #endif
 
 #ifdef _WIN32
+size_t sys_utf8_from_wchar(wchar_t const *in, char *out, size_t bytes)
+{
+  assert(in);
+  assert(bytes == 0 || out);
+  //  CAST bytes: size_t -> int = assert range
+  assert(bytes <= INT_MAX);
+  //  CAST retval: int -> size_t = WCTMB always returns >= 0 (error == 0)
+  return (size_t)WideCharToMultiByte(
+    CP_UTF8,
+    0,
+    in,
+    -1, // length of 'in'. -1: NUL-terminated
+    out,
+    (int)bytes,
+    NULL, // must be set to 0 for CP_UTF8
+    NULL // must be set to 0 for CP_UTF8
+  );
+}
+
+
 size_t sys_wchar_from_utf8(char const *in, wchar_t *out, size_t chars)
 {
   // CAST chars: size_t -> int = assert range
