@@ -8,12 +8,12 @@
 struct netw_callbacks
 {
 	void (*completion)(
-		void *in_udata,
+		void const *in_udata,
 		void const *in_data,
 		size_t in_bytes,
 		int error);
 	void (*downloaded)(
-		void *in_udata,
+		void const *in_udata,
 		char const *path,
 		int error);
 };

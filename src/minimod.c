@@ -448,7 +448,7 @@ static handler l_handlers[MINIMOD_TASKTYPE__COUNT] =
 
 
 static void
-on_completion(void *in_udata, void const *data, size_t bytes, int error)
+on_completion(void const *in_udata, void const *data, size_t bytes, int error)
 {
 	if (error != 200)
 	{
@@ -459,7 +459,7 @@ on_completion(void *in_udata, void const *data, size_t bytes, int error)
 	fclose(f);
 
 	assert(in_udata);
-	struct task *task = in_udata;
+	struct task const *task = in_udata;
 	if (task->type != MINIMOD_TASKTYPE_DOWNLOAD)
 	{
 		l_handlers[task->type](task->callback, data, bytes, error);
@@ -468,7 +468,7 @@ on_completion(void *in_udata, void const *data, size_t bytes, int error)
 
 
 static void
-on_downloaded(void *in_udata, char const *path, int error)
+on_downloaded(void const *in_udata, char const *path, int error)
 {
 	if (error != 200)
 	{
@@ -478,7 +478,7 @@ on_downloaded(void *in_udata, char const *path, int error)
 	printf("[mm] on_downloaded(%i): %s\n", error, path);
 
 	assert(in_udata);
-	struct task *task = in_udata;
+	struct task const *task = in_udata;
 	l_handlers[task->type](task->callback, path, 0, error);
 }
 

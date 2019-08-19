@@ -14,7 +14,8 @@ struct netw
 	NSURLSession *session;
 	MyDelegate *delegate;
 	struct netw_callbacks callbacks;
-	NSMutableDictionary *dict;
+	NSMutableDictionary *buffer_dict;
+	CFMutableDictionaryRef udata_dict;
 };
 static struct netw l_netw;
 
@@ -25,20 +26,25 @@ static struct netw l_netw;
 	didCompleteWithError:(NSError *)error
 {
 	assert(task.state == NSURLSessionTaskStateCompleted);
-	NSData *data = l_netw.dict[task];
-	l_netw.callbacks.completion(task.taskIdentifier, data.bytes, data.length, (int)((NSHTTPURLResponse*)task.response).statusCode);
-	[l_netw.dict removeObjectForKey:task];
+	NSData *data = l_netw.buffer_dict[task];
+	l_netw.callbacks.completion(
+		CFDictionaryGetValue(l_netw.udata_dict, task),
+		data.bytes,
+		data.length,
+		(int)((NSHTTPURLResponse*)task.response).statusCode);
+	[l_netw.buffer_dict removeObjectForKey:task];
+	CFDictionaryRemoveValue(l_netw.udata_dict, task);
 }
 
 - (void)URLSession:(NSURLSession *)session
 	dataTask:(NSURLSessionDataTask *)task
 	didReceiveData:(NSData *)in_data
 {
-	if (!l_netw.dict[task])
+	if (!l_netw.buffer_dict[task])
 	{
-	  l_netw.dict[task] = [NSMutableData new];
+	  l_netw.buffer_dict[task] = [NSMutableData new];
 	}
-	NSMutableData *data = l_netw.dict[task];
+	NSMutableData *data = l_netw.buffer_dict[task];
 	[data appendData:in_data];
 }
 
@@ -46,7 +52,12 @@ static struct netw l_netw;
 	downloadTask:(NSURLSessionDownloadTask *)task
 	didFinishDownloadingToURL:(NSURL *)location
 {
-	l_netw.callbacks.downloaded(task.taskIdentifier, location.path.UTF8String, (int)((NSHTTPURLResponse*)task.response).statusCode);
+	l_netw.callbacks.downloaded(
+		CFDictionaryGetValue(l_netw.udata_dict, task),
+		location.path.UTF8String,
+		(int)((NSHTTPURLResponse*)task.response).statusCode);
+	// didCompleteWithError is also called
+	//CFDictionaryRemoveValue(l_netw.udata_dict, task);
 }
 @end
 
@@ -58,7 +69,8 @@ netw_init(struct netw_callbacks *in_callbacks)
 
 	l_netw.delegate = [MyDelegate new];
 
-	l_netw.dict = [NSMutableDictionary dictionaryWithCapacity:8];
+	l_netw.buffer_dict = [NSMutableDictionary dictionaryWithCapacity:8];
+	l_netw.udata_dict = CFDictionaryCreateMutable(NULL, 0, NULL, NULL);
 
 	NSURLSessionConfiguration *config =
 		[NSURLSessionConfiguration defaultSessionConfiguration];
@@ -75,14 +87,16 @@ netw_deinit(void)
 	[l_netw.session invalidateAndCancel];
 	l_netw.session = nil;
 	l_netw.delegate = nil;
-	l_netw.dict = nil;
+	l_netw.buffer_dict = nil;
+	l_netw.udata_dict = nil;
 }
 
 
-uint64_t
+bool
 netw_get_request(
 	char const *in_uri,
-	char const *const headers[])
+	char const *const headers[],
+	void *in_udata)
 {
 	assert(in_uri);
 	assert(headers);
@@ -100,18 +114,21 @@ netw_get_request(
 
 	NSURLSessionDataTask *task = [l_netw.session dataTaskWithRequest:request];
 
+	CFDictionarySetValue(l_netw.udata_dict, task, in_udata);
+
 	[task resume];
 
-	return task.taskIdentifier;
+	return true;
 }
 
 
-uint64_t
+bool
 netw_post_request(
 	char const *in_uri,
 	char const *const headers[],
 	void const *in_body,
-	size_t in_nbytes)
+	size_t in_nbytes,
+	void *in_udata)
 {
 	assert(in_uri);
 	assert(headers);
@@ -134,14 +151,16 @@ netw_post_request(
 
 	NSURLSessionDataTask *task = [l_netw.session uploadTaskWithRequest:request fromData:body];
 
+	CFDictionarySetValue(l_netw.udata_dict, task, in_udata);
+
 	[task resume];
 
-	return task.taskIdentifier;
+	return true;
 }
 
 
-uint64_t
-netw_download(char const *in_uri)
+bool
+netw_download(char const *in_uri, void *in_udata)
 {
 	assert(in_uri);
 
@@ -152,7 +171,9 @@ netw_download(char const *in_uri)
 
 	NSURLSessionDownloadTask *task = [l_netw.session downloadTaskWithURL:url];
 
+	CFDictionarySetValue(l_netw.udata_dict, task, in_udata);
+
 	[task resume];
 
-	return task.taskIdentifier;
+	return true;
 }
