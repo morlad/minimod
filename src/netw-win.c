@@ -224,10 +224,12 @@ task_handler(LPVOID context)
 	}
 	printf("[netw] status code of response: %lu\n", status_code);
 
-	wchar_t temp_path[MAX_PATH] = {0};
-	HANDLE hfile = NULL;
+	printf("[netw] Read content...\n");
+	uint8_t* buffer = NULL;
 	if (task->is_download)
 	{
+		wchar_t temp_path[MAX_PATH] = {0};
+		HANDLE hfile = NULL;
 		printf("[netw] Setting up temporary file\n");
 
 		hfile = create_temp_file(temp_path);
@@ -236,36 +238,21 @@ task_handler(LPVOID context)
 			printf("[netw] Failed to create temporary file\n");
 			return false;
 		}
-	}
-
-	printf("[netw] Read content...\n");
-	uint8_t *buffer = task->is_download ? malloc(BUFFERSIZE) : NULL;
-	size_t bytes = 0;
-	DWORD avail_bytes = 0;
-	do
-	{
-		ok = WinHttpQueryDataAvailable(hrequest, &avail_bytes);
-		if (!ok)
+		buffer = malloc(BUFFERSIZE);
+		DWORD avail_bytes = 0;
+		do
 		{
-			printf("[netw] ERR: QueryDataAvailable: %lu (0x%lx)\n", GetLastError(), GetLastError());
-			return false;
-		}
-		if (avail_bytes > 0)
-		{
-			if (!task->is_download)
+			ok = WinHttpQueryDataAvailable(hrequest, &avail_bytes);
+			if (!ok)
 			{
-				buffer = realloc(buffer, bytes + avail_bytes);
+				printf("[netw] ERR: QueryDataAvailable: %lu (0x%lx)\n", GetLastError(), GetLastError());
+				return false;
 			}
-			DWORD actual_bytes_read = 0;
-			WinHttpReadData(
-				hrequest,
-				buffer + (task->is_download ? 0 : bytes),
-				task->is_download ? BUFFERSIZE : avail_bytes,
-				&actual_bytes_read);
-			bytes += actual_bytes_read;
-			printf("[netw] Read %lu from %lu bytes\n", actual_bytes_read, avail_bytes);
-			if (task->is_download)
+			if (avail_bytes > 0)
 			{
+				DWORD actual_bytes_read = 0;
+				WinHttpReadData(hrequest, buffer, BUFFERSIZE, &actual_bytes_read);
+				printf("[netw] Read %lu from %lu bytes\n", actual_bytes_read, avail_bytes);
 				DWORD actual_bytes_written = 0;
 				do
 				{
@@ -275,11 +262,8 @@ task_handler(LPVOID context)
 				printf("[netw] Written %lu from %lu bytes\n", actual_bytes_written, actual_bytes_read);
 			}
 		}
-	}
-	while (avail_bytes > 0);
+		while (avail_bytes > 0);
 
-	if (task->is_download)
-	{
 		// convert path to utf8
 		size_t pathlen = sys_utf8_from_wchar(temp_path, NULL, 0);
 		char *u8path = malloc(pathlen);
@@ -294,6 +278,27 @@ task_handler(LPVOID context)
 	}
 	else
 	{
+		size_t bytes = 0;
+		DWORD avail_bytes = 0;
+		do
+		{
+			ok = WinHttpQueryDataAvailable(hrequest, &avail_bytes);
+			if (!ok)
+			{
+				printf("[netw] ERR: QueryDataAvailable: %lu (0x%lx)\n", GetLastError(), GetLastError());
+				return false;
+			}
+			if (avail_bytes > 0)
+			{
+				buffer = realloc(buffer, bytes + avail_bytes);
+				DWORD actual_bytes = 0;
+				WinHttpReadData(hrequest, buffer + bytes, avail_bytes, &actual_bytes);
+				bytes += actual_bytes;
+				printf("[netw] Read %lu from %lu bytes\n", actual_bytes, avail_bytes);
+			}
+		}
+		while (avail_bytes > 0);
+
 		l_netw.callbacks.completion(task->udata, buffer, bytes, (int)status_code);
 	}
 
