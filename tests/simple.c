@@ -206,8 +206,6 @@ test_4(void)
 	int success = 0;
 	minimod_email_request(email, on_email_request, &success);
 	
-	free(email);
-
 	while (success == 0)
 	{
 		sys_sleep(10);
