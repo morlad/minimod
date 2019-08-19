@@ -1,0 +1,6 @@
+build/
+deps/qajson4c/
+deps/dirent/
+deps/miniz/examples/
+_minimod/
+.minimod/
