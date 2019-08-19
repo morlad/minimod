@@ -9,8 +9,6 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#define NTASKS 32
-
 
 enum task_type
 {
@@ -44,10 +42,12 @@ struct callback
 
 struct task
 {
-	uint64_t id;
 	struct callback callback;
+
+	uintptr_t meta64;
+
 	enum task_type type;
-	char _padding[4];
+	int32_t meta32;
 };
 
 
@@ -57,7 +57,7 @@ static struct mmi
 	char *root_path;
 	char *cache_tokenpath;
 	uint64_t game_id;
-	struct task *tasks;
+	struct task *taskpool;
 	char *token;
 	enum minimod_environment env;
 	bool unzip;
@@ -70,6 +70,28 @@ static char const *endpoints[2] =
 	"https://api.mod.io/v1",
 	"https://api.test.mod.io/v1",
 };
+
+
+static struct task *alloc_task(void)
+{
+	if (l_mmi.taskpool)
+	{
+	  struct task *task = l_mmi.taskpool;
+	  memcpy(l_mmi.taskpool, task, sizeof(void *));
+	  return task;
+  }
+	else
+	{
+	  return malloc(sizeof(struct task));
+  }
+}
+
+
+static void free_task(struct task *task)
+{
+	memcpy(task, l_mmi.taskpool, sizeof(void *));
+	l_mmi.taskpool = task;
+}
 
 
 static char *get_tokenpath(void)
@@ -426,7 +448,7 @@ static handler l_handlers[MINIMOD_TASKTYPE__COUNT] =
 
 
 static void
-on_completion(uint64_t tid, void const *data, size_t bytes, int error)
+on_completion(void *in_udata, void const *data, size_t bytes, int error)
 {
 	if (error != 200)
 	{
@@ -436,19 +458,17 @@ on_completion(uint64_t tid, void const *data, size_t bytes, int error)
 	fwrite(data, bytes, 1, f);
 	fclose(f);
 
-	if (tid < NTASKS)
+	assert(in_udata);
+	struct task *task = in_udata;
+	if (task->type != MINIMOD_TASKTYPE_DOWNLOAD)
 	{
-		struct task *task = &l_mmi.tasks[tid];
-		if (task->type != MINIMOD_TASKTYPE_DOWNLOAD)
-		{
-			l_handlers[task->type](l_mmi.tasks[tid].callback, data, bytes, error);
-		} 
+		l_handlers[task->type](task->callback, data, bytes, error);
 	}
 }
 
 
 static void
-on_downloaded(uint64_t tid, char const *path, int error)
+on_downloaded(void *in_udata, char const *path, int error)
 {
 	if (error != 200)
 	{
@@ -457,11 +477,9 @@ on_downloaded(uint64_t tid, char const *path, int error)
 
 	printf("[mm] on_downloaded(%i): %s\n", error, path);
 
-	if (tid < NTASKS)
-	{
-		struct task *task = &l_mmi.tasks[tid];
-		l_handlers[task->type](l_mmi.tasks[tid].callback, path, 0, error);
-	}
+	assert(in_udata);
+	struct task *task = in_udata;
+	l_handlers[task->type](task->callback, path, 0, error);
 }
 
 
@@ -486,8 +504,6 @@ minimod_init(
 	// TODO make sure the path does not end with '/'
 	l_mmi.api_key = api_key ? strdup(api_key) : NULL;
 
-	l_mmi.tasks = malloc(sizeof *l_mmi.tasks * NTASKS);
-
 	// attempt to load token
 	int64_t fsize = fsu_fsize(get_tokenpath());
 	if (fsize > 0)
@@ -511,7 +527,6 @@ minimod_deinit()
 	free(l_mmi.root_path);
 	free(l_mmi.cache_tokenpath);
 	free(l_mmi.api_key);
-	free(l_mmi.tasks);
 	free(l_mmi.token);
 
 	l_mmi = (struct mmi){0};
@@ -534,14 +549,17 @@ minimod_get_games(
 		NULL
 	};
 
-	uint64_t task = netw_get_request(path, headers);
-
-	if (task < NTASKS)
+	struct task *task = alloc_task();
+	if (netw_get_request(path, headers, task))
 	{
-		l_mmi.tasks[task].type = MINIMOD_TASKTYPE_GET_GAMES;
-		l_mmi.tasks[task].callback.fptr.get_games = in_callback;
-		l_mmi.tasks[task].callback.userdata = in_udata;
-	}
+		task->type = MINIMOD_TASKTYPE_GET_GAMES;
+		task->callback.fptr.get_games = in_callback;
+		task->callback.userdata = in_udata;
+  }
+	else
+	{
+	  free_task(task);
+  }
 
 	free(path);
 }
@@ -555,7 +573,7 @@ minimod_get_mods(
 	void *in_udata)
 {
 	char *path;
-	asprintf(&path, "%s/games/%llu/mods?api_key=%s%s",
+	asprintf(&path, "%s/games/%llu/mods?api_key=%s&%s",
 		endpoints[l_mmi.env],
 		in_gameid == 0 ? l_mmi.game_id : in_gameid,
 		l_mmi.api_key,
@@ -566,14 +584,17 @@ minimod_get_mods(
 		NULL
 	};
 
-	uint64_t task = netw_get_request(path, headers);
-
-	if (task < NTASKS)
+	struct task *task = alloc_task();
+	if (netw_get_request(path, headers, task))
 	{
-		l_mmi.tasks[task].type = MINIMOD_TASKTYPE_GET_MODS;
-		l_mmi.tasks[task].callback.fptr.get_mods = in_callback;
-		l_mmi.tasks[task].callback.userdata = in_udata;
-	}
+		task->type = MINIMOD_TASKTYPE_GET_MODS;
+		task->callback.fptr.get_mods = in_callback;
+		task->callback.userdata = in_udata;
+  }
+	else
+	{
+	  free_task(task);
+  }
 
 	free(path);
 }
@@ -602,14 +623,17 @@ minimod_email_request(
 
 	assert(nbytes > 0);
 
-	uint64_t task = netw_post_request(path, headers, payload, (size_t)nbytes);
-
-	if (task < NTASKS)
+	struct task *task = alloc_task();
+	if (netw_post_request(path, headers, payload, (size_t)nbytes, task))
 	{
-		l_mmi.tasks[task].type = MINIMOD_TASKTYPE_EMAIL_REQUEST;
-		l_mmi.tasks[task].callback.fptr.email_request = in_callback;
-		l_mmi.tasks[task].callback.userdata = in_udata;
-	}
+		task->type = MINIMOD_TASKTYPE_EMAIL_REQUEST;
+		task->callback.fptr.email_request = in_callback;
+		task->callback.userdata = in_udata;
+  }
+	else
+	{
+	  free_task(task);
+  }
 
 	free(payload);
 	free(path);
@@ -637,14 +661,17 @@ minimod_email_exchange(
 
 	assert(nbytes > 0);
 
-	uint64_t task = netw_post_request(path, headers, payload, (size_t)nbytes);
-
-	if (task < NTASKS)
+	struct task *task = alloc_task();
+	if (netw_post_request(path, headers, payload, (size_t)nbytes, task))
 	{
-		l_mmi.tasks[task].type = MINIMOD_TASKTYPE_EMAIL_EXCHANGE;
-		l_mmi.tasks[task].callback.fptr.email_exchange = in_callback;
-		l_mmi.tasks[task].callback.userdata = in_udata;
-	}
+		task->type = MINIMOD_TASKTYPE_EMAIL_EXCHANGE;
+		task->callback.fptr.email_exchange = in_callback;
+		task->callback.userdata = in_udata;
+  }
+	else
+	{
+	  free_task(task);
+  }
 
 	free(payload);
 	free(path);
@@ -678,14 +705,17 @@ minimod_get_user(
 		NULL
 	};
 
-	uint64_t task = netw_get_request(path, headers);
-
-	if (task < NTASKS)
+	struct task *task = alloc_task();
+	if (netw_get_request(path, headers, task))
 	{
-		l_mmi.tasks[task].type = MINIMOD_TASKTYPE_GET_USERS;
-		l_mmi.tasks[task].callback.fptr.get_users = in_callback;
-		l_mmi.tasks[task].callback.userdata = in_udata;
-	}
+		task->type = MINIMOD_TASKTYPE_GET_USERS;
+		task->callback.fptr.get_users = in_callback;
+		task->callback.userdata = in_udata;
+  }
+	else
+	{
+	  free_task(task);
+  }
 
 	free(path);
 }
@@ -743,14 +773,17 @@ minimod_get_modfiles(
 		NULL
 	};
 
-	uint64_t task = netw_get_request(path, headers);
-
-	if (task < NTASKS)
+	struct task *task = alloc_task();
+	if (netw_get_request(path, headers, task))
 	{
-		l_mmi.tasks[task].type = MINIMOD_TASKTYPE_GET_MODFILES;
-		l_mmi.tasks[task].callback.fptr.get_modfiles = in_callback;
-		l_mmi.tasks[task].callback.userdata = in_udata;
-	}
+		task->type = MINIMOD_TASKTYPE_GET_MODFILES;
+		task->callback.fptr.get_modfiles = in_callback;
+		task->callback.userdata = in_udata;
+  }
+	else
+	{
+	  free_task(task);
+  }
 
 	free(path);
 }
@@ -800,28 +833,24 @@ minimod_download(
 
 	// meta data received
 	printf("[mm] download-url: %s\n", uri);
-	uint64_t task = netw_download(uri);
-
-	if (task < NTASKS)
+	struct task *task = alloc_task();
+	if (netw_download(uri, task))
 	{
-		l_mmi.tasks[task].type = MINIMOD_TASKTYPE_DOWNLOAD;
-		l_mmi.tasks[task].callback.fptr.download = in_callback;
-		l_mmi.tasks[task].callback.userdata = in_udata;
-	}
+		task->type = MINIMOD_TASKTYPE_DOWNLOAD;
+		task->callback.fptr.download = in_callback;
+		task->callback.userdata = in_udata;
+  }
+	else
+	{
+	  free_task(task);
+  }
 }
-
-
-struct install_udata
-{
-	struct callback cb;
-	uint64_t mod_id;
-};
 
 
 static void
 on_install_download(void *in_udata, char const *in_path)
 {
-	struct install_udata *udata = in_udata;
+	struct task *task = in_udata;
 
 	char *path = NULL;
 	// extract zip?
@@ -832,16 +861,24 @@ on_install_download(void *in_udata, char const *in_path)
 	else
 	{
 		// todo move file
-		asprintf(&path, "%s/mods/%llu.zip", l_mmi.root_path, udata->mod_id);
+		asprintf(&path, "%s/mods/%llu.zip", l_mmi.root_path, task->meta64);
 		printf("[mm] installing mod to %s\n", path);
 		// always overwrites
-		util_mvfile(in_path, path, true);
+		if (util_mvfile(in_path, path, true))
+		{
+			printf("[mm] file moved\n");
+		}	
+		else
+		{
+			printf("[mm] file NOT moved\n");
+		}
 	}
 
 	// callback
-	udata->cb.fptr.install(udata->cb.userdata, path);
+	task->callback.fptr.install(task->callback.userdata, path);
 
 	free(path);
+	free_task(task);
 }
 
 
@@ -853,15 +890,15 @@ minimod_install(
 	minimod_install_fptr in_callback,
 	void *in_udata)
 {
-	struct install_udata udata = {
-		.cb.fptr.install = in_callback,
-		.cb.userdata = in_udata,
-		.mod_id = in_modid
-	};
+	struct task *task = alloc_task();
+	task->callback.fptr.install = in_callback;
+	task->callback.userdata = in_udata;
+	task->meta64 = in_modid;
+
 	minimod_download(
 		in_gameid,
 		in_modid,
 		in_modfileid,
 		on_install_download,
-		&udata);
+		task);
 }
