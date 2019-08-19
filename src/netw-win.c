@@ -371,7 +371,7 @@ download_task(LPVOID context)
 
 	HINTERNET hrequest = WinHttpOpenRequest(
 		hconnection,
-		L"POST",
+		task->verb,
 		task->path,
 		NULL,
 		WINHTTP_NO_REFERER,
@@ -383,9 +383,7 @@ download_task(LPVOID context)
 		return false;
 	}
 
-	printf("[netw] Sending request...\n");
-	printf("[netw] payload-bytes: %zu\n", task->payload_bytes);
-	printf("[netw] payload: %s\n", task->payload);
+	printf("[netw] Sending request (payload: %zuB)...\n", task->payload_bytes);
 	BOOL ok = WinHttpSendRequest(
 		hrequest,
 		task->header,
@@ -517,6 +515,7 @@ netw_download(char const *in_uri, void *udata)
 
 	struct task *task = calloc(sizeof *task, 1);
 	task->udata = udata;
+	task->verb = L"GET";
 
 	// convert/extract URI information
 	size_t urilen = sys_wchar_from_utf8(in_uri, NULL, 0);
