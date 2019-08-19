@@ -57,7 +57,6 @@ static struct mmi
 	char *root_path;
 	char *cache_tokenpath;
 	uint64_t game_id;
-	struct task *taskpool;
 	char *token;
 	enum minimod_environment env;
 	bool unzip;
@@ -74,23 +73,13 @@ static char const *endpoints[2] =
 
 static struct task *alloc_task(void)
 {
-	if (l_mmi.taskpool)
-	{
-	  struct task *task = l_mmi.taskpool;
-	  memcpy(l_mmi.taskpool, task, sizeof(void *));
-	  return task;
-  }
-	else
-	{
-	  return malloc(sizeof(struct task));
-  }
+	return malloc(sizeof(struct task));
 }
 
 
 static void free_task(struct task *task)
 {
-	memcpy(task, l_mmi.taskpool, sizeof(void *));
-	l_mmi.taskpool = task;
+	free(task);
 }
 
 
