@@ -31,7 +31,7 @@ sys_utf8_from_wchar(wchar_t const *in, char *out, size_t bytes)
 		out,
 		(int)bytes,
 		NULL, // must be set to 0 for CP_UTF8
-		NULL /* must be set to 0 for CP_UTF8 */;
+		NULL /* must be set to 0 for CP_UTF8 */);
 }
 
 
