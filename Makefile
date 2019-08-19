@@ -167,7 +167,6 @@ $(TEST_PATH): LDLIBS += $(subst .dll,.lib,$(LIB_PATH))
 LDLIBS += libvcruntime.lib
 LDLIBS += libcmt.lib
 LDLIBS += kernel32.lib
-LDLIBS += winhttp.lib
 endif
 
 ifeq ($(os),linux)

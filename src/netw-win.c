@@ -1,4 +1,6 @@
 // vi: noexpandtab tabstop=4 softtabstop=4 shiftwidth=0 list
+#pragma comment(lib, "winhttp.lib")
+
 #include "netw.h"
 #include "util.h"
 
