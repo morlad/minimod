@@ -245,7 +245,7 @@ handle_get_mods(
 static void
 populate_user(struct minimod_user *user, QAJ4C_Value const *node)
 {
-	assert(modfile);
+	assert(user);
 
 	assert(node);
 	assert(QAJ4C_is_object(node));
