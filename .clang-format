@@ -25,6 +25,10 @@ MaxEmptyLinesToKeep: 2
 Cpp11BracedListStyle: false
 AlwaysBreakAfterReturnType: All
 AlignEscapedNewlines: Left
+AllowShortBlocksOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
 
 # function decl/def/call
 BinPackParameters: false

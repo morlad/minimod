@@ -1,24 +1,24 @@
 // vi: noexpandtab tabstop=4 softtabstop=4 shiftwidth=0 list
 #include "minimod/minimod.h"
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 #include <time.h>
 
 
 #ifdef _WIN32
-#include <Windows.h>
-void
-static sys_sleep(uint32_t ms)
+#	include <Windows.h>
+static void
+sys_sleep(uint32_t ms)
 {
 	Sleep(ms);
 }
 #else
-#include <unistd.h>
-void
-static sys_sleep(uint32_t ms)
+#	include <unistd.h>
+static void
+sys_sleep(uint32_t ms)
 {
 	usleep(ms * 1000);
 }
@@ -43,16 +43,16 @@ test_1(void)
 // get all games
 // -------------
 static void
-get_games_callback(
-	void *udata,
-	size_t ngames,
-	struct minimod_game const *games)
+get_games_callback(void *udata, size_t ngames, struct minimod_game const *games)
 {
 	for (size_t i = 0; i < ngames; ++i)
 	{
 		printf("- %s {%llu}\n", games[i].name, games[i].id);
-		printf("\t+ https://%s.mod.io\n", minimod_get_more_string(games[i].more, "name_id"));
-		time_t added = (time_t)minimod_get_more_int(games[i].more, "date_added");
+		printf(
+		  "\t+ https://%s.mod.io\n",
+		  minimod_get_more_string(games[i].more, "name_id"));
+		time_t added =
+		  (time_t)minimod_get_more_int(games[i].more, "date_added");
 		printf("\t+ date added: %s\n", ctime(&added));
 	}
 
@@ -85,10 +85,7 @@ test_2(void)
 
 // get all mods
 static void
-get_mods_callback(
-	void *udata,
-	size_t nmods,
-	struct minimod_mod const *mods)
+get_mods_callback(void *udata, size_t nmods, struct minimod_mod const *mods)
 {
 	for (size_t i = 0; i < nmods; ++i)
 	{
@@ -185,7 +182,7 @@ test_4(void)
 
 	// get e-mail address
 	printf("Enter email: ");
-	char email[128] = {0};
+	char email[128] = { 0 };
 	fgets(email, sizeof email, stdin);
 	size_t len = strlen(email);
 
@@ -211,7 +208,7 @@ test_4(void)
 
 	int success = 0;
 	minimod_email_request(email, on_email_request, &success);
-	
+
 	while (success == 0)
 	{
 		sys_sleep(10);
@@ -286,11 +283,18 @@ test_5(void)
 // modfiles
 // --------
 static void
-on_get_modfiles(void *in_udata, size_t nmodfiles, struct minimod_modfile const *modfiles)
+on_get_modfiles(
+  void *in_udata,
+  size_t nmodfiles,
+  struct minimod_modfile const *modfiles)
 {
 	for (size_t i = 0; i < nmodfiles; ++i)
 	{
-		printf("- {%llu} @ %s (%lli bytes)\n", modfiles[i].id, modfiles[i].url, modfiles[i].filesize);
+		printf(
+		  "- {%llu} @ %s (%lli bytes)\n",
+		  modfiles[i].id,
+		  modfiles[i].url,
+		  modfiles[i].filesize);
 	}
 	*((int *)in_udata) = 0;
 }
@@ -376,7 +380,10 @@ test_8(void)
 
 
 static void
-on_get_ratings(void *in_udata, size_t nratings, struct minimod_rating const *ratings)
+on_get_ratings(
+  void *in_udata,
+  size_t nratings,
+  struct minimod_rating const *ratings)
 {
 	printf("got %zu ratings\n", nratings);
 	*((int *)in_udata) = (int)ratings[0].rating;
@@ -403,12 +410,18 @@ test_9(void)
 
 	int rating = -2;
 	minimod_get_ratings("game_id=309&mod_id=1720", on_get_ratings, &rating);
-	while (rating == -2) { sys_sleep(10); }
+	while (rating == -2)
+	{
+		sys_sleep(10);
+	}
 	printf("mod-rating is %i\n", rating);
 
 	int wait = 1;
 	minimod_rate(0, 1720, rating == 1 ? -1 : 1, on_rated, &wait);
-	while (wait) { sys_sleep(10); }
+	while (wait)
+	{
+		sys_sleep(10);
+	}
 
 	minimod_deinit();
 }
