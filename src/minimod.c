@@ -64,8 +64,7 @@ struct mmi
 static struct mmi l_mmi;
 
 
-static char const *endpoints[2] =
-{
+static char const *endpoints[2] = {
 	"https://api.mod.io/v1",
 	"https://api.test.mod.io/v1",
 };
@@ -586,7 +585,7 @@ minimod_deinit()
 	free(l_mmi.token);
 	free(l_mmi.token_bearer);
 
-	l_mmi = (struct mmi){0};
+	l_mmi = (struct mmi){ 0 };
 }
 
 
