@@ -35,6 +35,7 @@ struct callback
 		minimod_install_fptr install;
 		minimod_rate_fptr rate;
 		minimod_get_ratings_fptr get_ratings;
+		minimod_subscription_change_fptr subscription_change;
 	} fptr;
 	void *userdata;
 };
@@ -197,6 +198,8 @@ populate_mod(struct minimod_mod *mod, QAJ4C_Value const *node)
 		QAJ4C_is_uint64(modfile_id);
 		mod->modfile_id = QAJ4C_get_uint64(modfile_id);
 	}
+
+	mod->more = node;
 }
 
 
@@ -358,7 +361,8 @@ handle_get_modfiles(
 		assert(QAJ4C_is_array(data));
 
 		size_t nmodfiles = QAJ4C_array_size(data);
-		struct minimod_modfile *modfiles = malloc(sizeof *modfiles * nmodfiles);
+		struct minimod_modfile *modfiles =
+		  malloc(sizeof *modfiles * nmodfiles);
 
 		for (size_t i = 0; i < QAJ4C_array_size(data); ++i)
 		{
@@ -509,7 +513,7 @@ handle_get_ratings(
 
 
 static void
-on_completion(void const *in_udata, void const *data, size_t bytes, int error)
+on_completion(void *in_udata, void const *data, size_t bytes, int error)
 {
 	if (error != 200)
 	{
@@ -529,7 +533,7 @@ on_completion(void const *in_udata, void const *data, size_t bytes, int error)
 
 
 static void
-on_downloaded(void const *in_udata, char const *path, int error)
+on_downloaded(void *in_udata, char const *path, int error)
 {
 	if (error != 200)
 	{
@@ -587,9 +591,9 @@ minimod_init(
 	// make sure the path does not end with '/'
 	size_t len = strlen(l_mmi.root_path);
 	assert(len > 0);
-	if (l_mmi.root_path[len-1] == '/')
+	if (l_mmi.root_path[len - 1] == '/')
 	{
-		l_mmi.root_path[len-1] = '\0';
+		l_mmi.root_path[len - 1] = '\0';
 	}
 
 	l_mmi.api_key = api_key ? strdup(api_key) : NULL;
@@ -1068,6 +1072,178 @@ minimod_get_ratings(
 	netw_get_request(path, headers, task);
 
 	free(path);
+}
+
+
+void
+minimod_get_subscriptions(
+  char const *in_filter,
+  minimod_get_mods_fptr in_callback,
+  void *in_udata)
+{
+	assert(minimod_is_authenticated());
+
+	char *path = NULL;
+	asprintf(&path, "%s/me/subscribed?%s", endpoints[l_mmi.env], in_filter);
+
+	char const *const headers[] = {
+		// clang-format off
+		"Accept", "application/json",
+		"Authorization", l_mmi.token_bearer,
+		NULL
+		// clang-format on
+	};
+
+	struct task *task = alloc_task();
+	task->handler = handle_get_mods;
+	task->callback.userdata = in_udata;
+	task->callback.fptr.get_mods = in_callback;
+
+	netw_get_request(path, headers, task);
+
+	free(path);
+}
+
+
+static void
+handle_subscription_change(
+  void *in_udata,
+  void const *in_data,
+  size_t in_bytes,
+  int error)
+{
+	struct task *task = in_udata;
+
+	if (task->meta64 > 0)
+	{
+		if (error == 201)
+		{
+			task->callback.fptr.subscription_change(task->callback.userdata);
+		}
+		else
+		{
+			printf(
+			  "[mm] failed to subscribe %i [modid: %llu]\n",
+			  error,
+			  task->meta64);
+		}
+	}
+	else
+	{
+		if (error == 204)
+		{
+			task->callback.fptr.subscription_change(task->callback.userdata);
+		}
+		else
+		{
+			printf(
+			  "[mm] failed to unsubscribe %i [modid: %llu]\n",
+			  error,
+			  -task->meta64);
+		}
+	}
+
+	free_task(task);
+}
+
+
+bool
+minimod_subscribe(
+  uint64_t in_gameid,
+  uint64_t in_modid,
+  minimod_subscription_change_fptr in_callback,
+  void *in_udata)
+{
+	if (!minimod_is_authenticated())
+	{
+		return false;
+	}
+
+	char *path = NULL;
+	asprintf(
+	  &path,
+	  "%s/games/%llu/mods/%llu/subscribe",
+	  endpoints[l_mmi.env],
+	  in_gameid ? in_gameid : l_mmi.game_id,
+	  in_modid);
+
+	char const *const headers[] = {
+		// clang-format off
+		"Accept", "application/json",
+		"Authorization", l_mmi.token_bearer,
+		"Content-Type", "application/x-www-form-urlencoded",
+		NULL
+		// clang-format on
+	};
+
+	struct task *task = alloc_task();
+	task->handler = handle_get_mods;
+	task->callback.userdata = in_udata;
+	task->callback.fptr.subscription_change = in_callback;
+	task->meta64 = in_modid;
+
+	netw_request(
+	  NETW_VERB_POST,
+	  path,
+	  headers,
+	  NULL,
+	  0,
+	  handle_subscription_change,
+	  task);
+
+	free(path);
+
+	return true;
+}
+
+
+bool
+minimod_unsubscribe(
+  uint64_t in_gameid,
+  uint64_t in_modid,
+  minimod_subscription_change_fptr in_callback,
+  void *in_udata)
+{
+	if (!minimod_is_authenticated())
+	{
+		return false;
+	}
+
+	char *path = NULL;
+	asprintf(
+	  &path,
+	  "%s/games/%llu/mods/%llu/subscribe",
+	  endpoints[l_mmi.env],
+	  in_gameid ? in_gameid : l_mmi.game_id,
+	  in_modid);
+
+	char const *const headers[] = {
+		// clang-format off
+		"Accept", "application/json",
+		"Authorization", l_mmi.token_bearer,
+		"Content-Type", "application/x-www-form-urlencoded",
+		NULL
+		// clang-format on
+	};
+
+	struct task *task = alloc_task();
+	task->handler = handle_get_mods;
+	task->callback.userdata = in_udata;
+	task->callback.fptr.subscription_change = in_callback;
+	task->meta64 = -in_modid;
+
+	netw_request(
+	  NETW_VERB_DELETE,
+	  path,
+	  headers,
+	  NULL,
+	  0,
+	  handle_subscription_change,
+	  task);
+
+	free(path);
+
+	return true;
 }
 
 

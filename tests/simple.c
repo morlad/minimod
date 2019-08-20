@@ -43,7 +43,10 @@ test_1(void)
 // get all games
 // -------------
 static void
-get_games_callback(void *udata, size_t ngames, struct minimod_game const *games)
+get_games_callback(
+  void *udata,
+  size_t ngames,
+  struct minimod_game const *games)
 {
 	for (size_t i = 0; i < ngames; ++i)
 	{
@@ -427,6 +430,42 @@ test_9(void)
 }
 
 
+static void
+on_subscriptions(void *udata, size_t nmods, struct minimod_mod const *mods)
+{
+	printf("Subscribed mods:\n");
+	for (size_t i = 0; i < nmods; ++i)
+	{
+		printf(
+		  "- \"%s\" {%llu} for game {%lli}\n",
+		  mods[i].name,
+		  mods[i].id,
+		  minimod_get_more_int(mods[i].more, "game_id"));
+	}
+	*((int *)udata) = 0;
+}
+
+
+static void
+test_10(void)
+{
+	minimod_init(
+		MINIMOD_ENVIRONMENT_TEST,
+		309,
+		"f90f25ceed3708627a5b85ee52e4f930",
+		NULL);
+
+	int wait = 1;
+	minimod_get_subscriptions(NULL, on_subscriptions, &wait);
+
+	while (wait)
+	{
+		sys_sleep(10);
+	}
+
+	minimod_deinit();
+}
+
 int
 main(int argc, char const *argv[])
 {
@@ -441,6 +480,7 @@ main(int argc, char const *argv[])
 	test_7();
 	test_8();
 	test_9();
+	test_10();
 
 	printf("[test] Done\n");
 

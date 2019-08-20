@@ -2,8 +2,8 @@
 #include "netw.h"
 #include "util.h"
 
-#include <stdio.h>
 #include <Windows.h>
+#include <stdio.h>
 #include <winhttp.h>
 
 // size of download -> file buffer

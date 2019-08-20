@@ -9,11 +9,11 @@
 struct netw_callbacks
 {
 	void (*completion)(
-	  void const *in_udata,
+	  void *in_udata,
 	  void const *in_data,
 	  size_t in_bytes,
 	  int error);
-	void (*downloaded)(void const *in_udata, char const *path, int error);
+	void (*downloaded)(void *in_udata, char const *path, int error);
 };
 
 
@@ -35,7 +35,7 @@ enum netw_verb
 
 
 typedef void (*netw_request_callback)(
-  void const *in_udata,
+  void *in_udata,
   void const *in_data,
   size_t in_bytes,
   int error);
@@ -56,7 +56,7 @@ netw_request(
 
 
 typedef void (*netw_download_callback)(
-  void const *in_udata,
+  void *in_udata,
   char const *path,
   int error);
 

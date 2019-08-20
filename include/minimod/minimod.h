@@ -78,6 +78,7 @@ struct minimod_mod
 	uint64_t id;
 	char const *name;
 	uint64_t modfile_id;
+	void const *more;
 };
 
 
@@ -143,9 +144,7 @@ typedef void (*minimod_get_users_fptr)(
 
 
 MINIMOD_LIB bool
-minimod_get_me(
-  minimod_get_users_fptr in_callback,
-  void *in_udata);
+minimod_get_me(minimod_get_users_fptr in_callback, void *in_udata);
 
 
 MINIMOD_LIB bool
@@ -236,6 +235,32 @@ MINIMOD_LIB void
 minimod_get_ratings(
   char const *in_filter,
   minimod_get_ratings_fptr in_callback,
+  void *in_udata);
+
+
+MINIMOD_LIB void
+minimod_get_subscriptions(
+  char const *in_filter,
+  minimod_get_mods_fptr in_callback,
+  void *in_udata);
+
+
+typedef void (*minimod_subscription_change_fptr)(void *userdata);
+
+
+MINIMOD_LIB bool
+minimod_subscribe(
+  uint64_t in_gameid,
+  uint64_t in_modid,
+  minimod_subscription_change_fptr in_callback,
+  void *in_udata);
+
+
+MINIMOD_LIB bool
+minimod_unsubscribe(
+  uint64_t in_gameid,
+  uint64_t in_modid,
+  minimod_subscription_change_fptr in_callback,
   void *in_udata);
 
 
