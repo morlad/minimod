@@ -3,7 +3,7 @@
 #include "util.h"
 
 #include <stdio.h>
-#include <windows.h>
+#include <Windows.h>
 #include <winhttp.h>
 
 // size of download -> file buffer

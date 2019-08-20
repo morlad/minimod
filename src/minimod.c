@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(__clang__)
 #	define UNUSED(X) __pragma(warning(suppress : 4100)) X
 #else
 #	define UNUSED(X) __attribute__((unused)) X
