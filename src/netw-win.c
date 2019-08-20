@@ -12,7 +12,7 @@
 #define TEMPFILE_PREFIX L"mmi"
 
 #define PRINTERR(X) \
-	printf("[netw] "X" failed %lu (%lx)\n", GetLastError(), GetLastError())
+	printf("[netw] " X " failed %lu (%lx)\n", GetLastError(), GetLastError())
 
 struct netw
 {
@@ -30,10 +30,10 @@ netw_init(struct netw_callbacks *in_callbacks)
 	l_netw.session = WinHttpOpen(
 		USER_AGENT,
 
-// TODO if windows < 8.1
+		// TODO if windows < 8.1
 		WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
-// TODO if windows >= 8.1
-		//WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
+		// TODO if windows >= 8.1
+		// WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
 
 		WINHTTP_NO_PROXY_NAME,
 		WINHTTP_NO_PROXY_BYPASS,
@@ -102,7 +102,7 @@ combine_headers(char const *const in_headers[], size_t *out_len)
 }
 
 
-static wchar_t*
+static wchar_t *
 wcstrndup(wchar_t const *in, size_t in_len)
 {
 	wchar_t *ptr = malloc(sizeof *ptr * (in_len + 1));
@@ -144,8 +144,8 @@ create_temp_file(wchar_t out_path[MAX_PATH])
 	// \0). And in fact GetTempFileName() fails with ERROR_BUFFER_OVERFLOW
 	// when its first argument is > MAX_PATH-14.
 	// Well done Microsoft.
-	wchar_t temp_dir[MAX_PATH+1+1] = {0};
-	GetTempPathW(MAX_PATH+1, temp_dir);
+	wchar_t temp_dir[MAX_PATH + 1 + 1] = { 0 };
+	GetTempPathW(MAX_PATH + 1, temp_dir);
 	GetTempFileName(temp_dir, TEMPFILE_PREFIX, 0, out_path);
 	wprintf(L"[netw] Setting up temporary file: %s\n", out_path);
 	HANDLE hfile = CreateFile(
@@ -228,10 +228,10 @@ task_handler(LPVOID context)
 	printf("[netw] status code of response: %lu\n", status_code);
 
 	printf("[netw] Read content...\n");
-	uint8_t* buffer = NULL;
+	uint8_t *buffer = NULL;
 	if (task->is_download)
 	{
-		wchar_t temp_path[MAX_PATH] = {0};
+		wchar_t temp_path[MAX_PATH] = { 0 };
 		HANDLE hfile = NULL;
 		printf("[netw] Setting up temporary file\n");
 
@@ -255,17 +255,27 @@ task_handler(LPVOID context)
 			{
 				DWORD actual_bytes_read = 0;
 				WinHttpReadData(hrequest, buffer, BUFFERSIZE, &actual_bytes_read);
-				printf("[netw] Read %lu from %lu bytes\n", actual_bytes_read, avail_bytes);
+				printf(
+					"[netw] Read %lu from %lu bytes\n",
+					actual_bytes_read,
+					avail_bytes);
 				DWORD actual_bytes_written = 0;
 				do
 				{
-					WriteFile(hfile, buffer, actual_bytes_read, &actual_bytes_written, NULL);
+					WriteFile(
+						hfile,
+						buffer,
+						actual_bytes_read,
+						&actual_bytes_written,
+						NULL);
 					actual_bytes_read -= actual_bytes_written;
 				} while (actual_bytes_read > 0);
-				printf("[netw] Written %lu from %lu bytes\n", actual_bytes_written, actual_bytes_read);
+				printf(
+					"[netw] Written %lu from %lu bytes\n",
+					actual_bytes_written,
+					actual_bytes_read);
 			}
-		}
-		while (avail_bytes > 0);
+		} while (avail_bytes > 0);
 
 		// convert path to utf8
 		size_t pathlen = sys_utf8_from_wchar(temp_path, NULL, 0);
@@ -297,10 +307,12 @@ task_handler(LPVOID context)
 				DWORD actual_bytes = 0;
 				WinHttpReadData(hrequest, buffer + bytes, avail_bytes, &actual_bytes);
 				bytes += actual_bytes;
-				printf("[netw] Read %lu from %lu bytes\n", actual_bytes, avail_bytes);
+				printf(
+					"[netw] Read %lu from %lu bytes\n",
+					actual_bytes,
+					avail_bytes);
 			}
-		}
-		while (avail_bytes > 0);
+		} while (avail_bytes > 0);
 
 		l_netw.callbacks.completion(task->udata, buffer, bytes, (int)status_code);
 	}
@@ -324,7 +336,10 @@ task_handler(LPVOID context)
 
 
 bool
-netw_get_request(char const *in_uri, char const *const in_headers[], void *udata)
+netw_get_request(
+	char const *in_uri,
+	char const *const in_headers[],
+	void *udata)
 {
 	printf("[netw] get_request: %s\n", in_uri);
 
@@ -346,9 +361,11 @@ netw_get_request(char const *in_uri, char const *const in_headers[], void *udata
 
 	task->port = url_components.nPort;
 	wprintf(L"[netw] port: %i\n", task->port);
-	task->host = wcstrndup(url_components.lpszHostName, url_components.dwHostNameLength);
+	task->host =
+		wcstrndup(url_components.lpszHostName, url_components.dwHostNameLength);
 	wprintf(L"[netw] host: %s\n", task->host);
-	task->path = wcstrndup(url_components.lpszUrlPath, url_components.dwUrlPathLength);
+	task->path =
+		wcstrndup(url_components.lpszUrlPath, url_components.dwUrlPathLength);
 	wprintf(L"[netw] path: %s\n", task->path);
 
 	free(uri);
@@ -408,9 +425,11 @@ netw_post_request(
 
 	task->port = url_components.nPort;
 	wprintf(L"[netw] port: %i\n", task->port);
-	task->host = wcstrndup(url_components.lpszHostName, url_components.dwHostNameLength);
+	task->host =
+		wcstrndup(url_components.lpszHostName, url_components.dwHostNameLength);
 	wprintf(L"[netw] host: %s\n", task->host);
-	task->path = wcstrndup(url_components.lpszUrlPath, url_components.dwUrlPathLength);
+	task->path =
+		wcstrndup(url_components.lpszUrlPath, url_components.dwUrlPathLength);
 	wprintf(L"[netw] path: %s\n", task->path);
 
 	free(uri);
@@ -464,9 +483,11 @@ netw_download(char const *in_uri, void *udata)
 
 	task->port = url_components.nPort;
 	wprintf(L"[netw] port: %i\n", task->port);
-	task->host = wcstrndup(url_components.lpszHostName, url_components.dwHostNameLength);
+	task->host =
+		wcstrndup(url_components.lpszHostName, url_components.dwHostNameLength);
 	wprintf(L"[netw] host: %s\n", task->host);
-	task->path = wcstrndup(url_components.lpszUrlPath, url_components.dwUrlPathLength);
+	task->path =
+		wcstrndup(url_components.lpszUrlPath, url_components.dwUrlPathLength);
 	wprintf(L"[netw] path: %s\n", task->path);
 
 	free(uri);

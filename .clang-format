@@ -23,6 +23,7 @@ IndentPPDirectives: AfterHash
 MaxEmptyLinesToKeep: 2
 Cpp11BracedListStyle: false
 AlwaysBreakAfterReturnType: All
+AlignEscapedNewlines: Left
 
 # function decl/def/call
 BinPackParameters: false
