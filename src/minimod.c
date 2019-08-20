@@ -1,13 +1,13 @@
 // vi: noexpandtab tabstop=4 softtabstop=4 shiftwidth=0 list
 #include "minimod/minimod.h"
 #include "netw.h"
-#include "util.h"
 #include "qajson4c/src/qajson4c/qajson4c.h"
+#include "util.h"
 
-#include <dirent.h>
-#include <string.h>
-#include <stdlib.h>
 #include <assert.h>
+#include <dirent.h>
+#include <stdlib.h>
+#include <string.h>
 
 #ifdef _MSC_VER
 	#define UNUSED(X) __pragma(warning(suppress:4100)) X
@@ -163,7 +163,6 @@ handle_get_games(
 		games[i].id = QAJ4C_get_uint(QAJ4C_object_get(item, "id"));
 		games[i].name = QAJ4C_get_string(QAJ4C_object_get(item, "name"));
 		games[i].more = item;
-
 	}
 
 	in_callback.fptr.get_games(in_callback.userdata, ngames, games);
@@ -277,7 +276,6 @@ handle_get_users(
 		{
 			QAJ4C_Value const *item = QAJ4C_array_get(data, i);
 			assert(QAJ4C_is_object(item));
-
 		}
 
 		in_callback.fptr.get_users(in_callback.userdata, nusers, users);
@@ -484,7 +482,6 @@ handle_get_ratings(
 		ratings[i].modid = QAJ4C_get_uint(QAJ4C_object_get(item, "mod_id"));
 		ratings[i].date = QAJ4C_get_uint(QAJ4C_object_get(item, "date_added"));
 		ratings[i].rating = QAJ4C_get_int(QAJ4C_object_get(item, "rating"));
-
 	}
 
 	in_callback.fptr.get_ratings(in_callback.userdata, nratings, ratings);
@@ -677,7 +674,8 @@ minimod_email_request(
 
 	char *payload;
 	char *email = netw_percent_encode(in_email, strlen(in_email), NULL);
-	int nbytes = asprintf(&payload, "api_key=%s&email=%s", l_mmi.api_key, email);
+	int nbytes =
+		asprintf(&payload, "api_key=%s&email=%s", l_mmi.api_key, email);
 	free(email);
 	printf("[mm] payload: %s (%i)\n", payload, nbytes);
 
@@ -927,7 +925,7 @@ on_install_download(void *in_udata, char const *in_path)
 		if (fsu_mvfile(in_path, path, true))
 		{
 			printf("[mm] file moved\n");
-		}	
+		}
 		else
 		{
 			printf("[mm] file NOT moved\n");
@@ -997,12 +995,7 @@ minimod_rate(
 	task->callback.userdata = in_udata;
 	task->callback.fptr.rate = in_callback;
 
-	netw_post_request(
-		path,
-		headers,
-		data,
-		strlen(data),
-		task);
+	netw_post_request(path, headers, data, strlen(data), task);
 
 	free(path);
 }
@@ -1030,10 +1023,7 @@ minimod_get_ratings(
 	task->callback.userdata = in_udata;
 	task->callback.fptr.get_ratings = in_callback;
 
-	netw_get_request(
-		path,
-		headers,
-		task);
+	netw_get_request(path, headers, task);
 
 	free(path);
 }
