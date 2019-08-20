@@ -136,15 +136,15 @@ fsu_recursive_mkdir(wchar_t *in_dir)
 
 			if (result || err == ERROR_ALREADY_EXISTS)
 			{
-			printf("- done\n");
-			if (ptr == end)
-			{
-				printf("- final\n");
-				return true;
+				printf("- done\n");
+				if (ptr == end)
+				{
+					printf("- final\n");
+					return true;
+				}
+				++ptr;
+				continue;
 			}
-			++ptr;
-			continue;
-		  }
 		}
 		++ptr;
 	}
@@ -188,8 +188,8 @@ fsu_mkdir(char const *in_dir)
 			*ptr = '\0';
 			if (mkdir(dir, 0777 /* octal mode */) == -1 && errno != EEXIST)
 			{
-			free(dir);
-			return false;
+				free(dir);
+				return false;
 			}
 			*ptr = '/';
 		}
@@ -201,7 +201,8 @@ fsu_mkdir(char const *in_dir)
 
 
 #ifdef _WIN32
-FILE *fsu_fopen(char const *in_path, char const *in_mode)
+FILE *
+fsu_fopen(char const *in_path, char const *in_mode)
 {
 	assert(in_mode);
 
@@ -213,7 +214,7 @@ FILE *fsu_fopen(char const *in_path, char const *in_mode)
 
 	bool has_write = false;
 	// convert mode
-	wchar_t wmode[8] = {0};
+	wchar_t wmode[8] = { 0 };
 	for (size_t i = 0; i < 8 && in_mode[i]; ++i)
 	{
 		wmode[i] = (unsigned char)in_mode[i];
@@ -234,7 +235,8 @@ FILE *fsu_fopen(char const *in_path, char const *in_mode)
 	return f;
 }
 #else
-FILE *fsu_fopen(char const *path, char const *mode)
+FILE *
+fsu_fopen(char const *path, char const *mode)
 {
 	// create directory if mode contains 'w'
 	if (strchr(mode, 'w'))
@@ -275,7 +277,10 @@ fsu_mvfile(char const *in_srcpath, char const *in_dstpath, bool in_replace)
 	BOOL result = MoveFileExW(srcpath, dstpath, flags);
 	if (!result)
 	{
-		printf("[util] MoveFileEx#1 failed %lu (%lx)\n", GetLastError(), GetLastError());
+		printf(
+			"[util] MoveFileEx#1 failed %lu (%lx)\n",
+			GetLastError(),
+			GetLastError());
 	}
 	if (result == FALSE && GetLastError() == ERROR_PATH_NOT_FOUND)
 	{
@@ -283,7 +288,10 @@ fsu_mvfile(char const *in_srcpath, char const *in_dstpath, bool in_replace)
 		result = MoveFileExW(srcpath, dstpath, flags);
 		if (!result)
 		{
-			printf("[util] MoveFileEx#2 failed %lu (%lx)\n", GetLastError(), GetLastError());
+			printf(
+				"[util] MoveFileEx#2 failed %lu (%lx)\n",
+				GetLastError(),
+				GetLastError());
 		}
 	}
 
@@ -299,7 +307,7 @@ static bool
 fsu_cpfile(char const *in_srcpath, char const *in_dstpath, bool in_replace)
 {
 	// fail if something does exist at the destination but in_replace is false
-	struct stat st = {0};
+	struct stat st = { 0 };
 	if (!in_replace && stat(in_dstpath, &st) == 0)
 	{
 		return false;
@@ -341,7 +349,7 @@ fsu_mvfile(char const *in_srcpath, char const *in_dstpath, bool in_replace)
 	fsu_mkdir(in_dstpath);
 
 	// fail if something does exist at the destination but in_replace is false
-	struct stat st = {0};
+	struct stat st = { 0 };
 	if (!in_replace && stat(in_dstpath, &st) == 0)
 	{
 		return false;
@@ -397,7 +405,7 @@ fsu_fsize(char const *in_path)
 		return -1;
 	}
 
-	LARGE_INTEGER size = {.QuadPart = 0};
+	LARGE_INTEGER size = { .QuadPart = 0 };
 	GetFileSizeEx(file, &size);
 	CloseHandle(file);
 	return size.QuadPart;
@@ -437,7 +445,8 @@ sys_sleep(uint32_t ms)
 
 #ifdef _WIN32
 
-int asprintf(char **strp, const char *fmt, ...)
+int
+asprintf(char **strp, const char *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
@@ -451,32 +460,26 @@ int asprintf(char **strp, const char *fmt, ...)
 
 
 int
-vasprintf (char **strp, const char *fmt, va_list args)
+vasprintf(char **strp, const char *fmt, va_list args)
 {
 	va_list tmpa;
-
-	// copy
 	va_copy(tmpa, args);
 
-	// apply variadic arguments to
-	// sprintf with format to get size
 	int size = vsnprintf(NULL, 0, fmt, tmpa);
 
-	// toss args
 	va_end(tmpa);
 
-	// return -1 to be compliant if
-	// size is less than 0
-	if (size < 0) { return -1; }
+	if (size < 0)
+	{
+		return -1;
+	}
 
 	*strp = malloc((size_t)size + 1 /*NUL*/);
+	if (NULL == *strp)
+	{
+		return -1;
+	}
 
-	// return -1 to be compliant
-	// if pointer is `NULL'
-	if (NULL == *strp) { return -1; }
-
-	// format string with original
-	// variadic arguments and set new size
 	return vsprintf(*strp, fmt, args);
 }
 
