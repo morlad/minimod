@@ -2,6 +2,7 @@
 #include "netw.h"
 #import <Foundation/Foundation.h>
 
+#define UNUSED(X) __attribute__((unused)) X
 
 @interface MyDelegate : NSObject<NSURLSessionDelegate,
 	NSURLSessionTaskDelegate,
@@ -21,7 +22,7 @@ static struct netw l_netw;
 
 
 @implementation MyDelegate
-- (void)URLSession:(NSURLSession *)session
+- (void)URLSession:(NSURLSession *)UNUSED(session)
 	task:(NSURLSessionTask *)task
 	didCompleteWithError:(NSError *)error
 {
@@ -37,7 +38,7 @@ static struct netw l_netw;
 }
 
 
-- (void)URLSession:(NSURLSession *)session
+- (void)URLSession:(NSURLSession *)UNUSED(session)
 	dataTask:(NSURLSessionDataTask *)task
 	didReceiveData:(NSData *)in_data
 {
@@ -50,7 +51,7 @@ static struct netw l_netw;
 }
 
 
-- (void)URLSession:(NSURLSession *)session
+- (void)URLSession:(NSURLSession *)UNUSED(session)
 	downloadTask:(NSURLSessionDownloadTask *)task
 	didFinishDownloadingToURL:(NSURL *)location
 {

@@ -9,6 +9,11 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#ifdef _MSC_VER
+	#define UNUSED(X) __pragma(warning(suppress:4100)) X
+#else
+	#define UNUSED(X) __attribute__((unused)) X
+#endif
 
 struct callback
 {
@@ -362,8 +367,8 @@ handle_get_modfiles(
 static void
 handle_email_request(
 	struct callback const in_callback,
-	void const *in_data,
-	size_t in_len,
+	void const *UNUSED(in_data),
+	size_t UNUSED(in_len),
 	int error)
 {
 	in_callback.fptr.email_request(in_callback.userdata, error == 200);
@@ -408,7 +413,7 @@ static void
 handle_download(
 	struct callback const in_callback,
 	void const *in_data,
-	size_t in_len,
+	size_t UNUSED(in_len),
 	int error)
 {
 	if (error == 200)
@@ -427,8 +432,8 @@ handle_download(
 static void
 handle_rate(
 	struct callback const in_callback,
-	void const *in_data,
-	size_t in_len,
+	void const *UNUSED(in_data),
+	size_t UNUSED(in_len),
 	int error)
 {
 	if (error == 201)
