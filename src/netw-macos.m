@@ -32,7 +32,7 @@ static struct netw l_netw;
 		CFDictionaryGetValue(l_netw.udata_dict, task),
 		data.bytes,
 		data.length,
-		(int)((NSHTTPURLResponse*)task.response).statusCode);
+		(int)((NSHTTPURLResponse *)task.response).statusCode);
 	[l_netw.buffer_dict removeObjectForKey:task];
 	CFDictionaryRemoveValue(l_netw.udata_dict, task);
 }
@@ -44,7 +44,7 @@ static struct netw l_netw;
 {
 	if (!l_netw.buffer_dict[task])
 	{
-	  l_netw.buffer_dict[task] = [NSMutableData new];
+		l_netw.buffer_dict[task] = [NSMutableData new];
 	}
 	NSMutableData *data = l_netw.buffer_dict[task];
 	[data appendData:in_data];
@@ -58,9 +58,9 @@ static struct netw l_netw;
 	l_netw.callbacks.downloaded(
 		CFDictionaryGetValue(l_netw.udata_dict, task),
 		location.path.UTF8String,
-		(int)((NSHTTPURLResponse*)task.response).statusCode);
+		(int)((NSHTTPURLResponse *)task.response).statusCode);
 	// didCompleteWithError is also called
-	//CFDictionaryRemoveValue(l_netw.udata_dict, task);
+	// CFDictionaryRemoveValue(l_netw.udata_dict, task);
 }
 @end
 
@@ -111,7 +111,7 @@ netw_get_request(
 	for (size_t i = 0; headers[i]; i += 2)
 	{
 		NSString *field = [NSString stringWithUTF8String:headers[i]];
-		NSString *value = [NSString stringWithUTF8String:headers[i+1]];
+		NSString *value = [NSString stringWithUTF8String:headers[i + 1]];
 		[request setValue:value forHTTPHeaderField:field];
 	}
 
@@ -146,7 +146,7 @@ netw_post_request(
 	for (size_t i = 0; headers[i]; i += 2)
 	{
 		NSString *field = [NSString stringWithUTF8String:headers[i]];
-		NSString *value = [NSString stringWithUTF8String:headers[i+1]];
+		NSString *value = [NSString stringWithUTF8String:headers[i + 1]];
 		[request setValue:value forHTTPHeaderField:field];
 	}
 
