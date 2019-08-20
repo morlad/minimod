@@ -601,8 +601,10 @@ minimod_get_games(
 		l_mmi.api_key,
 		in_filter ? in_filter : "");
 	char const *const headers[] = {
+		//clang-format off
 		"Accept", "application/json",
 		NULL
+		//clang-format on
 	};
 
 	struct task *task = alloc_task();
@@ -636,8 +638,10 @@ minimod_get_mods(
 		in_filter ? in_filter : "");
 
 	char const *const headers[] = {
+		//clang-format off
 		"Accept", "application/json",
 		NULL
+		//clang-format on
 	};
 
 	struct task *task = alloc_task();
@@ -666,9 +670,11 @@ minimod_email_request(
 	asprintf(&path, "%s/oauth/emailrequest", endpoints[l_mmi.env]);
 
 	char const *const headers[] = {
+		//clang-format off
 		"Accept", "application/json",
 		"Content-Type", "application/x-www-form-urlencoded",
 		NULL
+		//clang-format on
 	};
 
 	char *payload;
@@ -707,9 +713,11 @@ minimod_email_exchange(
 	asprintf(&path, "%s/oauth/emailexchange", endpoints[l_mmi.env]);
 
 	char const *const headers[] = {
+		//clang-format off
 		"Accept", "application/json",
 		"Content-Type", "application/x-www-form-urlencoded",
 		NULL
+		//clang-format on
 	};
 
 	char *payload;
@@ -757,9 +765,11 @@ minimod_get_user(
 	}
 
 	char const * const headers[] = {
+		//clang-format off
 		"Accept", "application/json",
 		auth_field, auth_value,
 		NULL
+		//clang-format on
 	};
 
 	struct task *task = alloc_task();
@@ -826,8 +836,10 @@ minimod_get_modfiles(
 	printf("[mm] request: %s\n", path);
 
 	char const *const headers[] = {
+		//clang-format off
 		"Accept", "application/json",
 		NULL
+		//clang-format on
 	};
 
 	struct task *task = alloc_task();
@@ -981,10 +993,12 @@ minimod_rate(
 		in_modid);
 
 	char const * const headers[] = {
+		//clang-format off
 		"Accept", "application/json",
 		"Content-Type", "application/x-www-form-urlencoded",
 		"Authorization", l_mmi.token_bearer,
 		NULL
+		//clang-format on
 	};
 
 	char const *data = in_rating == 1 ? "rating=1" : "rating=-1";
@@ -1012,9 +1026,11 @@ minimod_get_ratings(
 	asprintf(&path, "%s/me/ratings?%s", endpoints[l_mmi.env], in_filter);
 
 	char const * const headers[] = {
+		//clang-format off
 		"Accept", "application/json",
 		"Authorization", l_mmi.token_bearer,
 		NULL
+		//clang-format on
 	};
 
 	struct task *task = alloc_task();
