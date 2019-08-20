@@ -313,10 +313,13 @@ endif
 	$(Q)$(ensure_dir)
 	$(Q)$(CC) $(CPPFLAGS) $(OBJCFLAGS) $(TARGET_ARCH) -c $(OUTPUT_OPTION) $<
 
-# LINES OF CODE
-# -------------
+# MISC TARGETS
+# ------------
 cloc-all:
 	$(Q)cloc . --quiet --exclude-dir=deps,build
 
 cloc:
 	$(Q)cloc src include Makefile --quiet
+
+format:
+	$(Q)clang-format -i tests/* src/* include/minimod/*
