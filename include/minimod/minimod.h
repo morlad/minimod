@@ -1,9 +1,9 @@
 // vi: noexpandtab tabstop=4 softtabstop=4 shiftwidth=0 list
 #pragma once
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include <sys/types.h>
 
 #if defined(_WIN32)
@@ -14,7 +14,7 @@
 #	endif
 #else
 #	if defined(MINIMOD_BUILD_LIB)
-#		define MINIMOD_LIB __attribute__ ((visibility ("default")))
+#		define MINIMOD_LIB __attribute__((visibility("default")))
 #	else
 #		define MINIMOD_LIB
 #	endif
@@ -34,10 +34,10 @@ enum minimod_environment
 
 MINIMOD_LIB bool
 minimod_init(
-	enum minimod_environment env,
-	uint32_t game_id,
-	char const *api_key,
-	char const *root_path);
+  enum minimod_environment env,
+  uint32_t game_id,
+  char const *api_key,
+  char const *root_path);
 
 
 MINIMOD_LIB void
@@ -52,11 +52,10 @@ struct minimod_game
 };
 
 
-typedef void
-(*minimod_get_games_fptr)(
-	void *userdata,
-	size_t ngames,
-	struct minimod_game const *games);
+typedef void (*minimod_get_games_fptr)(
+  void *userdata,
+  size_t ngames,
+  struct minimod_game const *games);
 
 
 //	Function: minimod_get_games
@@ -69,9 +68,9 @@ typedef void
 //			as laid out in the api docs.
 MINIMOD_LIB void
 minimod_get_games(
-	char const *filter,
-	minimod_get_games_fptr callback,
-	void *udata);
+  char const *filter,
+  minimod_get_games_fptr callback,
+  void *udata);
 
 
 struct minimod_mod
@@ -82,11 +81,10 @@ struct minimod_mod
 };
 
 
-typedef void
-(*minimod_get_mods_fptr)(
-	void *userdata,
-	size_t nmods,
-	struct minimod_mod const *mods);
+typedef void (*minimod_get_mods_fptr)(
+  void *userdata,
+  size_t nmods,
+  struct minimod_mod const *mods);
 
 
 // Function: minimod_get_mods
@@ -102,37 +100,33 @@ typedef void
 //
 MINIMOD_LIB void
 minimod_get_mods(
-	char const *filter,
-	uint64_t gameid,
-	minimod_get_mods_fptr callback,
-	void *udata);
+  char const *filter,
+  uint64_t gameid,
+  minimod_get_mods_fptr callback,
+  void *udata);
 
 
-typedef void
-(*minimod_email_request_fptr)(
-	void *userdata,
-	bool success);
+typedef void (*minimod_email_request_fptr)(void *userdata, bool success);
 
 
 MINIMOD_LIB void
 minimod_email_request(
-	char const *in_email,
-	minimod_email_request_fptr in_callback,
-	void *in_udata);
+  char const *in_email,
+  minimod_email_request_fptr in_callback,
+  void *in_udata);
 
 
-typedef void
-(*minimod_email_exchange_fptr)(
-	void *userdata,
-	char const *token,
-	size_t ntoken_bytes);
+typedef void (*minimod_email_exchange_fptr)(
+  void *userdata,
+  char const *token,
+  size_t ntoken_bytes);
 
 
 MINIMOD_LIB void
 minimod_email_exchange(
-	char const *in_code,
-	minimod_email_exchange_fptr in_callback,
-	void *in_udata);
+  char const *in_code,
+  minimod_email_exchange_fptr in_callback,
+  void *in_udata);
 
 
 struct minimod_user
@@ -142,18 +136,17 @@ struct minimod_user
 };
 
 
-typedef void
-(*minimod_get_users_fptr)(
-	void *userdata,
-	size_t nusers,
-	struct minimod_user const *users);
+typedef void (*minimod_get_users_fptr)(
+  void *userdata,
+  size_t nusers,
+  struct minimod_user const *users);
 
 
 MINIMOD_LIB void
 minimod_get_user(
-	uint64_t in_uid,
-	minimod_get_users_fptr in_callback,
-	void *in_udata);
+  uint64_t in_uid,
+  minimod_get_users_fptr in_callback,
+  void *in_udata);
 
 
 MINIMOD_LIB bool
@@ -173,60 +166,56 @@ struct minimod_modfile
 };
 
 
-typedef void
-(*minimod_get_modfiles_fptr)(
-	void *userdata,
-	size_t nmodfiles,
-	struct minimod_modfile const *modfiles);
+typedef void (*minimod_get_modfiles_fptr)(
+  void *userdata,
+  size_t nmodfiles,
+  struct minimod_modfile const *modfiles);
 
 
 MINIMOD_LIB void
 minimod_get_modfiles(
-	char const *in_filter,
-	uint64_t in_gameid,
-	uint64_t in_modid,
-	uint64_t in_modfileid,
-	minimod_get_modfiles_fptr in_callback,
-	void *in_udata);
+  char const *in_filter,
+  uint64_t in_gameid,
+  uint64_t in_modid,
+  uint64_t in_modfileid,
+  minimod_get_modfiles_fptr in_callback,
+  void *in_udata);
 
 
-typedef void
-(*minimod_download_fptr)(void *userdata, char const *path);
+typedef void (*minimod_download_fptr)(void *userdata, char const *path);
 
 
 MINIMOD_LIB void
 minimod_download(
-	uint64_t in_gameid,
-	uint64_t in_modid,
-	uint64_t in_modfileid,
-	minimod_download_fptr in_callback,
-	void *in_udata);
+  uint64_t in_gameid,
+  uint64_t in_modid,
+  uint64_t in_modfileid,
+  minimod_download_fptr in_callback,
+  void *in_udata);
 
 
-typedef void
-(*minimod_install_fptr)(void *userdata, char const *path);
+typedef void (*minimod_install_fptr)(void *userdata, char const *path);
 
 
 MINIMOD_LIB void
 minimod_install(
-	uint64_t in_gameid,
-	uint64_t in_modid,
-	uint64_t in_modfileid,
-	minimod_install_fptr in_callback,
-	void *in_udata);
+  uint64_t in_gameid,
+  uint64_t in_modid,
+  uint64_t in_modfileid,
+  minimod_install_fptr in_callback,
+  void *in_udata);
 
 
-typedef void
-(*minimod_rate_fptr)(void *userdata, bool success);
+typedef void (*minimod_rate_fptr)(void *userdata, bool success);
 
 
 MINIMOD_LIB void
 minimod_rate(
-	uint64_t in_gameid,
-	uint64_t in_modid,
-	int in_rating,
-	minimod_rate_fptr in_callback,
-	void *in_udata);
+  uint64_t in_gameid,
+  uint64_t in_modid,
+  int in_rating,
+  minimod_rate_fptr in_callback,
+  void *in_udata);
 
 
 struct minimod_rating
@@ -238,15 +227,17 @@ struct minimod_rating
 };
 
 
-typedef void
-(*minimod_get_ratings_fptr)(void *userdata, size_t nratings, struct minimod_rating const *ratings);
+typedef void (*minimod_get_ratings_fptr)(
+  void *userdata,
+  size_t nratings,
+  struct minimod_rating const *ratings);
 
 
 MINIMOD_LIB void
 minimod_get_ratings(
-	char const *in_filter,
-	minimod_get_ratings_fptr in_callback,
-	void *in_udata);
+  char const *in_filter,
+  minimod_get_ratings_fptr in_callback,
+  void *in_udata);
 
 
 MINIMOD_LIB char const *
