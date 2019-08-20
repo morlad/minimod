@@ -6,12 +6,13 @@
 #include <windows.h>
 #include <winhttp.h>
 
-
 // size of download -> file buffer
 #define BUFFERSIZE 4096
 #define USER_AGENT L"minimod/0.1"
 #define TEMPFILE_PREFIX L"mmi"
 
+#define PRINTERR(X) \
+	printf("[netw] "X" failed %lu (%lx)\n", GetLastError(), GetLastError())
 
 struct netw
 {
@@ -41,7 +42,7 @@ netw_init(struct netw_callbacks *in_callbacks)
 
 	if (!l_netw.session)
 	{
-		printf("[netw] HttpOpen failed %lu (%lx)\n", GetLastError(), GetLastError());
+		PRINTERR("HttpOpen");
 		return false;
 	}
 
@@ -168,7 +169,7 @@ task_handler(LPVOID context)
 		WinHttpConnect(l_netw.session, task->host, task->port, 0);
 	if (!hconnection)
 	{
-		printf("[netw] ERR: HttpConnect %lu (0x%lx)\n", GetLastError(), GetLastError());
+		PRINTERR("HttpConnect");
 		return false;
 	}
 
@@ -182,7 +183,7 @@ task_handler(LPVOID context)
 		WINHTTP_FLAG_SECURE);
 	if (!hrequest)
 	{
-		printf("[netw] ERR: HttpOpenRequest: %lu (0x%lx)\n", GetLastError(), GetLastError());
+		PRINTERR("HttpOpenRequest");
 		return false;
 	}
 
@@ -197,7 +198,7 @@ task_handler(LPVOID context)
 		1);
 	if (!ok)
 	{
-		printf("[netw] ERR: HttpSendRequest: %lu (0x%lx)\n", GetLastError(), GetLastError());
+		PRINTERR("HttpSendRequest");
 		return false;
 	}
 
@@ -205,7 +206,7 @@ task_handler(LPVOID context)
 	ok = WinHttpReceiveResponse(hrequest, NULL);
 	if (!ok)
 	{
-		printf("[netw] ERR: HttpReceiveResponse: %lu (0x%lx)\n", GetLastError(), GetLastError());
+		PRINTERR("HttpReceiveResponse");
 		return false;
 	}
 
@@ -221,7 +222,7 @@ task_handler(LPVOID context)
 		WINHTTP_NO_HEADER_INDEX);
 	if (!ok)
 	{
-		printf("[netw] ERR: HttpQueryHeaders: %lu (0x%lx)\n", GetLastError(), GetLastError());
+		PRINTERR("HttpQueryHeaders");
 		return false;
 	}
 	printf("[netw] status code of response: %lu\n", status_code);
@@ -247,7 +248,7 @@ task_handler(LPVOID context)
 			ok = WinHttpQueryDataAvailable(hrequest, &avail_bytes);
 			if (!ok)
 			{
-				printf("[netw] ERR: QueryDataAvailable: %lu (0x%lx)\n", GetLastError(), GetLastError());
+				PRINTERR("HttpQueryDataAvailable");
 				return false;
 			}
 			if (avail_bytes > 0)
@@ -287,7 +288,7 @@ task_handler(LPVOID context)
 			ok = WinHttpQueryDataAvailable(hrequest, &avail_bytes);
 			if (!ok)
 			{
-				printf("[netw] ERR: QueryDataAvailable: %lu (0x%lx)\n", GetLastError(), GetLastError());
+				PRINTERR("HttpQueryDataAvailable");
 				return false;
 			}
 			if (avail_bytes > 0)
