@@ -1,3 +1,5 @@
+ColumnLimit: 79
+
 # tabs
 UseTab: ForIndentation
 TabWidth: 4

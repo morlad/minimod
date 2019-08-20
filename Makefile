@@ -1,4 +1,4 @@
-# vi: noexpandtab tabstop=4 softtabstop=4 list
+# vi: noexpandtab tabstop=4 softtabstop=4 shiftwidth=0
 
 # OS DETECTION
 # ------------
