@@ -10,21 +10,6 @@
 #include <assert.h>
 
 
-enum task_type
-{
-	MINIMOD_TASKTYPE_GET_GAMES,
-	MINIMOD_TASKTYPE_GET_MODS,
-	MINIMOD_TASKTYPE_EMAIL_REQUEST,
-	MINIMOD_TASKTYPE_EMAIL_EXCHANGE,
-	MINIMOD_TASKTYPE_GET_USERS,
-	MINIMOD_TASKTYPE_GET_MODFILES,
-	MINIMOD_TASKTYPE_DOWNLOAD,
-	MINIMOD_TASKTYPE_RATE,
-	MINIMOD_TASKTYPE_GET_RATINGS,
-	MINIMOD_TASKTYPE__COUNT
-};
-
-
 struct callback
 {
 	union
@@ -44,14 +29,18 @@ struct callback
 };
 
 
+typedef void (*task_handler)(
+	struct callback const in_callback,
+	void const *in_data,
+	size_t in_len,
+	int error);
+
+
 struct task
 {
 	struct callback callback;
-
+	task_handler handler;
 	uint64_t meta64;
-
-	enum task_type type;
-	int32_t meta32;
 };
 
 
@@ -500,27 +489,6 @@ handle_get_ratings(
 }
 
 
-typedef void (*handler)(
-	struct callback const in_callback,
-	void const *in_data,
-	size_t in_len,
-	int error);
-
-
-static handler l_handlers[MINIMOD_TASKTYPE__COUNT] =
-{
-	[MINIMOD_TASKTYPE_GET_GAMES] = handle_get_games,
-	[MINIMOD_TASKTYPE_GET_MODS] = handle_get_mods,
-	[MINIMOD_TASKTYPE_EMAIL_REQUEST] = handle_email_request,
-	[MINIMOD_TASKTYPE_EMAIL_EXCHANGE] = handle_email_exchange,
-	[MINIMOD_TASKTYPE_GET_USERS] = handle_get_users,
-	[MINIMOD_TASKTYPE_GET_MODFILES] = handle_get_modfiles,
-	[MINIMOD_TASKTYPE_DOWNLOAD] = handle_download,
-	[MINIMOD_TASKTYPE_RATE] = handle_rate,
-	[MINIMOD_TASKTYPE_GET_RATINGS] = handle_get_ratings,
-};
-
-
 static void
 on_completion(void const *in_udata, void const *data, size_t bytes, int error)
 {
@@ -534,9 +502,9 @@ on_completion(void const *in_udata, void const *data, size_t bytes, int error)
 
 	assert(in_udata);
 	struct task const *task = in_udata;
-	if (task->type != MINIMOD_TASKTYPE_DOWNLOAD)
+	if (task->handler != handle_download)
 	{
-		l_handlers[task->type](task->callback, data, bytes, error);
+		task->handler(task->callback, data, bytes, error);
 	}
 }
 
@@ -553,7 +521,7 @@ on_downloaded(void const *in_udata, char const *path, int error)
 
 	assert(in_udata);
 	struct task const *task = in_udata;
-	l_handlers[task->type](task->callback, path, 0, error);
+	task->handler(task->callback, path, 0, error);
 }
 
 
@@ -639,7 +607,7 @@ minimod_get_games(
 	struct task *task = alloc_task();
 	if (netw_get_request(path, headers, task))
 	{
-		task->type = MINIMOD_TASKTYPE_GET_GAMES;
+		task->handler = handle_get_games;
 		task->callback.fptr.get_games = in_callback;
 		task->callback.userdata = in_udata;
 	}
@@ -674,7 +642,7 @@ minimod_get_mods(
 	struct task *task = alloc_task();
 	if (netw_get_request(path, headers, task))
 	{
-		task->type = MINIMOD_TASKTYPE_GET_MODS;
+		task->handler = handle_get_mods;
 		task->callback.fptr.get_mods = in_callback;
 		task->callback.userdata = in_udata;
 	}
@@ -713,7 +681,7 @@ minimod_email_request(
 	struct task *task = alloc_task();
 	if (netw_post_request(path, headers, payload, (size_t)nbytes, task))
 	{
-		task->type = MINIMOD_TASKTYPE_EMAIL_REQUEST;
+		task->handler = handle_email_request;
 		task->callback.fptr.email_request = in_callback;
 		task->callback.userdata = in_udata;
 	}
@@ -751,7 +719,7 @@ minimod_email_exchange(
 	struct task *task = alloc_task();
 	if (netw_post_request(path, headers, payload, (size_t)nbytes, task))
 	{
-		task->type = MINIMOD_TASKTYPE_EMAIL_EXCHANGE;
+		task->handler = handle_email_exchange;
 		task->callback.fptr.email_exchange = in_callback;
 		task->callback.userdata = in_udata;
 	}
@@ -795,7 +763,7 @@ minimod_get_user(
 	struct task *task = alloc_task();
 	if (netw_get_request(path, headers, task))
 	{
-		task->type = MINIMOD_TASKTYPE_GET_USERS;
+		task->handler = handle_get_users;
 		task->callback.fptr.get_users = in_callback;
 		task->callback.userdata = in_udata;
 	}
@@ -863,7 +831,7 @@ minimod_get_modfiles(
 	struct task *task = alloc_task();
 	if (netw_get_request(path, headers, task))
 	{
-		task->type = MINIMOD_TASKTYPE_GET_MODFILES;
+		task->handler = handle_get_modfiles;
 		task->callback.fptr.get_modfiles = in_callback;
 		task->callback.userdata = in_udata;
 	}
@@ -923,7 +891,7 @@ minimod_download(
 	struct task *task = alloc_task();
 	if (netw_download(uri, task))
 	{
-		task->type = MINIMOD_TASKTYPE_DOWNLOAD;
+		task->handler = handle_download;
 		task->callback.fptr.download = in_callback;
 		task->callback.userdata = in_udata;
 	}
@@ -1020,7 +988,7 @@ minimod_rate(
 	char const *data = in_rating == 1 ? "rating=1" : "rating=-1";
 
 	struct task *task = alloc_task();
-	task->type = MINIMOD_TASKTYPE_RATE;
+	task->handler = handle_rate;
 	task->callback.userdata = in_udata;
 	task->callback.fptr.rate = in_callback;
 
@@ -1053,7 +1021,7 @@ minimod_get_ratings(
 	};
 
 	struct task *task = alloc_task();
-	task->type = MINIMOD_TASKTYPE_GET_RATINGS;
+	task->handler = handle_get_ratings;
 	task->callback.userdata = in_udata;
 	task->callback.fptr.get_ratings = in_callback;
 
