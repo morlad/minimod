@@ -1,0 +1,32 @@
+# tabs
+UseTab: Always
+TabWidth: 4
+IndentWidth: 4
+
+# braces
+#BreakBeforeBraces: Allman
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterControlStatement: true
+  AfterEnum: true
+  AfterFunction: true
+  AfterStruct: true
+  AfterUnion: true
+  BeforeElse: true
+
+# pp directives
+# I'd rather use BeforeHash, but it is not supported in my version of clang-format
+#IndentPPDirectives: BeforeHash
+IndentPPDirectives: AfterHash
+
+# misc
+MaxEmptyLinesToKeep: 2
+Cpp11BracedListStyle: false
+AlwaysBreakAfterReturnType: All
+
+# function decl/def/call
+BinPackParameters: false
+BinPackArguments: false
+AlignAfterOpenBracket: AlwaysBreak
+#AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
