@@ -764,7 +764,7 @@ minimod_get_user(
 		asprintf(&path, "%s/users/%llu", endpoints[l_mmi.env], in_uid);
 	}
 
-	char const * const headers[] = {
+	char const *const headers[] = {
 		// clang-format off
 		"Accept", "application/json",
 		auth_field, auth_value,
@@ -992,7 +992,7 @@ minimod_rate(
 		in_gameid ? in_gameid : l_mmi.game_id,
 		in_modid);
 
-	char const * const headers[] = {
+	char const *const headers[] = {
 		// clang-format off
 		"Accept", "application/json",
 		"Content-Type", "application/x-www-form-urlencoded",
@@ -1025,7 +1025,7 @@ minimod_get_ratings(
 	char *path = NULL;
 	asprintf(&path, "%s/me/ratings?%s", endpoints[l_mmi.env], in_filter);
 
-	char const * const headers[] = {
+	char const *const headers[] = {
 		// clang-format off
 		"Accept", "application/json",
 		"Authorization", l_mmi.token_bearer,
