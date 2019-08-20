@@ -360,13 +360,10 @@ netw_get_request(
 	WinHttpCrackUrl(uri, (DWORD)urilen, 0, &url_components);
 
 	task->port = url_components.nPort;
-	wprintf(L"[netw] port: %i\n", task->port);
 	task->host =
 	  wcstrndup(url_components.lpszHostName, url_components.dwHostNameLength);
-	wprintf(L"[netw] host: %s\n", task->host);
 	task->path =
 	  wcstrndup(url_components.lpszUrlPath, url_components.dwUrlPathLength);
-	wprintf(L"[netw] path: %s\n", task->path);
 
 	free(uri);
 
@@ -376,8 +373,6 @@ netw_get_request(
 	size_t headerlen = sys_wchar_from_utf8(header, NULL, 0);
 	task->header = malloc(sizeof *(task->header) * headerlen);
 	sys_wchar_from_utf8(header, task->header, headerlen);
-
-	wprintf(L"[netw] headers:\n--\n%s--\n", task->header);
 
 	free(header);
 
@@ -424,13 +419,10 @@ netw_post_request(
 	WinHttpCrackUrl(uri, (DWORD)urilen, 0, &url_components);
 
 	task->port = url_components.nPort;
-	wprintf(L"[netw] port: %i\n", task->port);
 	task->host =
 	  wcstrndup(url_components.lpszHostName, url_components.dwHostNameLength);
-	wprintf(L"[netw] host: %s\n", task->host);
 	task->path =
 	  wcstrndup(url_components.lpszUrlPath, url_components.dwUrlPathLength);
-	wprintf(L"[netw] path: %s\n", task->path);
 
 	free(uri);
 
@@ -440,8 +432,6 @@ netw_post_request(
 	size_t headerlen = sys_wchar_from_utf8(header, NULL, 0);
 	task->header = malloc(sizeof *(task->header) * headerlen);
 	sys_wchar_from_utf8(header, task->header, headerlen);
-
-	wprintf(L"[netw] headers:\n--\n%s--\n", task->header);
 
 	free(header);
 
@@ -482,13 +472,10 @@ netw_download(char const *in_uri, void *udata)
 	WinHttpCrackUrl(uri, (DWORD)urilen, 0, &url_components);
 
 	task->port = url_components.nPort;
-	wprintf(L"[netw] port: %i\n", task->port);
 	task->host =
 	  wcstrndup(url_components.lpszHostName, url_components.dwHostNameLength);
-	wprintf(L"[netw] host: %s\n", task->host);
 	task->path =
 	  wcstrndup(url_components.lpszUrlPath, url_components.dwUrlPathLength);
-	wprintf(L"[netw] path: %s\n", task->path);
 
 	free(uri);
 
