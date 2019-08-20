@@ -216,6 +216,39 @@ minimod_install(
 	void *in_udata);
 
 
+typedef void
+(*minimod_rate_fptr)(void *userdata, bool success);
+
+
+MINIMOD_LIB void
+minimod_rate(
+	uint64_t in_gameid,
+	uint64_t in_modid,
+	int in_rating,
+	minimod_rate_fptr in_callback,
+	void *in_udata);
+
+
+struct minimod_rating
+{
+	uint64_t gameid;
+	uint64_t modid;
+	uint64_t date;
+	int64_t rating;
+};
+
+
+typedef void
+(*minimod_get_ratings_fptr)(void *userdata, size_t nratings, struct minimod_rating const *ratings);
+
+
+MINIMOD_LIB void
+minimod_get_ratings(
+	char const *in_filter,
+	minimod_get_ratings_fptr in_callback,
+	void *in_udata);
+
+
 MINIMOD_LIB char const *
 minimod_get_more_string(void const *more, char const *name);
 

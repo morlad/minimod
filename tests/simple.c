@@ -375,6 +375,45 @@ test_8(void)
 }
 
 
+static void
+on_get_ratings(void *in_udata, size_t nratings, struct minimod_rating const *ratings)
+{
+	printf("got %zu ratings\n", nratings);
+	*((int *)in_udata) = (int)ratings[0].rating;
+}
+
+
+static void
+on_rated(void *in_udata, bool in_success)
+{
+	printf("rating %s\n", in_success ? "succeeded" : "failed");
+	*((int *)in_udata) = 0;
+}
+
+
+static void
+test_9(void)
+{
+	minimod_init(
+		MINIMOD_ENVIRONMENT_TEST,
+		309,
+		"f90f25ceed3708627a5b85ee52e4f930",
+		NULL);
+
+
+	int rating = -2;
+	minimod_get_ratings("game_id=309&mod_id=1720", on_get_ratings, &rating);
+	while (rating == -2) { sys_sleep(10); }
+	printf("mod-rating is %i\n", rating);
+
+	int wait = 1;
+	minimod_rate(0, 1720, rating == 1 ? -1 : 1, on_rated, &wait);
+	while (wait) { sys_sleep(10); }
+
+	minimod_deinit();
+}
+
+
 int
 main(int argc, char const *argv[])
 {
@@ -388,6 +427,7 @@ main(int argc, char const *argv[])
 	test_6();
 	test_7();
 	test_8();
+	test_9();
 
 	printf("[test] Done\n");
 

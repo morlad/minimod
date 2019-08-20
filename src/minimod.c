@@ -19,6 +19,8 @@ enum task_type
 	MINIMOD_TASKTYPE_GET_USERS,
 	MINIMOD_TASKTYPE_GET_MODFILES,
 	MINIMOD_TASKTYPE_DOWNLOAD,
+	MINIMOD_TASKTYPE_RATE,
+	MINIMOD_TASKTYPE_GET_RATINGS,
 	MINIMOD_TASKTYPE__COUNT
 };
 
@@ -35,6 +37,8 @@ struct callback
 		minimod_get_modfiles_fptr get_modfiles;
 		minimod_download_fptr download;
 		minimod_install_fptr install;
+		minimod_rate_fptr rate;
+		minimod_get_ratings_fptr get_ratings;
 	} fptr;
 	void *userdata;
 };
@@ -429,6 +433,71 @@ handle_download(
 }
 
 
+static void
+handle_rate(
+	struct callback const in_callback,
+	void const *in_data,
+	size_t in_len,
+	int error)
+{
+	if (error == 201)
+	{
+		printf("[mm] Rating applied successful\n");
+		in_callback.fptr.rate(in_callback.userdata, true);
+	}
+	else
+	{
+		printf("[mm] Raiting not applied: %i\n", error);
+		in_callback.fptr.rate(in_callback.userdata, false);
+	}
+}
+
+
+static void
+handle_get_ratings(
+	struct callback const in_callback,
+	void const *in_data,
+	size_t in_len,
+	int error)
+{
+	if (error != 200)
+	{
+		in_callback.fptr.get_ratings(in_callback.userdata, 0, NULL);
+		return;
+	}
+
+	size_t nbuffer = QAJ4C_calculate_max_buffer_size_n(in_data, in_len);
+	void *buffer = malloc(nbuffer);
+
+	QAJ4C_Value const *document = NULL;
+	QAJ4C_parse_opt(in_data, in_len, 0, buffer, nbuffer, &document);
+	assert(QAJ4C_is_object(document));
+
+	QAJ4C_Value const *data = QAJ4C_object_get(document, "data");
+	assert(QAJ4C_is_array(data));
+
+	size_t nratings = QAJ4C_array_size(data);
+	struct minimod_rating *ratings = malloc(sizeof *ratings * nratings);
+
+	for (size_t i = 0; i < QAJ4C_array_size(data); ++i)
+	{
+		QAJ4C_Value const *item = QAJ4C_array_get(data, i);
+		assert(QAJ4C_is_object(item));
+
+		ratings[i].gameid = QAJ4C_get_uint(QAJ4C_object_get(item, "game_id"));
+		ratings[i].modid = QAJ4C_get_uint(QAJ4C_object_get(item, "mod_id"));
+		ratings[i].date = QAJ4C_get_uint(QAJ4C_object_get(item, "date_added"));
+		ratings[i].rating = QAJ4C_get_int(QAJ4C_object_get(item, "rating"));
+
+	}
+
+	in_callback.fptr.get_ratings(in_callback.userdata, nratings, ratings);
+
+	free(ratings);
+	free(buffer);
+}
+
+
 typedef void (*handler)(
 	struct callback const in_callback,
 	void const *in_data,
@@ -445,6 +514,8 @@ static handler l_handlers[MINIMOD_TASKTYPE__COUNT] =
 	[MINIMOD_TASKTYPE_GET_USERS] = handle_get_users,
 	[MINIMOD_TASKTYPE_GET_MODFILES] = handle_get_modfiles,
 	[MINIMOD_TASKTYPE_DOWNLOAD] = handle_download,
+	[MINIMOD_TASKTYPE_RATE] = handle_rate,
+	[MINIMOD_TASKTYPE_GET_RATINGS] = handle_get_ratings,
 };
 
 
@@ -484,6 +555,27 @@ on_downloaded(void const *in_udata, char const *path, int error)
 }
 
 
+static bool
+read_token(void)
+{
+	int64_t fsize = fsu_fsize(get_tokenpath());
+	if (fsize <= 0)
+	{
+		return false;
+	}
+
+	FILE *f = fsu_fopen(get_tokenpath(), "rb");
+	l_mmi.token = malloc((size_t)(fsize + 1));
+	l_mmi.token[fsize] = '\0';
+	fread(l_mmi.token, (size_t)fsize, 1, f);
+	fclose(f);
+
+	asprintf(&l_mmi.token_bearer, "Bearer %s", l_mmi.token);
+
+	return true;
+}
+
+
 bool
 minimod_init(
 	enum minimod_environment env,
@@ -505,16 +597,7 @@ minimod_init(
 	// TODO make sure the path does not end with '/'
 	l_mmi.api_key = api_key ? strdup(api_key) : NULL;
 
-	// attempt to load token
-	int64_t fsize = fsu_fsize(get_tokenpath());
-	if (fsize > 0)
-	{
-		FILE *f = fsu_fopen(get_tokenpath(), "rb");
-		l_mmi.token = malloc((size_t)(fsize + 1));
-		l_mmi.token[fsize] = '\0';
-		fread(l_mmi.token, (size_t)fsize, 1, f);
-		fclose(f);
-	}
+	read_token();
 
 	return true;
 }
@@ -529,6 +612,7 @@ minimod_deinit()
 	free(l_mmi.cache_tokenpath);
 	free(l_mmi.api_key);
 	free(l_mmi.token);
+	free(l_mmi.token_bearer);
 
 	l_mmi = (struct mmi){0};
 }
@@ -902,6 +986,81 @@ minimod_install(
 		in_modfileid,
 		on_install_download,
 		task);
+}
+
+
+void
+minimod_rate(
+	uint64_t in_gameid,
+	uint64_t in_modid,
+	int in_rating,
+	minimod_rate_fptr in_callback,
+	void *in_udata)
+{
+	assert(in_rating == 1 || in_rating == -1);
+	assert(minimod_is_authenticated());
+
+	char *path = NULL;
+	asprintf(
+		&path,
+		"%s/games/%llu/mods/%llu/ratings",
+		endpoints[l_mmi.env],
+		in_gameid ? in_gameid : l_mmi.game_id,
+		in_modid);
+
+	char const * const headers[] = {
+		"Accept", "application/json",
+		"Content-Type", "application/x-www-form-urlencoded",
+		"Authorization", l_mmi.token_bearer,
+		NULL
+	};
+
+	char const *data = in_rating == 1 ? "rating=1" : "rating=-1";
+
+	struct task *task = alloc_task();
+	task->type = MINIMOD_TASKTYPE_RATE;
+	task->callback.userdata = in_udata;
+	task->callback.fptr.rate = in_callback;
+
+	netw_post_request(
+		path,
+		headers,
+		data,
+		strlen(data),
+		task);
+
+	free(path);
+}
+
+
+void
+minimod_get_ratings(
+	char const *in_filter,
+	minimod_get_ratings_fptr in_callback,
+	void *in_udata)
+{
+	assert(minimod_is_authenticated());
+
+	char *path = NULL;
+	asprintf(&path, "%s/me/ratings?%s", endpoints[l_mmi.env], in_filter);
+
+	char const * const headers[] = {
+		"Accept", "application/json",
+		"Authorization", l_mmi.token_bearer,
+		NULL
+	};
+
+	struct task *task = alloc_task();
+	task->type = MINIMOD_TASKTYPE_GET_RATINGS;
+	task->callback.userdata = in_udata;
+	task->callback.fptr.get_ratings = in_callback;
+
+	netw_get_request(
+		path,
+		headers,
+		task);
+
+	free(path);
 }
 
 
