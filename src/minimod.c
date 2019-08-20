@@ -15,6 +15,12 @@
 #	define UNUSED(X) __attribute__((unused)) X
 #endif
 
+/**********/
+/* CONFIG */
+/**********/
+#define DEFAULT_ROOT "_minimod"
+
+
 struct callback
 {
 	union
@@ -576,8 +582,16 @@ minimod_init(
 
 	l_mmi.env = env;
 	l_mmi.game_id = game_id;
-	l_mmi.root_path = strdup(root_path ? root_path : "_minimod");
-	// TODO make sure the path does not end with '/'
+
+	l_mmi.root_path = strdup(root_path ? root_path : DEFAULT_ROOT);
+	// make sure the path does not end with '/'
+	size_t len = strlen(l_mmi.root_path);
+	assert(len > 0);
+	if (l_mmi.root_path[len-1] == '/')
+	{
+		l_mmi.root_path[len-1] = '\0';
+	}
+
 	l_mmi.api_key = api_key ? strdup(api_key) : NULL;
 
 	read_token();
@@ -813,7 +827,7 @@ minimod_deauthenticate(void)
 }
 
 
-MINIMOD_LIB void
+void
 minimod_get_modfiles(
   char const *in_filter,
   uint64_t in_gameid,
