@@ -5,9 +5,11 @@ A lightweight C library to wrap the https://mod.io API.
 - Small filesize of the library
 
 ## Examples
+
 ### Print all games currently on mod.io
 ```c
 #include "minimod/minimod.h"
+#include <stdio.h>
 
 void get_games_callback(void *udata, size_t ngames, struct minimod_game const *games)
 {
@@ -40,3 +42,11 @@ int main(void)
 	minimod_deinit();
 }
 ```
+
+## Design Choices
+
+### Caching
+
+### Mega-structs vs. 'more'
+
+### Filtering: minimod vs. API
