@@ -295,12 +295,76 @@ fsu_mvfile(char const *in_srcpath, char const *in_dstpath, bool in_replace)
 
 #else
 
-bool
-fsu_mvfile(char const *from, char const *to, bool in_replace)
+static bool
+fsu_cpfile(char const *in_srcpath, char const *in_dstpath, bool in_replace)
 {
-	fsu_mkdir(to);
-	rename(from, to);
-	return true;
+	// fail if something does exist at the destination but in_replace is false
+	struct stat st = {0};
+	if (!in_replace && stat(in_dstpath, &st) == 0)
+	{
+		return false;
+	}
+
+	// if the file cannot be opened, all bets are off.
+	FILE *src = fopen(in_srcpath, "rb");
+	if (!src)
+	{
+		return false;
+	}
+
+	// make sure the destination directory exists.
+	fsu_mkdir(in_dstpath);
+	// either the file does not exist, or in_replace is true so make sure
+	// the old file does not exist anymore.
+	unlink(in_dstpath);
+
+	FILE *dst = fopen(in_dstpath, "wb");
+	if (dst)
+	{
+		char buffer[4096];
+		size_t nbytes = 0;
+		while ((nbytes = fread(buffer, 1, sizeof buffer, src)) > 0)
+		{
+			fwrite(buffer, 1, nbytes, dst);
+		}
+		fclose(dst);
+	}
+	fclose(src);
+
+	return (dst);
+}
+
+
+bool
+fsu_mvfile(char const *in_srcpath, char const *in_dstpath, bool in_replace)
+{
+	fsu_mkdir(in_dstpath);
+
+	// fail if something does exist at the destination but in_replace is false
+	struct stat st = {0};
+	if (!in_replace && stat(in_dstpath, &st) == 0)
+	{
+		return false;
+	}
+
+	int rv = rename(in_srcpath, in_dstpath);
+
+	if (rv == 0)
+	{
+		return true;
+	}
+	else if (rv == -1 && errno == EXDEV)
+	{
+		// if rename() failed because src and dst were on different
+		// file systems use mlfs_cpfile() and mlfs_rmfile()
+		if (fsu_cpfile(in_srcpath, in_dstpath, in_replace))
+		{
+			fsu_rmfile(in_srcpath);
+			return true;
+		}
+	}
+
+	return false;
 }
 
 #endif
