@@ -1,7 +1,8 @@
 # tabs
-UseTab: Always
+UseTab: ForIndentation
 TabWidth: 4
 IndentWidth: 4
+ContinuationIndentWidth: 2
 
 # braces
 #BreakBeforeBraces: Allman
@@ -29,5 +30,6 @@ AlignEscapedNewlines: Left
 BinPackParameters: false
 BinPackArguments: false
 AlignAfterOpenBracket: AlwaysBreak
+#AlignAfterOpenBracket: DontAlign
 #AllowAllArgumentsOnNextLine: false
 AllowAllParametersOfDeclarationOnNextLine: false

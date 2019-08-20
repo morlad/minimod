@@ -4,9 +4,10 @@
 
 #define UNUSED(X) __attribute__((unused)) X
 
-@interface MyDelegate : NSObject<NSURLSessionDelegate,
-	NSURLSessionTaskDelegate,
-	NSURLSessionDataDelegate>
+@interface MyDelegate : NSObject <
+                          NSURLSessionDelegate,
+                          NSURLSessionTaskDelegate,
+                          NSURLSessionDataDelegate>
 @end
 
 
@@ -23,24 +24,24 @@ static struct netw l_netw;
 
 @implementation MyDelegate
 - (void)URLSession:(NSURLSession *)UNUSED(session)
-	task:(NSURLSessionTask *)task
-	didCompleteWithError:(NSError *)error
+                  task:(NSURLSessionTask *)task
+  didCompleteWithError:(NSError *)error
 {
 	assert(task.state == NSURLSessionTaskStateCompleted);
 	NSData *data = l_netw.buffer_dict[task];
 	l_netw.callbacks.completion(
-		CFDictionaryGetValue(l_netw.udata_dict, task),
-		data.bytes,
-		data.length,
-		(int)((NSHTTPURLResponse *)task.response).statusCode);
+	  CFDictionaryGetValue(l_netw.udata_dict, task),
+	  data.bytes,
+	  data.length,
+	  (int)((NSHTTPURLResponse *)task.response).statusCode);
 	[l_netw.buffer_dict removeObjectForKey:task];
 	CFDictionaryRemoveValue(l_netw.udata_dict, task);
 }
 
 
 - (void)URLSession:(NSURLSession *)UNUSED(session)
-	dataTask:(NSURLSessionDataTask *)task
-	didReceiveData:(NSData *)in_data
+          dataTask:(NSURLSessionDataTask *)task
+    didReceiveData:(NSData *)in_data
 {
 	if (!l_netw.buffer_dict[task])
 	{
@@ -52,13 +53,13 @@ static struct netw l_netw;
 
 
 - (void)URLSession:(NSURLSession *)UNUSED(session)
-	downloadTask:(NSURLSessionDownloadTask *)task
-	didFinishDownloadingToURL:(NSURL *)location
+               downloadTask:(NSURLSessionDownloadTask *)task
+  didFinishDownloadingToURL:(NSURL *)location
 {
 	l_netw.callbacks.downloaded(
-		CFDictionaryGetValue(l_netw.udata_dict, task),
-		location.path.UTF8String,
-		(int)((NSHTTPURLResponse *)task.response).statusCode);
+	  CFDictionaryGetValue(l_netw.udata_dict, task),
+	  location.path.UTF8String,
+	  (int)((NSHTTPURLResponse *)task.response).statusCode);
 	// didCompleteWithError is also called
 	// CFDictionaryRemoveValue(l_netw.udata_dict, task);
 }
@@ -76,10 +77,10 @@ netw_init(struct netw_callbacks *in_callbacks)
 	l_netw.udata_dict = CFDictionaryCreateMutable(NULL, 0, NULL, NULL);
 
 	NSURLSessionConfiguration *config =
-		[NSURLSessionConfiguration defaultSessionConfiguration];
+	  [NSURLSessionConfiguration defaultSessionConfiguration];
 	l_netw.session = [NSURLSession sessionWithConfiguration:config
-		delegate:l_netw.delegate
-		delegateQueue:nil];
+	                                               delegate:l_netw.delegate
+	                                          delegateQueue:nil];
 	return true;
 }
 
@@ -97,9 +98,9 @@ netw_deinit(void)
 
 bool
 netw_get_request(
-	char const *in_uri,
-	char const *const headers[],
-	void *in_udata)
+  char const *in_uri,
+  char const *const headers[],
+  void *in_udata)
 {
 	assert(in_uri);
 	assert(headers);
@@ -127,11 +128,11 @@ netw_get_request(
 
 bool
 netw_post_request(
-	char const *in_uri,
-	char const *const headers[],
-	void const *in_body,
-	size_t in_nbytes,
-	void *in_udata)
+  char const *in_uri,
+  char const *const headers[],
+  void const *in_body,
+  size_t in_nbytes,
+  void *in_udata)
 {
 	assert(in_uri);
 	assert(headers);
@@ -152,7 +153,8 @@ netw_post_request(
 
 	NSData *body = [NSData dataWithBytes:in_body length:in_nbytes];
 
-	NSURLSessionDataTask *task = [l_netw.session uploadTaskWithRequest:request fromData:body];
+	NSURLSessionDataTask *task = [l_netw.session uploadTaskWithRequest:request
+	                                                          fromData:body];
 
 	CFDictionarySetValue(l_netw.udata_dict, task, in_udata);
 

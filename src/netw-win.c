@@ -28,17 +28,17 @@ netw_init(struct netw_callbacks *in_callbacks)
 	l_netw.callbacks = *in_callbacks;
 
 	l_netw.session = WinHttpOpen(
-		USER_AGENT,
+	  USER_AGENT,
 
-		// TODO if windows < 8.1
-		WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
-		// TODO if windows >= 8.1
-		// WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
+	  // TODO if windows < 8.1
+	  WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
+	  // TODO if windows >= 8.1
+	  // WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
 
-		WINHTTP_NO_PROXY_NAME,
-		WINHTTP_NO_PROXY_BYPASS,
+	  WINHTTP_NO_PROXY_NAME,
+	  WINHTTP_NO_PROXY_BYPASS,
 
-		0);
+	  0);
 
 	if (!l_netw.session)
 	{
@@ -149,13 +149,13 @@ create_temp_file(wchar_t out_path[MAX_PATH])
 	GetTempFileName(temp_dir, TEMPFILE_PREFIX, 0, out_path);
 	wprintf(L"[netw] Setting up temporary file: %s\n", out_path);
 	HANDLE hfile = CreateFile(
-		out_path,
-		GENERIC_WRITE,
-		FILE_SHARE_READ | FILE_SHARE_DELETE,
-		NULL,
-		CREATE_ALWAYS,
-		FILE_ATTRIBUTE_TEMPORARY,
-		NULL);
+	  out_path,
+	  GENERIC_WRITE,
+	  FILE_SHARE_READ | FILE_SHARE_DELETE,
+	  NULL,
+	  CREATE_ALWAYS,
+	  FILE_ATTRIBUTE_TEMPORARY,
+	  NULL);
 	return hfile;
 }
 
@@ -166,7 +166,7 @@ task_handler(LPVOID context)
 	struct task *task = context;
 
 	HINTERNET hconnection =
-		WinHttpConnect(l_netw.session, task->host, task->port, 0);
+	  WinHttpConnect(l_netw.session, task->host, task->port, 0);
 	if (!hconnection)
 	{
 		PRINTERR("HttpConnect");
@@ -174,13 +174,13 @@ task_handler(LPVOID context)
 	}
 
 	HINTERNET hrequest = WinHttpOpenRequest(
-		hconnection,
-		task->verb,
-		task->path,
-		NULL,
-		WINHTTP_NO_REFERER,
-		WINHTTP_DEFAULT_ACCEPT_TYPES,
-		WINHTTP_FLAG_SECURE);
+	  hconnection,
+	  task->verb,
+	  task->path,
+	  NULL,
+	  WINHTTP_NO_REFERER,
+	  WINHTTP_DEFAULT_ACCEPT_TYPES,
+	  WINHTTP_FLAG_SECURE);
 	if (!hrequest)
 	{
 		PRINTERR("HttpOpenRequest");
@@ -189,13 +189,13 @@ task_handler(LPVOID context)
 
 	printf("[netw] Sending request (payload: %zuB)...\n", task->payload_bytes);
 	BOOL ok = WinHttpSendRequest(
-		hrequest,
-		task->header,
-		(DWORD)-1,
-		task->payload,
-		(DWORD)task->payload_bytes,
-		(DWORD)task->payload_bytes,
-		1);
+	  hrequest,
+	  task->header,
+	  (DWORD)-1,
+	  task->payload,
+	  (DWORD)task->payload_bytes,
+	  (DWORD)task->payload_bytes,
+	  1);
 	if (!ok)
 	{
 		PRINTERR("HttpSendRequest");
@@ -214,12 +214,12 @@ task_handler(LPVOID context)
 	DWORD status_code;
 	DWORD sc_bytes = sizeof status_code;
 	ok = WinHttpQueryHeaders(
-		hrequest,
-		WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
-		WINHTTP_HEADER_NAME_BY_INDEX,
-		&status_code,
-		&sc_bytes,
-		WINHTTP_NO_HEADER_INDEX);
+	  hrequest,
+	  WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
+	  WINHTTP_HEADER_NAME_BY_INDEX,
+	  &status_code,
+	  &sc_bytes,
+	  WINHTTP_NO_HEADER_INDEX);
 	if (!ok)
 	{
 		PRINTERR("HttpQueryHeaders");
@@ -256,24 +256,24 @@ task_handler(LPVOID context)
 				DWORD actual_bytes_read = 0;
 				WinHttpReadData(hrequest, buffer, BUFFERSIZE, &actual_bytes_read);
 				printf(
-					"[netw] Read %lu from %lu bytes\n",
-					actual_bytes_read,
-					avail_bytes);
+				  "[netw] Read %lu from %lu bytes\n",
+				  actual_bytes_read,
+				  avail_bytes);
 				DWORD actual_bytes_written = 0;
 				do
 				{
 					WriteFile(
-						hfile,
-						buffer,
-						actual_bytes_read,
-						&actual_bytes_written,
-						NULL);
+					  hfile,
+					  buffer,
+					  actual_bytes_read,
+					  &actual_bytes_written,
+					  NULL);
 					actual_bytes_read -= actual_bytes_written;
 				} while (actual_bytes_read > 0);
 				printf(
-					"[netw] Written %lu from %lu bytes\n",
-					actual_bytes_written,
-					actual_bytes_read);
+				  "[netw] Written %lu from %lu bytes\n",
+				  actual_bytes_written,
+				  actual_bytes_read);
 			}
 		} while (avail_bytes > 0);
 
@@ -308,9 +308,9 @@ task_handler(LPVOID context)
 				WinHttpReadData(hrequest, buffer + bytes, avail_bytes, &actual_bytes);
 				bytes += actual_bytes;
 				printf(
-					"[netw] Read %lu from %lu bytes\n",
-					actual_bytes,
-					avail_bytes);
+				  "[netw] Read %lu from %lu bytes\n",
+				  actual_bytes,
+				  avail_bytes);
 			}
 		} while (avail_bytes > 0);
 
@@ -337,9 +337,9 @@ task_handler(LPVOID context)
 
 bool
 netw_get_request(
-	char const *in_uri,
-	char const *const in_headers[],
-	void *udata)
+  char const *in_uri,
+  char const *const in_headers[],
+  void *udata)
 {
 	printf("[netw] get_request: %s\n", in_uri);
 
@@ -362,10 +362,10 @@ netw_get_request(
 	task->port = url_components.nPort;
 	wprintf(L"[netw] port: %i\n", task->port);
 	task->host =
-		wcstrndup(url_components.lpszHostName, url_components.dwHostNameLength);
+	  wcstrndup(url_components.lpszHostName, url_components.dwHostNameLength);
 	wprintf(L"[netw] host: %s\n", task->host);
 	task->path =
-		wcstrndup(url_components.lpszUrlPath, url_components.dwUrlPathLength);
+	  wcstrndup(url_components.lpszUrlPath, url_components.dwUrlPathLength);
 	wprintf(L"[netw] path: %s\n", task->path);
 
 	free(uri);
@@ -397,11 +397,11 @@ netw_get_request(
 
 bool
 netw_post_request(
-	char const *in_uri,
-	char const *const in_headers[],
-	void const *body,
-	size_t nbody_bytes,
-	void *udata)
+  char const *in_uri,
+  char const *const in_headers[],
+  void const *body,
+  size_t nbody_bytes,
+  void *udata)
 {
 	printf("[netw] post_request: %s\n", in_uri);
 
@@ -426,10 +426,10 @@ netw_post_request(
 	task->port = url_components.nPort;
 	wprintf(L"[netw] port: %i\n", task->port);
 	task->host =
-		wcstrndup(url_components.lpszHostName, url_components.dwHostNameLength);
+	  wcstrndup(url_components.lpszHostName, url_components.dwHostNameLength);
 	wprintf(L"[netw] host: %s\n", task->host);
 	task->path =
-		wcstrndup(url_components.lpszUrlPath, url_components.dwUrlPathLength);
+	  wcstrndup(url_components.lpszUrlPath, url_components.dwUrlPathLength);
 	wprintf(L"[netw] path: %s\n", task->path);
 
 	free(uri);
@@ -484,10 +484,10 @@ netw_download(char const *in_uri, void *udata)
 	task->port = url_components.nPort;
 	wprintf(L"[netw] port: %i\n", task->port);
 	task->host =
-		wcstrndup(url_components.lpszHostName, url_components.dwHostNameLength);
+	  wcstrndup(url_components.lpszHostName, url_components.dwHostNameLength);
 	wprintf(L"[netw] host: %s\n", task->host);
 	task->path =
-		wcstrndup(url_components.lpszUrlPath, url_components.dwUrlPathLength);
+	  wcstrndup(url_components.lpszUrlPath, url_components.dwUrlPathLength);
 	wprintf(L"[netw] path: %s\n", task->path);
 
 	free(uri);

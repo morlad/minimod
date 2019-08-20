@@ -35,10 +35,10 @@ struct callback
 
 
 typedef void (*task_handler)(
-	struct callback const in_callback,
-	void const *in_data,
-	size_t in_len,
-	int error);
+  struct callback const in_callback,
+  void const *in_data,
+  size_t in_len,
+  int error);
 
 
 struct task
@@ -130,10 +130,10 @@ get_tokenpath(void)
 
 static void
 handle_get_games(
-	struct callback const in_callback,
-	void const *in_data,
-	size_t in_len,
-	int error)
+  struct callback const in_callback,
+  void const *in_data,
+  size_t in_len,
+  int error)
 {
 	if (error != 200)
 	{
@@ -196,10 +196,10 @@ populate_mod(struct minimod_mod *mod, QAJ4C_Value const *node)
 
 static void
 handle_get_mods(
-	struct callback const in_callback,
-	void const *in_data,
-	size_t in_len,
-	int error)
+  struct callback const in_callback,
+  void const *in_data,
+  size_t in_len,
+  int error)
 {
 	if (error != 200)
 	{
@@ -244,10 +244,10 @@ handle_get_mods(
 
 static void
 handle_get_users(
-	struct callback const in_callback,
-	void const *in_data,
-	size_t in_len,
-	int error)
+  struct callback const in_callback,
+  void const *in_data,
+  size_t in_len,
+  int error)
 {
 	if (error != 200)
 	{
@@ -315,10 +315,10 @@ populate_modfile(struct minimod_modfile *modfile, QAJ4C_Value const *node)
 
 static void
 handle_get_modfiles(
-	struct callback const in_callback,
-	void const *in_data,
-	size_t in_len,
-	int error)
+  struct callback const in_callback,
+  void const *in_data,
+  size_t in_len,
+  int error)
 {
 	if (error != 200)
 	{
@@ -363,10 +363,10 @@ handle_get_modfiles(
 
 static void
 handle_email_request(
-	struct callback const in_callback,
-	void const *UNUSED(in_data),
-	size_t UNUSED(in_len),
-	int error)
+  struct callback const in_callback,
+  void const *UNUSED(in_data),
+  size_t UNUSED(in_len),
+  int error)
 {
 	in_callback.fptr.email_request(in_callback.userdata, error == 200);
 }
@@ -374,10 +374,10 @@ handle_email_request(
 
 static void
 handle_email_exchange(
-	struct callback const in_callback,
-	void const *in_data,
-	size_t in_len,
-	int error)
+  struct callback const in_callback,
+  void const *in_data,
+  size_t in_len,
+  int error)
 {
 	if (error != 200)
 	{
@@ -408,10 +408,10 @@ handle_email_exchange(
 
 static void
 handle_download(
-	struct callback const in_callback,
-	void const *in_data,
-	size_t UNUSED(in_len),
-	int error)
+  struct callback const in_callback,
+  void const *in_data,
+  size_t UNUSED(in_len),
+  int error)
 {
 	if (error == 200)
 	{
@@ -428,10 +428,10 @@ handle_download(
 
 static void
 handle_rate(
-	struct callback const in_callback,
-	void const *UNUSED(in_data),
-	size_t UNUSED(in_len),
-	int error)
+  struct callback const in_callback,
+  void const *UNUSED(in_data),
+  size_t UNUSED(in_len),
+  int error)
 {
 	if (error == 201)
 	{
@@ -448,10 +448,10 @@ handle_rate(
 
 static void
 handle_get_ratings(
-	struct callback const in_callback,
-	void const *in_data,
-	size_t in_len,
-	int error)
+  struct callback const in_callback,
+  void const *in_data,
+  size_t in_len,
+  int error)
 {
 	if (error != 200)
 	{
@@ -549,10 +549,10 @@ read_token(void)
 
 bool
 minimod_init(
-	enum minimod_environment env,
-	uint32_t game_id,
-	char const *api_key,
-	char const *root_path)
+  enum minimod_environment env,
+  uint32_t game_id,
+  char const *api_key,
+  char const *root_path)
 {
 	struct netw_callbacks callbacks;
 	callbacks.completion = on_completion;
@@ -591,17 +591,17 @@ minimod_deinit()
 
 void
 minimod_get_games(
-	char const *in_filter,
-	minimod_get_games_fptr in_callback,
-	void *in_udata)
+  char const *in_filter,
+  minimod_get_games_fptr in_callback,
+  void *in_udata)
 {
 	char *path;
 	asprintf(
-		&path,
-		"%s/games?api_key=%s&%s",
-		endpoints[l_mmi.env],
-		l_mmi.api_key,
-		in_filter ? in_filter : "");
+	  &path,
+	  "%s/games?api_key=%s&%s",
+	  endpoints[l_mmi.env],
+	  l_mmi.api_key,
+	  in_filter ? in_filter : "");
 	char const *const headers[] = {
 		// clang-format off
 		"Accept", "application/json",
@@ -627,19 +627,19 @@ minimod_get_games(
 
 void
 minimod_get_mods(
-	char const *in_filter,
-	uint64_t in_gameid,
-	minimod_get_mods_fptr in_callback,
-	void *in_udata)
+  char const *in_filter,
+  uint64_t in_gameid,
+  minimod_get_mods_fptr in_callback,
+  void *in_udata)
 {
 	char *path;
 	asprintf(
-		&path,
-		"%s/games/%llu/mods?api_key=%s&%s",
-		endpoints[l_mmi.env],
-		in_gameid == 0 ? l_mmi.game_id : in_gameid,
-		l_mmi.api_key,
-		in_filter ? in_filter : "");
+	  &path,
+	  "%s/games/%llu/mods?api_key=%s&%s",
+	  endpoints[l_mmi.env],
+	  in_gameid == 0 ? l_mmi.game_id : in_gameid,
+	  l_mmi.api_key,
+	  in_filter ? in_filter : "");
 
 	char const *const headers[] = {
 		// clang-format off
@@ -666,9 +666,9 @@ minimod_get_mods(
 
 void
 minimod_email_request(
-	char const *in_email,
-	minimod_email_request_fptr in_callback,
-	void *in_udata)
+  char const *in_email,
+  minimod_email_request_fptr in_callback,
+  void *in_udata)
 {
 	char *path;
 	asprintf(&path, "%s/oauth/emailrequest", endpoints[l_mmi.env]);
@@ -684,7 +684,7 @@ minimod_email_request(
 	char *payload;
 	char *email = netw_percent_encode(in_email, strlen(in_email), NULL);
 	int nbytes =
-		asprintf(&payload, "api_key=%s&email=%s", l_mmi.api_key, email);
+	  asprintf(&payload, "api_key=%s&email=%s", l_mmi.api_key, email);
 	free(email);
 	printf("[mm] payload: %s (%i)\n", payload, nbytes);
 
@@ -709,9 +709,9 @@ minimod_email_request(
 
 void
 minimod_email_exchange(
-	char const *in_code,
-	minimod_email_exchange_fptr in_callback,
-	void *in_udata)
+  char const *in_code,
+  minimod_email_exchange_fptr in_callback,
+  void *in_udata)
 {
 	char *path;
 	asprintf(&path, "%s/oauth/emailexchange", endpoints[l_mmi.env]);
@@ -725,8 +725,8 @@ minimod_email_exchange(
 	};
 
 	char *payload;
-	int nbytes = asprintf(
-		&payload, "api_key=%s&security_code=%s", l_mmi.api_key, in_code);
+	int nbytes =
+	  asprintf(&payload, "api_key=%s&security_code=%s", l_mmi.api_key, in_code);
 	printf("[mm] payload: %s (%i)\n", payload, nbytes);
 
 	assert(nbytes > 0);
@@ -750,9 +750,9 @@ minimod_email_exchange(
 
 void
 minimod_get_user(
-	uint64_t in_uid,
-	minimod_get_users_fptr in_callback,
-	void *in_udata)
+  uint64_t in_uid,
+  minimod_get_users_fptr in_callback,
+  void *in_udata)
 {
 	char *path;
 	char *auth_field = NULL;
@@ -811,36 +811,36 @@ minimod_deauthenticate(void)
 
 MINIMOD_LIB void
 minimod_get_modfiles(
-	char const *in_filter,
-	uint64_t in_gameid,
-	uint64_t in_modid,
-	uint64_t in_modfileid,
-	minimod_get_modfiles_fptr in_callback,
-	void *in_udata)
+  char const *in_filter,
+  uint64_t in_gameid,
+  uint64_t in_modid,
+  uint64_t in_modfileid,
+  minimod_get_modfiles_fptr in_callback,
+  void *in_udata)
 {
 	char *path;
 	if (in_modfileid)
 	{
 		asprintf(
-			&path,
-			"%s/games/%llu/mods/%llu/files/%llu?api_key=%s&%s",
-			endpoints[l_mmi.env],
-			in_gameid == 0 ? l_mmi.game_id : in_gameid,
-			in_modid,
-			in_modfileid,
-			l_mmi.api_key,
-			in_filter ? in_filter : "");
+		  &path,
+		  "%s/games/%llu/mods/%llu/files/%llu?api_key=%s&%s",
+		  endpoints[l_mmi.env],
+		  in_gameid == 0 ? l_mmi.game_id : in_gameid,
+		  in_modid,
+		  in_modfileid,
+		  l_mmi.api_key,
+		  in_filter ? in_filter : "");
 	}
 	else
 	{
 		asprintf(
-			&path,
-			"%s/games/%llu/mods/%llu/files?api_key=%s&%s",
-			endpoints[l_mmi.env],
-			in_gameid == 0 ? l_mmi.game_id : in_gameid,
-			in_modid,
-			l_mmi.api_key,
-			in_filter ? in_filter : "");
+		  &path,
+		  "%s/games/%llu/mods/%llu/files?api_key=%s&%s",
+		  endpoints[l_mmi.env],
+		  in_gameid == 0 ? l_mmi.game_id : in_gameid,
+		  in_modid,
+		  l_mmi.api_key,
+		  in_filter ? in_filter : "");
 	}
 	printf("[mm] request: %s\n", path);
 
@@ -872,9 +872,9 @@ minimod_get_modfiles(
 
 static void
 on_download_modfile(
-	void *udata,
-	size_t nmodfiles,
-	struct minimod_modfile const *modfiles)
+  void *udata,
+  size_t nmodfiles,
+  struct minimod_modfile const *modfiles)
 {
 	assert(nmodfiles == 1);
 
@@ -887,11 +887,11 @@ on_download_modfile(
 
 void
 minimod_download(
-	uint64_t in_gameid,
-	uint64_t in_modid,
-	uint64_t in_modfileid,
-	minimod_download_fptr in_callback,
-	void *in_udata)
+  uint64_t in_gameid,
+  uint64_t in_modid,
+  uint64_t in_modfileid,
+  minimod_download_fptr in_callback,
+  void *in_udata)
 {
 	// fetch meta-data
 	char uri[DOWNLOAD_URI_SIZE] = { 0 };
@@ -962,11 +962,11 @@ on_install_download(void *in_udata, char const *in_path)
 
 void
 minimod_install(
-	uint64_t in_gameid,
-	uint64_t in_modid,
-	uint64_t in_modfileid,
-	minimod_install_fptr in_callback,
-	void *in_udata)
+  uint64_t in_gameid,
+  uint64_t in_modid,
+  uint64_t in_modfileid,
+  minimod_install_fptr in_callback,
+  void *in_udata)
 {
 	struct task *task = alloc_task();
 	task->callback.fptr.install = in_callback;
@@ -984,22 +984,22 @@ minimod_install(
 
 void
 minimod_rate(
-	uint64_t in_gameid,
-	uint64_t in_modid,
-	int in_rating,
-	minimod_rate_fptr in_callback,
-	void *in_udata)
+  uint64_t in_gameid,
+  uint64_t in_modid,
+  int in_rating,
+  minimod_rate_fptr in_callback,
+  void *in_udata)
 {
 	assert(in_rating == 1 || in_rating == -1);
 	assert(minimod_is_authenticated());
 
 	char *path = NULL;
 	asprintf(
-		&path,
-		"%s/games/%llu/mods/%llu/ratings",
-		endpoints[l_mmi.env],
-		in_gameid ? in_gameid : l_mmi.game_id,
-		in_modid);
+	  &path,
+	  "%s/games/%llu/mods/%llu/ratings",
+	  endpoints[l_mmi.env],
+	  in_gameid ? in_gameid : l_mmi.game_id,
+	  in_modid);
 
 	char const *const headers[] = {
 		// clang-format off
@@ -1025,9 +1025,9 @@ minimod_rate(
 
 void
 minimod_get_ratings(
-	char const *in_filter,
-	minimod_get_ratings_fptr in_callback,
-	void *in_udata)
+  char const *in_filter,
+  minimod_get_ratings_fptr in_callback,
+  void *in_udata)
 {
 	assert(minimod_is_authenticated());
 

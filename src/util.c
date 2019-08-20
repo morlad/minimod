@@ -24,14 +24,14 @@ sys_utf8_from_wchar(wchar_t const *in, char *out, size_t bytes)
 	assert(bytes <= INT_MAX);
 	//  CAST retval: int -> size_t = WCTMB always returns >= 0 (error == 0)
 	return (size_t)WideCharToMultiByte(
-		CP_UTF8,
-		0,
-		in,
-		-1, // length of 'in'. -1: NUL-terminated
-		out,
-		(int)bytes,
-		NULL, // must be set to 0 for CP_UTF8
-		NULL /* must be set to 0 for CP_UTF8 */);
+	  CP_UTF8,
+	  0,
+	  in,
+	  -1, // length of 'in'. -1: NUL-terminated
+	  out,
+	  (int)bytes,
+	  NULL, // must be set to 0 for CP_UTF8
+	  NULL /* must be set to 0 for CP_UTF8 */);
 }
 
 
@@ -42,12 +42,12 @@ sys_wchar_from_utf8(char const *in, wchar_t *out, size_t chars)
 	assert(chars <= INT_MAX);
 	// CAST retval: int -> size_t = MBTWC always returns >= 0 (error == 0)
 	return (size_t)MultiByteToWideChar(
-		CP_UTF8,
-		0, // MB_PRECOMPOSED is default.
-		in,
-		-1, // length of 'in'. -1: NUL-terminated
-		out,
-		(int)chars /* size in characters, not bytes! */);
+	  CP_UTF8,
+	  0, // MB_PRECOMPOSED is default.
+	  in,
+	  -1, // length of 'in'. -1: NUL-terminated
+	  out,
+	  (int)chars /* size in characters, not bytes! */);
 }
 
 #endif
@@ -278,9 +278,9 @@ fsu_mvfile(char const *in_srcpath, char const *in_dstpath, bool in_replace)
 	if (!result)
 	{
 		printf(
-			"[util] MoveFileEx#1 failed %lu (%lx)\n",
-			GetLastError(),
-			GetLastError());
+		  "[util] MoveFileEx#1 failed %lu (%lx)\n",
+		  GetLastError(),
+		  GetLastError());
 	}
 	if (result == FALSE && GetLastError() == ERROR_PATH_NOT_FOUND)
 	{
@@ -289,9 +289,9 @@ fsu_mvfile(char const *in_srcpath, char const *in_dstpath, bool in_replace)
 		if (!result)
 		{
 			printf(
-				"[util] MoveFileEx#2 failed %lu (%lx)\n",
-				GetLastError(),
-				GetLastError());
+			  "[util] MoveFileEx#2 failed %lu (%lx)\n",
+			  GetLastError(),
+			  GetLastError());
 		}
 	}
 
@@ -390,13 +390,13 @@ fsu_fsize(char const *in_path)
 	sys_wchar_from_utf8(in_path, utf16, nchars);
 
 	HANDLE file = CreateFile(
-		utf16,
-		GENERIC_READ,
-		FILE_SHARE_READ | FILE_SHARE_WRITE,
-		NULL,
-		OPEN_EXISTING,
-		FILE_ATTRIBUTE_NORMAL,
-		NULL);
+	  utf16,
+	  GENERIC_READ,
+	  FILE_SHARE_READ | FILE_SHARE_WRITE,
+	  NULL,
+	  OPEN_EXISTING,
+	  FILE_ATTRIBUTE_NORMAL,
+	  NULL);
 	free(utf16);
 
 	// early out on failure
