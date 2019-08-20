@@ -284,12 +284,12 @@ endif
 # ---------------------
 $(OUTPUT_DIR)/src/%.o: CPPFLAGS += -Iinclude -Ideps/miniz -Ideps
 $(OUTPUT_DIR)/tests/%.o: CPPFLAGS += -Iinclude
-$(OUTPUT_DIR)/src/minimod.o: NOWARNINGS += -Wno-documentation
+$(OUTPUT_DIR)/src/minimod.o: NOWARNINGS += -Wno-error-documentation
 
 ifeq ($(os),windows)
 $(OUTPUT_DIR)/src/%.o: CPPFLAGS += -Ideps/dirent/include
-$(OUTPUT_DIR)/src/%.o: NOWARNINGS += -Wno-reserved-id-macro
-$(OUTPUT_DIR)/src/%.o: NOWARNINGS += -Wno-nonportable-system-include-path
+$(OUTPUT_DIR)/src/%.o: NOWARNINGS += -Wno-error-reserved-id-macro
+$(OUTPUT_DIR)/src/%.o: NOWARNINGS += -Wno-error-nonportable-system-include-path
 endif
 
 # clang implied
