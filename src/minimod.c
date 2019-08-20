@@ -596,7 +596,9 @@ minimod_get_games(
 	void *in_udata)
 {
 	char *path;
-	asprintf(&path, "%s/games?api_key=%s&%s",
+	asprintf(
+		&path,
+		"%s/games?api_key=%s&%s",
 		endpoints[l_mmi.env],
 		l_mmi.api_key,
 		in_filter ? in_filter : "");
@@ -631,7 +633,9 @@ minimod_get_mods(
 	void *in_udata)
 {
 	char *path;
-	asprintf(&path, "%s/games/%llu/mods?api_key=%s&%s",
+	asprintf(
+		&path,
+		"%s/games/%llu/mods?api_key=%s&%s",
 		endpoints[l_mmi.env],
 		in_gameid == 0 ? l_mmi.game_id : in_gameid,
 		l_mmi.api_key,
@@ -721,7 +725,8 @@ minimod_email_exchange(
 	};
 
 	char *payload;
-	int nbytes = asprintf(&payload, "api_key=%s&security_code=%s", l_mmi.api_key, in_code);
+	int nbytes = asprintf(
+		&payload, "api_key=%s&security_code=%s", l_mmi.api_key, in_code);
 	printf("[mm] payload: %s (%i)\n", payload, nbytes);
 
 	assert(nbytes > 0);
@@ -816,7 +821,9 @@ minimod_get_modfiles(
 	char *path;
 	if (in_modfileid)
 	{
-		asprintf(&path, "%s/games/%llu/mods/%llu/files/%llu?api_key=%s&%s",
+		asprintf(
+			&path,
+			"%s/games/%llu/mods/%llu/files/%llu?api_key=%s&%s",
 			endpoints[l_mmi.env],
 			in_gameid == 0 ? l_mmi.game_id : in_gameid,
 			in_modid,
@@ -826,7 +833,9 @@ minimod_get_modfiles(
 	}
 	else
 	{
-		asprintf(&path, "%s/games/%llu/mods/%llu/files?api_key=%s&%s",
+		asprintf(
+			&path,
+			"%s/games/%llu/mods/%llu/files?api_key=%s&%s",
 			endpoints[l_mmi.env],
 			in_gameid == 0 ? l_mmi.game_id : in_gameid,
 			in_modid,
