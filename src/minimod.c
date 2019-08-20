@@ -55,17 +55,19 @@ struct task
 };
 
 
-static struct mmi
+struct mmi
 {
 	char *api_key;
 	char *root_path;
 	char *cache_tokenpath;
 	uint64_t game_id;
 	char *token;
+	char *token_bearer;
 	enum minimod_environment env;
 	bool unzip;
 	char _padding[3];
-} l_mmi;
+};
+static struct mmi l_mmi;
 
 
 static char const *endpoints[2] =
