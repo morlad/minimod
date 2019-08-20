@@ -243,6 +243,19 @@ handle_get_mods(
 
 
 static void
+populate_user(struct minimod_user *user, QAJ4C_Value const *node)
+{
+	assert(modfile);
+
+	assert(node);
+	assert(QAJ4C_is_object(node));
+
+	user->id = QAJ4C_get_uint64(QAJ4C_object_get(node, "id"));
+	user->name = QAJ4C_get_string(QAJ4C_object_get(node, "username"));
+}
+
+
+static void
 handle_get_users(
   struct callback const in_callback,
   void const *in_data,
@@ -275,6 +288,7 @@ handle_get_users(
 		{
 			QAJ4C_Value const *item = QAJ4C_array_get(data, i);
 			assert(QAJ4C_is_object(item));
+			populate_user(&users[i], item);
 		}
 
 		in_callback.fptr.get_users(in_callback.userdata, nusers, users);
@@ -285,9 +299,7 @@ handle_get_users(
 	else
 	{
 		struct minimod_user user;
-		user.id = QAJ4C_get_uint(QAJ4C_object_get(document, "id"));
-		user.name = QAJ4C_get_string(QAJ4C_object_get(document, "username"));
-
+		populate_user(&user, document);
 		in_callback.fptr.get_users(in_callback.userdata, 1, &user);
 	}
 	free(buffer);
