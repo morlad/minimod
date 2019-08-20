@@ -142,9 +142,8 @@ typedef void (*minimod_get_users_fptr)(
   struct minimod_user const *users);
 
 
-MINIMOD_LIB void
-minimod_get_user(
-  uint64_t in_uid,
+MINIMOD_LIB bool
+minimod_get_me(
   minimod_get_users_fptr in_callback,
   void *in_udata);
 

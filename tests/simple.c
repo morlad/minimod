@@ -269,7 +269,7 @@ test_5(void)
 		NULL);
 
 	int wait = 1;
-	minimod_get_user(0, on_get_users, &wait);
+	minimod_get_me(on_get_users, &wait);
 
 	while (wait)
 	{

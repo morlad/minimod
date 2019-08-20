@@ -760,31 +760,21 @@ minimod_email_exchange(
 }
 
 
-void
-minimod_get_user(
-  uint64_t in_uid,
-  minimod_get_users_fptr in_callback,
-  void *in_udata)
+bool
+minimod_get_me(minimod_get_users_fptr in_callback, void *in_udata)
 {
+	if (!minimod_is_authenticated())
+	{
+		return false;
+	}
+
 	char *path;
-	char *auth_field = NULL;
-	char *auth_value = NULL;
-	if (in_uid == 0)
-	{
-		assert(l_mmi.token);
-		asprintf(&path, "%s/me", endpoints[l_mmi.env]);
-		auth_field = "Authorization";
-		asprintf(&auth_value, "Bearer %s", l_mmi.token);
-	}
-	else
-	{
-		asprintf(&path, "%s/users/%llu", endpoints[l_mmi.env], in_uid);
-	}
+	asprintf(&path, "%s/me", endpoints[l_mmi.env]);
 
 	char const *const headers[] = {
 		// clang-format off
 		"Accept", "application/json",
-		auth_field, auth_value,
+		"Authorization", l_mmi.token_bearer,
 		NULL
 		// clang-format on
 	};
@@ -802,6 +792,8 @@ minimod_get_user(
 	}
 
 	free(path);
+
+	return true;
 }
 
 
