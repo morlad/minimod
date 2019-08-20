@@ -245,7 +245,10 @@ minimod_get_subscriptions(
   void *in_udata);
 
 
-typedef void (*minimod_subscription_change_fptr)(void *userdata);
+typedef void (*minimod_subscription_change_fptr)(
+  void *userdata,
+  uint64_t mod_id,
+  int change);
 
 
 MINIMOD_LIB bool

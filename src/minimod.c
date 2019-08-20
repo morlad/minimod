@@ -1118,7 +1118,8 @@ handle_subscription_change(
 	{
 		if (error == 201)
 		{
-			task->callback.fptr.subscription_change(task->callback.userdata);
+			task->callback.fptr
+			  .subscription_change(task->callback.userdata, task->meta64, 1);
 		}
 		else
 		{
@@ -1126,13 +1127,16 @@ handle_subscription_change(
 			  "[mm] failed to subscribe %i [modid: %llu]\n",
 			  error,
 			  task->meta64);
+			task->callback.fptr
+			  .subscription_change(task->callback.userdata, task->meta64, 0);
 		}
 	}
 	else
 	{
 		if (error == 204)
 		{
-			task->callback.fptr.subscription_change(task->callback.userdata);
+			task->callback.fptr
+			  .subscription_change(task->callback.userdata, -task->meta64, -1);
 		}
 		else
 		{
@@ -1140,6 +1144,8 @@ handle_subscription_change(
 			  "[mm] failed to unsubscribe %i [modid: %llu]\n",
 			  error,
 			  -task->meta64);
+			task->callback.fptr
+			  .subscription_change(task->callback.userdata, -task->meta64, 0);
 		}
 	}
 
