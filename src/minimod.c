@@ -179,6 +179,42 @@ handle_get_games(
 
 
 static void
+populate_user(struct minimod_user *user, QAJ4C_Value const *node)
+{
+	assert(user);
+
+	assert(node);
+	assert(QAJ4C_is_object(node));
+
+	user->id = QAJ4C_get_uint64(QAJ4C_object_get(node, "id"));
+	user->username = QAJ4C_get_string(QAJ4C_object_get(node, "username"));
+	user->more = node;
+}
+
+
+static void
+populate_stats(struct minimod_stats *stats, QAJ4C_Value const *node)
+{
+	assert(stats);
+
+	assert(node);
+	assert(QAJ4C_is_object(node));
+
+	stats->mod_id = QAJ4C_get_uint64(QAJ4C_object_get(node, "mod_id"));
+	stats->ndownloads =
+	  QAJ4C_get_uint64(QAJ4C_object_get(node, "downloads_total"));
+	stats->nsubscribers =
+	  QAJ4C_get_uint64(QAJ4C_object_get(node, "subscribers_total"));
+	stats->nratings_positive =
+	  QAJ4C_get_uint64(QAJ4C_object_get(node, "ratings_positive"));
+	stats->nratings_negative =
+	  QAJ4C_get_uint64(QAJ4C_object_get(node, "ratings_negative"));
+
+	stats->more = node;
+}
+
+
+static void
 populate_mod(struct minimod_mod *mod, QAJ4C_Value const *node)
 {
 	assert(mod);
@@ -200,6 +236,16 @@ populate_mod(struct minimod_mod *mod, QAJ4C_Value const *node)
 	}
 
 	mod->more = node;
+
+	// submitted_by
+	QAJ4C_Value const *submitted_by = QAJ4C_object_get(node, "submitted_by");
+	assert(QAJ4C_is_object(submitted_by));
+	populate_user(&mod->submitted_by, submitted_by);
+
+	// stats
+	QAJ4C_Value const *stats = QAJ4C_object_get(node, "stats");
+	assert(QAJ4C_is_object(stats));
+	populate_stats(&mod->stats, stats);
 }
 
 
@@ -248,19 +294,6 @@ handle_get_mods(
 		in_callback.fptr.get_mods(in_callback.userdata, 1, &mod);
 	}
 	free(buffer);
-}
-
-
-static void
-populate_user(struct minimod_user *user, QAJ4C_Value const *node)
-{
-	assert(user);
-
-	assert(node);
-	assert(QAJ4C_is_object(node));
-
-	user->id = QAJ4C_get_uint64(QAJ4C_object_get(node, "id"));
-	user->name = QAJ4C_get_string(QAJ4C_object_get(node, "username"));
 }
 
 

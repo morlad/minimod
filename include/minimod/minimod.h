@@ -73,12 +73,33 @@ minimod_get_games(
   void *udata);
 
 
+struct minimod_stats
+{
+	uint64_t mod_id;
+	uint64_t ndownloads;
+	uint64_t nsubscribers;
+	uint64_t nratings_positive;
+	uint64_t nratings_negative;
+	void const *more;
+};
+
+
+struct minimod_user
+{
+	uint64_t id;
+	char const *username;
+	void const *more;
+};
+
+
 struct minimod_mod
 {
 	uint64_t id;
 	char const *name;
 	uint64_t modfile_id;
 	void const *more;
+	struct minimod_user submitted_by;
+	struct minimod_stats stats;
 };
 
 
@@ -128,13 +149,6 @@ minimod_email_exchange(
   char const *in_code,
   minimod_email_exchange_fptr in_callback,
   void *in_udata);
-
-
-struct minimod_user
-{
-	uint64_t id;
-	char const *name;
-};
 
 
 typedef void (*minimod_get_users_fptr)(
