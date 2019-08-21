@@ -178,10 +178,7 @@ ifeq ($(os),linux)
 # to this shared library's list of exports.
 LDFLAGS += -Wl,--exclude-libs,ALL
 LDLIBS += -lstdc++ -lpthread
-# statically links OpenSSL, which is quite huge.
-# maybe replace with mbdtls?
-LDLIBS += -l:libssl.a
-LDLIBS += -l:libcrypto.a
+$(LIB_PATH): LDLIBS += -lcurl
 endif
 
 # COMPILER OPTIONS
