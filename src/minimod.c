@@ -41,17 +41,9 @@ struct callback
 };
 
 
-typedef void (*task_handler)(
-  struct callback const in_callback,
-  void const *in_data,
-  size_t in_len,
-  int error);
-
-
 struct task
 {
 	struct callback callback;
-	task_handler handler;
 	uint64_t meta64;
 };
 
@@ -136,15 +128,12 @@ get_tokenpath(void)
 
 
 static void
-handle_get_games(
-  struct callback const in_callback,
-  void const *in_data,
-  size_t in_len,
-  int error)
+handle_get_games(void *in_udata, void const *in_data, size_t in_len, int error)
 {
+	struct task *task = in_udata;
 	if (error != 200)
 	{
-		in_callback.fptr.get_games(in_callback.userdata, 0, NULL);
+		task->callback.fptr.get_games(task->callback.userdata, 0, NULL);
 		return;
 	}
 
@@ -171,7 +160,7 @@ handle_get_games(
 		games[i].more = item;
 	}
 
-	in_callback.fptr.get_games(in_callback.userdata, ngames, games);
+	task->callback.fptr.get_games(task->callback.userdata, ngames, games);
 
 	free(games);
 	free(buffer);
@@ -250,15 +239,12 @@ populate_mod(struct minimod_mod *mod, QAJ4C_Value const *node)
 
 
 static void
-handle_get_mods(
-  struct callback const in_callback,
-  void const *in_data,
-  size_t in_len,
-  int error)
+handle_get_mods(void *in_udata, void const *in_data, size_t in_len, int error)
 {
+	struct task *task = in_udata;
 	if (error != 200)
 	{
-		in_callback.fptr.get_mods(in_callback.userdata, 0, NULL);
+		task->callback.fptr.get_mods(task->callback.userdata, 0, NULL);
 		return;
 	}
 
@@ -283,7 +269,7 @@ handle_get_mods(
 			populate_mod(&mods[i], QAJ4C_array_get(data, i));
 		}
 
-		in_callback.fptr.get_mods(in_callback.userdata, nmods, mods);
+		task->callback.fptr.get_mods(task->callback.userdata, nmods, mods);
 
 		free(mods);
 	}
@@ -291,22 +277,19 @@ handle_get_mods(
 	{
 		struct minimod_mod mod = { 0 };
 		populate_mod(&mod, document);
-		in_callback.fptr.get_mods(in_callback.userdata, 1, &mod);
+		task->callback.fptr.get_mods(task->callback.userdata, 1, &mod);
 	}
 	free(buffer);
 }
 
 
 static void
-handle_get_users(
-  struct callback const in_callback,
-  void const *in_data,
-  size_t in_len,
-  int error)
+handle_get_users(void *in_udata, void const *in_data, size_t in_len, int error)
 {
+	struct task *task = in_udata;
 	if (error != 200)
 	{
-		in_callback.fptr.get_mods(in_callback.userdata, 0, NULL);
+		task->callback.fptr.get_mods(task->callback.userdata, 0, NULL);
 		return;
 	}
 
@@ -333,7 +316,7 @@ handle_get_users(
 			populate_user(&users[i], item);
 		}
 
-		in_callback.fptr.get_users(in_callback.userdata, nusers, users);
+		task->callback.fptr.get_users(task->callback.userdata, nusers, users);
 
 		free(users);
 	}
@@ -342,7 +325,7 @@ handle_get_users(
 	{
 		struct minimod_user user;
 		populate_user(&user, document);
-		in_callback.fptr.get_users(in_callback.userdata, 1, &user);
+		task->callback.fptr.get_users(task->callback.userdata, 1, &user);
 	}
 	free(buffer);
 }
@@ -369,14 +352,15 @@ populate_modfile(struct minimod_modfile *modfile, QAJ4C_Value const *node)
 
 static void
 handle_get_modfiles(
-  struct callback const in_callback,
+  void *in_udata,
   void const *in_data,
   size_t in_len,
   int error)
 {
+	struct task *task = in_udata;
 	if (error != 200)
 	{
-		in_callback.fptr.get_modfiles(in_callback.userdata, 0, NULL);
+		task->callback.fptr.get_modfiles(task->callback.userdata, 0, NULL);
 		return;
 	}
 
@@ -402,8 +386,8 @@ handle_get_modfiles(
 			populate_modfile(&modfiles[i], QAJ4C_array_get(data, i));
 		}
 
-		in_callback.fptr.get_modfiles(
-		  in_callback.userdata,
+		task->callback.fptr.get_modfiles(
+		  task->callback.userdata,
 		  nmodfiles,
 		  modfiles);
 
@@ -413,7 +397,7 @@ handle_get_modfiles(
 	{
 		struct minimod_modfile modfile;
 		populate_modfile(&modfile, document);
-		in_callback.fptr.get_modfiles(in_callback.userdata, 1, &modfile);
+		task->callback.fptr.get_modfiles(task->callback.userdata, 1, &modfile);
 	}
 	free(buffer);
 }
@@ -421,25 +405,27 @@ handle_get_modfiles(
 
 static void
 handle_email_request(
-  struct callback const in_callback,
+  void *in_udata,
   void const *UNUSED(in_data),
   size_t UNUSED(in_len),
   int error)
 {
-	in_callback.fptr.email_request(in_callback.userdata, error == 200);
+	struct task *task = in_udata;
+	task->callback.fptr.email_request(task->callback.userdata, error == 200);
 }
 
 
 static void
 handle_email_exchange(
-  struct callback const in_callback,
+  void *in_udata,
   void const *in_data,
   size_t in_len,
   int error)
 {
+	struct task *task = in_udata;
 	if (error != 200)
 	{
-		in_callback.fptr.email_exchange(in_callback.userdata, NULL, 0);
+		task->callback.fptr.email_exchange(task->callback.userdata, NULL, 0);
 	}
 
 	// extract token
@@ -460,40 +446,42 @@ handle_email_exchange(
 	fwrite(tok, tok_bytes, 1, f);
 	fclose(f);
 
-	in_callback.fptr.email_exchange(in_callback.userdata, tok, tok_bytes);
+	task->callback.fptr.email_exchange(task->callback.userdata, tok, tok_bytes);
 }
 
 
 static void
 handle_rate(
-  struct callback const in_callback,
+  void *in_udata,
   void const *UNUSED(in_data),
   size_t UNUSED(in_len),
   int error)
 {
+	struct task *task = in_udata;
 	if (error == 201)
 	{
 		printf("[mm] Rating applied successful\n");
-		in_callback.fptr.rate(in_callback.userdata, true);
+		task->callback.fptr.rate(task->callback.userdata, true);
 	}
 	else
 	{
 		printf("[mm] Raiting not applied: %i\n", error);
-		in_callback.fptr.rate(in_callback.userdata, false);
+		task->callback.fptr.rate(task->callback.userdata, false);
 	}
 }
 
 
 static void
 handle_get_ratings(
-  struct callback const in_callback,
+  void *in_udata,
   void const *in_data,
   size_t in_len,
   int error)
 {
+	struct task *task = in_udata;
 	if (error != 200)
 	{
-		in_callback.fptr.get_ratings(in_callback.userdata, 0, NULL);
+		task->callback.fptr.get_ratings(task->callback.userdata, 0, NULL);
 		return;
 	}
 
@@ -521,40 +509,10 @@ handle_get_ratings(
 		ratings[i].rating = QAJ4C_get_int(QAJ4C_object_get(item, "rating"));
 	}
 
-	in_callback.fptr.get_ratings(in_callback.userdata, nratings, ratings);
+	task->callback.fptr.get_ratings(task->callback.userdata, nratings, ratings);
 
 	free(ratings);
 	free(buffer);
-}
-
-
-static void
-on_completion(void *in_udata, void const *data, size_t bytes, int error)
-{
-	if (error != 200)
-	{
-		printf("[mm] on_completion(%i):\n%s\n--\n", error, (char const *)data);
-	}
-
-	assert(in_udata);
-	struct task const *task = in_udata;
-	task->handler(task->callback, data, bytes, error);
-}
-
-
-static void
-on_downloaded(void *in_udata, char const *path, int error)
-{
-	if (error != 200)
-	{
-		printf("[mm] on_downloaded(%i)\n", error);
-	}
-
-	printf("[mm] on_downloaded(%i): %s\n", error, path);
-
-	assert(in_udata);
-	struct task const *task = in_udata;
-	task->handler(task->callback, path, 0, error);
 }
 
 
@@ -586,10 +544,7 @@ minimod_init(
   char const *api_key,
   char const *root_path)
 {
-	struct netw_callbacks callbacks;
-	callbacks.completion = on_completion;
-	callbacks.downloaded = on_downloaded;
-	if (!netw_init(&callbacks))
+	if (!netw_init())
 	{
 		return false;
 	}
@@ -650,9 +605,8 @@ minimod_get_games(
 	};
 
 	struct task *task = alloc_task();
-	if (netw_get_request(path, headers, task))
+	if (netw_request(NETW_VERB_GET, path, headers, NULL, 0, handle_get_games, task))
 	{
-		task->handler = handle_get_games;
 		task->callback.fptr.get_games = in_callback;
 		task->callback.userdata = in_udata;
 	}
@@ -689,13 +643,9 @@ minimod_get_mods(
 	};
 
 	struct task *task = alloc_task();
-	if (netw_get_request(path, headers, task))
-	{
-		task->handler = handle_get_mods;
-		task->callback.fptr.get_mods = in_callback;
-		task->callback.userdata = in_udata;
-	}
-	else
+	task->callback.fptr.get_mods = in_callback;
+	task->callback.userdata = in_udata;
+	if (!netw_request(NETW_VERB_GET, path, headers, NULL, 0, handle_get_mods, task))
 	{
 		free_task(task);
 	}
@@ -731,13 +681,16 @@ minimod_email_request(
 	assert(nbytes > 0);
 
 	struct task *task = alloc_task();
-	if (netw_post_request(path, headers, payload, (size_t)nbytes, task))
-	{
-		task->handler = handle_email_request;
-		task->callback.fptr.email_request = in_callback;
-		task->callback.userdata = in_udata;
-	}
-	else
+	task->callback.fptr.email_request = in_callback;
+	task->callback.userdata = in_udata;
+	if (!netw_request(
+	      NETW_VERB_POST,
+	      path,
+	      headers,
+	      payload,
+	      (size_t)nbytes,
+	      handle_email_request,
+	      task))
 	{
 		free_task(task);
 	}
@@ -775,13 +728,16 @@ minimod_email_exchange(
 	assert(nbytes > 0);
 
 	struct task *task = alloc_task();
-	if (netw_post_request(path, headers, payload, (size_t)nbytes, task))
-	{
-		task->handler = handle_email_exchange;
-		task->callback.fptr.email_exchange = in_callback;
-		task->callback.userdata = in_udata;
-	}
-	else
+	task->callback.fptr.email_exchange = in_callback;
+	task->callback.userdata = in_udata;
+	if (!netw_request(
+	      NETW_VERB_POST,
+	      path,
+	      headers,
+	      payload,
+	      (size_t)nbytes,
+	      handle_email_exchange,
+	      task))
 	{
 		free_task(task);
 	}
@@ -811,13 +767,9 @@ minimod_get_me(minimod_get_users_fptr in_callback, void *in_udata)
 	};
 
 	struct task *task = alloc_task();
-	if (netw_get_request(path, headers, task))
-	{
-		task->handler = handle_get_users;
-		task->callback.fptr.get_users = in_callback;
-		task->callback.userdata = in_udata;
-	}
-	else
+	task->callback.fptr.get_users = in_callback;
+	task->callback.userdata = in_udata;
+	if (!netw_request(NETW_VERB_GET, path, headers, NULL, 0, handle_get_users, task))
 	{
 		free_task(task);
 	}
@@ -888,13 +840,9 @@ minimod_get_modfiles(
 	};
 
 	struct task *task = alloc_task();
-	if (netw_get_request(path, headers, task))
-	{
-		task->handler = handle_get_modfiles;
-		task->callback.fptr.get_modfiles = in_callback;
-		task->callback.userdata = in_udata;
-	}
-	else
+	task->callback.fptr.get_modfiles = in_callback;
+	task->callback.userdata = in_udata;
+	if (!netw_request(NETW_VERB_GET, path, headers, NULL, 0, handle_get_modfiles, task))
 	{
 		free_task(task);
 	}
@@ -1021,11 +969,19 @@ minimod_rate(
 	char const *data = in_rating == 1 ? "rating=1" : "rating=-1";
 
 	struct task *task = alloc_task();
-	task->handler = handle_rate;
 	task->callback.userdata = in_udata;
 	task->callback.fptr.rate = in_callback;
-
-	netw_post_request(path, headers, data, strlen(data), task);
+	if (!netw_request(
+	      NETW_VERB_POST,
+	      path,
+	      headers,
+	      data,
+	      strlen(data),
+	      handle_rate,
+	      task))
+	{
+		free_task(task);
+	}
 
 	free(path);
 }
@@ -1051,11 +1007,12 @@ minimod_get_ratings(
 	};
 
 	struct task *task = alloc_task();
-	task->handler = handle_get_ratings;
 	task->callback.userdata = in_udata;
 	task->callback.fptr.get_ratings = in_callback;
-
-	netw_get_request(path, headers, task);
+	if (!netw_request(NETW_VERB_GET, path, headers, NULL, 0, handle_get_ratings, task))
+	{
+		free_task(task);
+	}
 
 	free(path);
 }
@@ -1081,11 +1038,12 @@ minimod_get_subscriptions(
 	};
 
 	struct task *task = alloc_task();
-	task->handler = handle_get_mods;
 	task->callback.userdata = in_udata;
 	task->callback.fptr.get_mods = in_callback;
-
-	netw_get_request(path, headers, task);
+	if (!netw_request(NETW_VERB_GET, path, headers, NULL, 0, handle_get_mods, task))
+	{
+		free_task(task);
+	}
 
 	free(path);
 }
@@ -1177,7 +1135,6 @@ minimod_subscribe(
 	};
 
 	struct task *task = alloc_task();
-	task->handler = handle_get_mods;
 	task->callback.userdata = in_udata;
 	task->callback.fptr.subscription_change = in_callback;
 	task->meta64 = in_modid;
@@ -1227,7 +1184,6 @@ minimod_unsubscribe(
 	};
 
 	struct task *task = alloc_task();
-	task->handler = handle_get_mods;
 	task->callback.userdata = in_udata;
 	task->callback.fptr.subscription_change = in_callback;
 	task->meta64 = -in_modid;

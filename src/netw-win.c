@@ -18,16 +18,13 @@
 struct netw
 {
 	HINTERNET session;
-	struct netw_callbacks callbacks;
 };
 static struct netw l_netw;
 
 
 bool
-netw_init(struct netw_callbacks *in_callbacks)
+netw_init(void)
 {
-	l_netw.callbacks = *in_callbacks;
-
 	l_netw.session = WinHttpOpen(
 	  USER_AGENT,
 
@@ -453,40 +450,4 @@ netw_download_to(
 	}
 
 	return true;
-}
-
-
-bool
-netw_get_request(
-  char const *in_uri,
-  char const *const headers[],
-  void *in_udata)
-{
-	return netw_request(
-	  NETW_VERB_GET,
-	  in_uri,
-	  headers,
-	  NULL,
-	  0,
-	  l_netw.callbacks.completion,
-	  in_udata);
-}
-
-
-bool
-netw_post_request(
-  char const *in_uri,
-  char const *const headers[],
-  void const *in_body,
-  size_t in_nbytes,
-  void *in_udata)
-{
-	return netw_request(
-	  NETW_VERB_POST,
-	  in_uri,
-	  headers,
-	  in_body,
-	  in_nbytes,
-	  l_netw.callbacks.completion,
-	  in_udata);
 }

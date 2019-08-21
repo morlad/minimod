@@ -7,19 +7,8 @@
 #include <stdio.h>
 
 
-struct netw_callbacks
-{
-	void (*completion)(
-	  void *in_udata,
-	  void const *in_data,
-	  size_t in_bytes,
-	  int error);
-	void (*downloaded)(void *in_udata, char const *path, int error);
-};
-
-
 bool
-netw_init(struct netw_callbacks *callbacks);
+netw_init(void);
 
 
 void
@@ -73,23 +62,6 @@ netw_download_to(
   size_t nbody_bytes,
   FILE *file,
   netw_download_callback callback,
-  void *udata);
-
-
-// send GET request. Calls *completion* callback when done.
-// (deprecated)
-bool
-netw_get_request(char const *uri, char const *const headers[], void *udata);
-
-
-// send POST request. Calls *completion* callback when done.
-// (deprecated)
-bool
-netw_post_request(
-  char const *uri,
-  char const *const headers[],
-  void const *body,
-  size_t nbody_bytes,
   void *udata);
 
 

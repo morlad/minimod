@@ -16,7 +16,6 @@ struct netw
 {
 	NSURLSession *session;
 	MyDelegate *delegate;
-	struct netw_callbacks callbacks;
 	CFMutableDictionaryRef task_dict;
 };
 static struct netw l_netw;
@@ -116,10 +115,8 @@ task_from_dictionary(CFDictionaryRef in_dict, NSURLSessionTask *in_task)
 
 
 bool
-netw_init(struct netw_callbacks *in_callbacks)
+netw_init(void)
 {
-	l_netw.callbacks = *in_callbacks;
-
 	l_netw.delegate = [MyDelegate new];
 
 	l_netw.task_dict = CFDictionaryCreateMutable(NULL, 0, NULL, NULL);
@@ -140,42 +137,6 @@ netw_deinit(void)
 	l_netw.session = nil;
 	l_netw.delegate = nil;
 	l_netw.task_dict = nil;
-}
-
-
-bool
-netw_get_request(
-  char const *in_uri,
-  char const *const headers[],
-  void *in_udata)
-{
-	return netw_request(
-	  NETW_VERB_GET,
-	  in_uri,
-	  headers,
-	  NULL,
-	  0,
-	  l_netw.callbacks.completion,
-	  in_udata);
-}
-
-
-bool
-netw_post_request(
-  char const *in_uri,
-  char const *const headers[],
-  void const *in_body,
-  size_t in_nbytes,
-  void *in_udata)
-{
-	return netw_request(
-	  NETW_VERB_POST,
-	  in_uri,
-	  headers,
-	  in_body,
-	  in_nbytes,
-	  l_netw.callbacks.completion,
-	  in_udata);
 }
 
 
