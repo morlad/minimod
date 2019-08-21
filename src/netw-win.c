@@ -3,6 +3,7 @@
 #include "util.h"
 
 #include <Windows.h>
+#include <assert.h>
 #include <stdio.h>
 #include <winhttp.h>
 
@@ -126,12 +127,17 @@ struct task
 	wchar_t *host;
 	wchar_t *path;
 	wchar_t *header;
-	wchar_t *verb;
+	wchar_t const *verb;
+	union
+	{
+		netw_request_callback request;
+		netw_download_callback download;
+	} callback;
 	void *udata;
 	void *payload;
 	size_t payload_bytes;
 	uint16_t port;
-	bool is_download;
+	FILE *file;
 };
 
 
@@ -229,18 +235,8 @@ task_handler(LPVOID context)
 
 	printf("[netw] Read content...\n");
 	uint8_t *buffer = NULL;
-	if (task->is_download)
+	if (task->file)
 	{
-		wchar_t temp_path[MAX_PATH] = { 0 };
-		HANDLE hfile = NULL;
-		printf("[netw] Setting up temporary file\n");
-
-		hfile = create_temp_file(temp_path);
-		if (!hfile)
-		{
-			printf("[netw] Failed to create temporary file\n");
-			return false;
-		}
 		buffer = malloc(BUFFERSIZE);
 		DWORD avail_bytes = 0;
 		do
@@ -253,41 +249,20 @@ task_handler(LPVOID context)
 			}
 			if (avail_bytes > 0)
 			{
+				DWORD m = avail_bytes <= BUFFERSIZE ? avail_bytes : BUFFERSIZE;
 				DWORD actual_bytes_read = 0;
-				WinHttpReadData(hrequest, buffer, BUFFERSIZE, &actual_bytes_read);
+				WinHttpReadData(hrequest, buffer, m, &actual_bytes_read);
 				printf(
 				  "[netw] Read %lu from %lu bytes\n",
 				  actual_bytes_read,
 				  avail_bytes);
-				DWORD actual_bytes_written = 0;
-				do
-				{
-					WriteFile(
-					  hfile,
-					  buffer,
-					  actual_bytes_read,
-					  &actual_bytes_written,
-					  NULL);
-					actual_bytes_read -= actual_bytes_written;
-				} while (actual_bytes_read > 0);
-				printf(
-				  "[netw] Written %lu from %lu bytes\n",
-				  actual_bytes_written,
-				  actual_bytes_read);
+				size_t nitems =
+				  fwrite(buffer, actual_bytes_read, 1, task->file);
+				assert(nitems == 1);
 			}
 		} while (avail_bytes > 0);
 
-		// convert path to utf8
-		size_t pathlen = sys_utf8_from_wchar(temp_path, NULL, 0);
-		char *u8path = malloc(pathlen);
-		sys_utf8_from_wchar(temp_path, u8path, pathlen);
-
-		l_netw.callbacks.downloaded(task->udata, u8path, (int)status_code);
-
-		CloseHandle(hfile);
-		DeleteFile(temp_path);
-
-		free(u8path);
+		task->callback.download(task->udata, "hello world", (int)status_code);
 	}
 	else
 	{
@@ -314,7 +289,7 @@ task_handler(LPVOID context)
 			}
 		} while (avail_bytes > 0);
 
-		l_netw.callbacks.completion(task->udata, buffer, bytes, (int)status_code);
+		task->callback.request(task->udata, buffer, bytes, (int)status_code);
 	}
 
 	// free local data
@@ -335,17 +310,30 @@ task_handler(LPVOID context)
 }
 
 
+static wchar_t const *l_verbs[] = { L"GET", L"POST", L"PUT", L"DELETE" };
+
+
 bool
-netw_get_request(
+netw_request(
+  enum netw_verb in_verb,
   char const *in_uri,
   char const *const in_headers[],
+  void const *body,
+  size_t nbody_bytes,
+  netw_request_callback in_callback,
   void *udata)
 {
-	printf("[netw] get_request: %s\n", in_uri);
+	printf("[netw] request: %s\n", in_uri);
 
 	struct task *task = calloc(sizeof *task, 1);
+	task->callback.request = in_callback;
 	task->udata = udata;
-	task->verb = L"GET";
+	task->verb = l_verbs[in_verb];
+	if (body && nbody_bytes > 0)
+	{
+		task->payload = memdup(body, nbody_bytes);
+		task->payload_bytes = nbody_bytes;
+	}
 
 	// convert/extract URI information
 	size_t urilen = sys_wchar_from_utf8(in_uri, NULL, 0);
@@ -368,13 +356,16 @@ netw_get_request(
 	free(uri);
 
 	// combine/convert headers
-	char *header = combine_headers(in_headers, NULL);
+	if (in_headers)
+	{
+		char *header = combine_headers(in_headers, NULL);
 
-	size_t headerlen = sys_wchar_from_utf8(header, NULL, 0);
-	task->header = malloc(sizeof *(task->header) * headerlen);
-	sys_wchar_from_utf8(header, task->header, headerlen);
+		size_t headerlen = sys_wchar_from_utf8(header, NULL, 0);
+		task->header = malloc(sizeof *(task->header) * headerlen);
+		sys_wchar_from_utf8(header, task->header, headerlen);
 
-	free(header);
+		free(header);
+	}
 
 	HANDLE h = CreateThread(NULL, 0, task_handler, task, 0, NULL);
 	if (h)
@@ -387,107 +378,111 @@ netw_get_request(
 	}
 
 	return true;
+}
+
+
+bool
+netw_download_to(
+  enum netw_verb in_verb,
+  char const *in_uri,
+  char const *const in_headers[],
+  void const *in_body,
+  size_t in_nbytes,
+  FILE *fout,
+  netw_download_callback in_callback,
+  void *in_udata)
+{
+	assert(fout);
+	printf("[netw] download_request: %s\n", in_uri);
+
+	struct task *task = calloc(sizeof *task, 1);
+	task->callback.download = in_callback;
+	task->udata = in_udata;
+	task->verb = l_verbs[in_verb];
+	task->file = fout;
+	if (in_body && in_nbytes > 0)
+	{
+		task->payload = memdup(in_body, in_nbytes);
+		task->payload_bytes = in_nbytes;
+	}
+
+	// convert/extract URI information
+	size_t urilen = sys_wchar_from_utf8(in_uri, NULL, 0);
+	wchar_t *uri = malloc(sizeof *uri * urilen);
+	sys_wchar_from_utf8(in_uri, uri, urilen);
+
+	URL_COMPONENTS url_components = {
+		.dwStructSize = sizeof url_components,
+		.dwHostNameLength = (DWORD)-1,
+		.dwUrlPathLength = (DWORD)-1,
+	};
+	WinHttpCrackUrl(uri, (DWORD)urilen, 0, &url_components);
+
+	task->port = url_components.nPort;
+	task->host =
+	  wcstrndup(url_components.lpszHostName, url_components.dwHostNameLength);
+	task->path =
+	  wcstrndup(url_components.lpszUrlPath, url_components.dwUrlPathLength);
+
+	free(uri);
+
+	// combine/convert headers
+	if (in_headers)
+	{
+		char *header = combine_headers(in_headers, NULL);
+
+		size_t headerlen = sys_wchar_from_utf8(header, NULL, 0);
+		task->header = malloc(sizeof *(task->header) * headerlen);
+		sys_wchar_from_utf8(header, task->header, headerlen);
+
+		free(header);
+	}
+
+	HANDLE h = CreateThread(NULL, 0, task_handler, task, 0, NULL);
+	if (h)
+	{
+		CloseHandle(h);
+	}
+	else
+	{
+		printf("[netw] failed to create thread\n");
+	}
+
+	return true;
+}
+
+
+bool
+netw_get_request(
+  char const *in_uri,
+  char const *const headers[],
+  void *in_udata)
+{
+	return netw_request(
+	  NETW_VERB_GET,
+	  in_uri,
+	  headers,
+	  NULL,
+	  0,
+	  l_netw.callbacks.completion,
+	  in_udata);
 }
 
 
 bool
 netw_post_request(
   char const *in_uri,
-  char const *const in_headers[],
-  void const *body,
-  size_t nbody_bytes,
-  void *udata)
+  char const *const headers[],
+  void const *in_body,
+  size_t in_nbytes,
+  void *in_udata)
 {
-	printf("[netw] post_request: %s\n", in_uri);
-
-	struct task *task = calloc(sizeof *task, 1);
-	task->udata = udata;
-	task->payload = memdup(body, nbody_bytes);
-	task->payload_bytes = nbody_bytes;
-	task->verb = L"POST";
-
-	// convert/extract URI information
-	size_t urilen = sys_wchar_from_utf8(in_uri, NULL, 0);
-	wchar_t *uri = malloc(sizeof *uri * urilen);
-	sys_wchar_from_utf8(in_uri, uri, urilen);
-
-	URL_COMPONENTS url_components = {
-		.dwStructSize = sizeof url_components,
-		.dwHostNameLength = (DWORD)-1,
-		.dwUrlPathLength = (DWORD)-1,
-	};
-	WinHttpCrackUrl(uri, (DWORD)urilen, 0, &url_components);
-
-	task->port = url_components.nPort;
-	task->host =
-	  wcstrndup(url_components.lpszHostName, url_components.dwHostNameLength);
-	task->path =
-	  wcstrndup(url_components.lpszUrlPath, url_components.dwUrlPathLength);
-
-	free(uri);
-
-	// combine/convert headers
-	char *header = combine_headers(in_headers, NULL);
-
-	size_t headerlen = sys_wchar_from_utf8(header, NULL, 0);
-	task->header = malloc(sizeof *(task->header) * headerlen);
-	sys_wchar_from_utf8(header, task->header, headerlen);
-
-	free(header);
-
-	HANDLE h = CreateThread(NULL, 0, task_handler, task, 0, NULL);
-	if (h)
-	{
-		CloseHandle(h);
-	}
-	else
-	{
-		printf("[netw] failed to create thread\n");
-	}
-
-	return true;
-}
-
-
-bool
-netw_download(char const *in_uri, void *udata)
-{
-	printf("[netw] download_request: %s\n", in_uri);
-
-	struct task *task = calloc(sizeof *task, 1);
-	task->udata = udata;
-	task->verb = L"GET";
-	task->is_download = true;
-
-	// convert/extract URI information
-	size_t urilen = sys_wchar_from_utf8(in_uri, NULL, 0);
-	wchar_t *uri = malloc(sizeof *uri * urilen);
-	sys_wchar_from_utf8(in_uri, uri, urilen);
-
-	URL_COMPONENTS url_components = {
-		.dwStructSize = sizeof url_components,
-		.dwHostNameLength = (DWORD)-1,
-		.dwUrlPathLength = (DWORD)-1,
-	};
-	WinHttpCrackUrl(uri, (DWORD)urilen, 0, &url_components);
-
-	task->port = url_components.nPort;
-	task->host =
-	  wcstrndup(url_components.lpszHostName, url_components.dwHostNameLength);
-	task->path =
-	  wcstrndup(url_components.lpszUrlPath, url_components.dwUrlPathLength);
-
-	free(uri);
-
-	HANDLE h = CreateThread(NULL, 0, task_handler, task, 0, NULL);
-	if (h)
-	{
-		CloseHandle(h);
-	}
-	else
-	{
-		printf("[netw] failed to create thread\n");
-	}
-
-	return true;
+	return netw_request(
+	  NETW_VERB_POST,
+	  in_uri,
+	  headers,
+	  in_body,
+	  in_nbytes,
+	  l_netw.callbacks.completion,
+	  in_udata);
 }
