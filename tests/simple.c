@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
+#include <inttypes.h>
 
 #ifdef _WIN32
 #	include <Windows.h>
@@ -50,7 +50,7 @@ get_games_callback(
 {
 	for (size_t i = 0; i < ngames; ++i)
 	{
-		printf("- %s {%llu}\n", games[i].name, games[i].id);
+		printf("- %s {%" PRIu64 "}\n", games[i].name, games[i].id);
 		printf(
 		  "\t+ https://%s.mod.io\n",
 		  minimod_get_more_string(games[i].more, "name_id"));
@@ -92,8 +92,8 @@ get_mods_callback(void *udata, size_t nmods, struct minimod_mod const *mods)
 {
 	for (size_t i = 0; i < nmods; ++i)
 	{
-		printf("- %s {%llu}\n", mods[i].name, mods[i].id);
-		printf("  - ? {%llu}\n", mods[i].modfile_id);
+		printf("- %s {%" PRIu64 "}\n", mods[i].name, mods[i].id);
+		printf("  - ? {%" PRIu64 "}\n", mods[i].modfile_id);
 	}
 
 	++(*(int *)udata);
@@ -130,7 +130,7 @@ test_3(uint64_t game_id)
 		"4cb29b99f25a2f0d1ba30c5a71419e5b",
 		NULL);
 
-	printf("\n= Requesting list of mods for game {%llu} on live-mod.io\n", game_id);
+	printf("\n= Requesting list of mods for game {%" PRIu64 "} on live-mod.io\n", game_id);
 
 	int nrequests_completed = 0;
 	minimod_get_mods(NULL, game_id, get_mods_callback, &nrequests_completed);
@@ -257,7 +257,7 @@ on_get_users(void *in_udata, size_t nusers, struct minimod_user const *users)
 	printf("Users: %zu\n", nusers);
 	for (size_t i = 0; i < nusers; ++i)
 	{
-		printf("- %s {%llu}\n", users[i].name, users[i].id);
+		printf("- %s {%" PRIu64 "}\n", users[i].username, users[i].id);
 	}
 }
 
@@ -294,7 +294,7 @@ on_get_modfiles(
 	for (size_t i = 0; i < nmodfiles; ++i)
 	{
 		printf(
-		  "- {%llu} @ %s (%lli bytes)\n",
+		  "- {%" PRIu64 "} @ %s (%" PRIi64 " bytes)\n",
 		  modfiles[i].id,
 		  modfiles[i].url,
 		  modfiles[i].filesize);
@@ -437,7 +437,7 @@ on_subscriptions(void *udata, size_t nmods, struct minimod_mod const *mods)
 	for (size_t i = 0; i < nmods; ++i)
 	{
 		printf(
-		  "- \"%s\" {%llu} for game {%lli}\n",
+		  "- \"%s\" {%" PRIu64 "} for game {%" PRIi64 "}\n",
 		  mods[i].name,
 		  mods[i].id,
 		  minimod_get_more_int(mods[i].more, "game_id"));

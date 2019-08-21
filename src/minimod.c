@@ -8,6 +8,7 @@
 #include <dirent.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #	define UNUSED(X) __pragma(warning(suppress : 4100)) X
@@ -698,7 +699,7 @@ minimod_get_mods(
 	char *path;
 	asprintf(
 	  &path,
-	  "%s/games/%llu/mods?api_key=%s&%s",
+	  "%s/games/%" PRIu64 "/mods?api_key=%s&%s",
 	  endpoints[l_mmi.env],
 	  in_gameid == 0 ? l_mmi.game_id : in_gameid,
 	  l_mmi.api_key,
@@ -878,7 +879,7 @@ minimod_get_modfiles(
 	{
 		asprintf(
 		  &path,
-		  "%s/games/%llu/mods/%llu/files/%llu?api_key=%s&%s",
+		  "%s/games/%" PRIu64 "/mods/%" PRIu64 "/files/%" PRIu64 "?api_key=%s&%s",
 		  endpoints[l_mmi.env],
 		  in_gameid == 0 ? l_mmi.game_id : in_gameid,
 		  in_modid,
@@ -890,7 +891,7 @@ minimod_get_modfiles(
 	{
 		asprintf(
 		  &path,
-		  "%s/games/%llu/mods/%llu/files?api_key=%s&%s",
+		  "%s/games/%" PRIu64 "/mods/%" PRIu64 "/files?api_key=%s&%s",
 		  endpoints[l_mmi.env],
 		  in_gameid == 0 ? l_mmi.game_id : in_gameid,
 		  in_modid,
@@ -994,7 +995,7 @@ on_install_download(void *in_udata, char const *in_path)
 	else
 	{
 		// todo move file
-		asprintf(&path, "%s/mods/%llu.zip", l_mmi.root_path, task->meta64);
+		asprintf(&path, "%s/mods/%" PRIu64 ".zip", l_mmi.root_path, task->meta64);
 		printf("[mm] installing mod to %s\n", path);
 		// always overwrites
 		if (fsu_mvfile(in_path, path, true))
@@ -1051,7 +1052,7 @@ minimod_rate(
 	char *path = NULL;
 	asprintf(
 	  &path,
-	  "%s/games/%llu/mods/%llu/ratings",
+	  "%s/games/%" PRIu64 "/mods/%" PRIu64 "/ratings",
 	  endpoints[l_mmi.env],
 	  in_gameid ? in_gameid : l_mmi.game_id,
 	  in_modid);
@@ -1157,7 +1158,7 @@ handle_subscription_change(
 		else
 		{
 			printf(
-			  "[mm] failed to subscribe %i [modid: %llu]\n",
+			  "[mm] failed to subscribe %i [modid: %" PRIu64 "]\n",
 			  error,
 			  task->meta64);
 			task->callback.fptr
@@ -1174,7 +1175,7 @@ handle_subscription_change(
 		else
 		{
 			printf(
-			  "[mm] failed to unsubscribe %i [modid: %llu]\n",
+			  "[mm] failed to unsubscribe %i [modid: %" PRIu64 "]\n",
 			  error,
 			  -task->meta64);
 			task->callback.fptr
@@ -1201,7 +1202,7 @@ minimod_subscribe(
 	char *path = NULL;
 	asprintf(
 	  &path,
-	  "%s/games/%llu/mods/%llu/subscribe",
+	  "%s/games/%" PRIu64 "/mods/%" PRIu64 "/subscribe",
 	  endpoints[l_mmi.env],
 	  in_gameid ? in_gameid : l_mmi.game_id,
 	  in_modid);
@@ -1251,7 +1252,7 @@ minimod_unsubscribe(
 	char *path = NULL;
 	asprintf(
 	  &path,
-	  "%s/games/%llu/mods/%llu/subscribe",
+	  "%s/games/%" PRIu64 "/mods/%" PRIu64 "/subscribe",
 	  endpoints[l_mmi.env],
 	  in_gameid ? in_gameid : l_mmi.game_id,
 	  in_modid);

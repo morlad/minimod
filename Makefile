@@ -67,6 +67,7 @@ NOWARNINGS += -Wno-error-unused-function
 NOWARNINGS += -Wno-error-unused-variable
 else
 WARNINGS += -Wall
+NOWARNINGS += -Wno-unused-result
 endif
 
 WARNINGS += -Werror
@@ -198,6 +199,7 @@ endif
 ifeq ($(os),linux)
 CPPFLAGS += -D_LARGEFILE64_SOURCE
 CPPFLAGS += -D_POSIX_C_SOURCE=200809L
+CPPFLAGS += -D_GNU_SOURCE
 CFLAGS += -fPIC
 CFLAGS += -fvisibility=hidden
 endif
@@ -228,12 +230,15 @@ ifdef Q
 	@echo Linking $@
 endif
 	$(Q)$(ensure_dir)
-
 ifeq ($(os),macos)
 	$(Q)$(CC) $(TARGET_ARCH) $(LDFLAGS) $(filter %.o,$^) $(LIB_PATH) $(LDLIBS) $(OUTPUT_OPTION)
 endif
 ifeq ($(os),windows)
 	$(Q)$(LINKER) $(LDFLAGS) /OUT:$@ $(filter %.o,$^) $(filter %.res,$^) $(LDLIBS)
+endif
+ifeq ($(os),linux)
+	$(Q)$(CC) $(TARGET_ARCH) $(LDFLAGS) $(filter %.o,$^) $(LIB_PATH) $(LDLIBS) $(OUTPUT_OPTION)
+	$(Q)strip --strip-debug $@
 endif
 
 test: $(TEST_PATH)
@@ -244,15 +249,12 @@ ifdef Q
 	@echo Linking $@
 endif
 	$(Q)$(ensure_dir)
-
 ifeq ($(os),macos)
 	$(Q)$(CC) -dynamiclib $(TARGET_ARCH) $(LDFLAGS) $(filter %.o,$^) $(LDLIBS) $(OUTPUT_OPTION) -Wl,-install_name,@loader_path/$(notdir $@)
 endif
-
 ifeq ($(os),windows)
 	$(Q)$(LINKER) /DLL $(LDFLAGS) $(LDLIBS) $(filter %.o,$^) /OUT:$(subst /,\,$@)
 endif
-
 ifeq ($(os),linux)
 	$(Q)$(CC) -shared $(TARGET_ARCH) $(LDFLAGS) $(filter %.o,$^) $(LDLIBS) $(OUTPUT_OPTION)
 	$(Q)strip --strip-debug $@
@@ -282,7 +284,9 @@ endif
 # ---------------------
 $(OUTPUT_DIR)/src/%.o: CPPFLAGS += -Iinclude -Ideps/miniz -Ideps
 $(OUTPUT_DIR)/tests/%.o: CPPFLAGS += -Iinclude
+ifneq ($(os),linux)
 $(OUTPUT_DIR)/src/minimod.o: NOWARNINGS += -Wno-error-documentation
+endif
 
 ifeq ($(os),windows)
 $(OUTPUT_DIR)/src/%.o: CPPFLAGS += -Ideps/dirent/include
