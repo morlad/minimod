@@ -20,7 +20,7 @@ endif
 # PRIMARY TARGETS
 # ---------------
 all: library
-.PHONY: library clean clean-library minimod all test
+.PHONY: library clean clean-library minimod all test docs
 
 # CONFIG
 # ------
@@ -45,6 +45,7 @@ DIRENT_VERSION = v1.23
 USE_SANITIZER = 0
 Q = @
 
+NDOCS = mono ~/bin/Natural\ Docs/NaturalDocs.exe
 
 ifeq ($(os),macos)
 LIBRARY_NAME = libminimod.dylib
@@ -352,3 +353,8 @@ cloc:
 
 format:
 	$(Q)clang-format -i tests/* src/* include/minimod/*
+
+docs:
+	$(Q)$(ensure_dir)
+	$(Q)$(NDOCS) -p docs.cfg -o html docs
+
