@@ -26,6 +26,8 @@ all: library
 # ------
 OUTPUT_DIR := build
 
+USE_LIBCURL_ON_MACOS = 0
+
 # macos only:
 MIN_MACOS_VERSION = 10.11
 
@@ -103,7 +105,11 @@ srcs += src/util.c
 srcs += src/netw.c
 
 ifeq ($(os),macos)
+ifeq ($(USE_LIBCURL_ON_MACOS),0)
 srcs += src/netw-macos.m
+else
+srcs += src/netw-libcurl.c
+endif
 endif
 ifeq ($(os),windows)
 srcs += src/netw-win.c
@@ -150,6 +156,10 @@ TARGET_ARCH += -arch x86_64 -mmacosx-version-min=$(MIN_MACOS_VERSION) -stdlib=li
 
 LDLIBS += -lc++
 
+$(LIB_PATH): LDLIBS += -framework Foundation
+ifneq ($(USE_LIBCURL_ON_MACOS),0)
+$(LIB_PATH): LDLIBS += -lcurl
+endif
 $(LIB_PATH): LDLIBS += -framework Foundation
 ifeq ($(USE_SANITIZER),1)
 TARGET_ARCH += -fsanitize=address
@@ -299,6 +309,10 @@ ifeq ($(os),windows)
 $(OUTPUT_DIR)/src/%.o: CPPFLAGS += -Ideps/dirent/include
 $(OUTPUT_DIR)/src/%.o: NOWARNINGS += -Wno-error-reserved-id-macro
 $(OUTPUT_DIR)/src/%.o: NOWARNINGS += -Wno-error-nonportable-system-include-path
+endif
+
+ifeq ($(os),macos)
+$(OUTPUT_DIR)/src/netw-libcurl.o: NOWARNINGS += -Wno-disabled-macro-expansion
 endif
 
 ifeq ($(os),freebsd)
