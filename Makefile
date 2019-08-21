@@ -119,6 +119,10 @@ ifeq ($(os),windows)
 srcs += src/netw-win.c
 endif
 
+ifeq ($(os),linux)
+srcs += src/netw-libcurl.c
+endif
+
 test_srcs += tests/simple.c
 
 # OBJECT FILES
