@@ -1,5 +1,7 @@
 // vi: noexpandtab tabstop=4 softtabstop=4 shiftwidth=0 list
 #pragma once
+#ifndef MINIMOD_NETW_H_INCLUDED
+#define MINIMOD_NETW_H_INCLUDED
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -68,3 +70,5 @@ netw_download_to(
 // percent-encode *input*. Do not forget to free() the returned string.
 char *
 netw_percent_encode(char const *input, size_t len, size_t *out_len);
+
+#endif
