@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 
 struct netw_callbacks
@@ -64,12 +65,13 @@ typedef void (*netw_download_callback)(
 // same as netw_request() but received data is written to temporary file
 // instead of in-memory buffer.
 bool
-netw_request_download(
+netw_download_to(
   enum netw_verb verb,
   char const *uri,
   char const *const headers[],
   void const *body,
   size_t nbody_bytes,
+  FILE *file,
   netw_download_callback callback,
   void *udata);
 
@@ -89,13 +91,6 @@ netw_post_request(
   void const *body,
   size_t nbody_bytes,
   void *udata);
-
-
-// GET request writing response to temporary file.
-// Calls *downloaded* callback first, then *completion*.
-// (deprecated)
-bool
-netw_download(char const *in_uri, void *udata);
 
 
 // percent-encode *input*. Do not forget to free() the returned string.

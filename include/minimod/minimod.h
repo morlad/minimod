@@ -194,18 +194,6 @@ minimod_get_modfiles(
   void *in_udata);
 
 
-typedef void (*minimod_download_fptr)(void *userdata, char const *path);
-
-
-MINIMOD_LIB void
-minimod_download(
-  uint64_t in_gameid,
-  uint64_t in_modid,
-  uint64_t in_modfileid,
-  minimod_download_fptr in_callback,
-  void *in_udata);
-
-
 typedef void (*minimod_install_fptr)(void *userdata, char const *path);
 
 

@@ -6,9 +6,9 @@
 
 #include <assert.h>
 #include <dirent.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
-#include <inttypes.h>
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #	define UNUSED(X) __pragma(warning(suppress : 4100)) X
@@ -32,7 +32,6 @@ struct callback
 		minimod_email_exchange_fptr email_exchange;
 		minimod_get_users_fptr get_users;
 		minimod_get_modfiles_fptr get_modfiles;
-		minimod_download_fptr download;
 		minimod_install_fptr install;
 		minimod_rate_fptr rate;
 		minimod_get_ratings_fptr get_ratings;
@@ -463,26 +462,6 @@ handle_email_exchange(
 
 
 static void
-handle_download(
-  struct callback const in_callback,
-  void const *in_data,
-  size_t UNUSED(in_len),
-  int error)
-{
-	if (error == 200)
-	{
-		printf("[mm] Downloaded a file %s\n", (char const *)in_data);
-		in_callback.fptr.download(in_callback.userdata, in_data);
-	}
-	else
-	{
-		printf("[mm] Failed to download file %s\n", (char const *)in_data);
-		in_callback.fptr.download(in_callback.userdata, NULL);
-	}
-}
-
-
-static void
 handle_rate(
   struct callback const in_callback,
   void const *UNUSED(in_data),
@@ -559,10 +538,7 @@ on_completion(void *in_udata, void const *data, size_t bytes, int error)
 
 	assert(in_udata);
 	struct task const *task = in_udata;
-	if (task->handler != handle_download)
-	{
-		task->handler(task->callback, data, bytes, error);
-	}
+	task->handler(task->callback, data, bytes, error);
 }
 
 
@@ -879,7 +855,8 @@ minimod_get_modfiles(
 	{
 		asprintf(
 		  &path,
-		  "%s/games/%" PRIu64 "/mods/%" PRIu64 "/files/%" PRIu64 "?api_key=%s&%s",
+		  "%s/games/%" PRIu64 "/mods/%" PRIu64 "/files/%" PRIu64
+		  "?api_key=%s&%s",
 		  endpoints[l_mmi.env],
 		  in_gameid == 0 ? l_mmi.game_id : in_gameid,
 		  in_modid,
@@ -923,7 +900,40 @@ minimod_get_modfiles(
 }
 
 
-#define DOWNLOAD_URI_SIZE 2048
+struct install_request
+{
+	minimod_install_fptr callback;
+	void *userdata;
+	uint64_t mod_id;
+	FILE *file;
+};
+
+
+static void
+on_install_download(void *in_udata, char const *in_path, int error)
+{
+	struct install_request *req = in_udata;
+
+	if (error != 200)
+	{
+		printf("[mm] mod NOT downloaded\n");
+		return;
+	}
+
+	printf("[mm] mod downloaded\n");
+
+	// extract zip?
+	if (l_mmi.unzip)
+	{
+		// unzip it
+	}
+
+	// callback
+	req->callback(req->userdata, in_path);
+
+	fclose(req->file);
+	free(req);
+}
 
 
 static void
@@ -934,85 +944,23 @@ on_download_modfile(
 {
 	assert(nmodfiles == 1);
 
-	char *uri = (char *)udata;
-	strncpy(uri, modfiles[0].url, DOWNLOAD_URI_SIZE);
-	// make sure string is NUL terminated (this also unblocks minimod_download)
-	uri[DOWNLOAD_URI_SIZE - 1] = 0;
-}
+	struct install_request *req = udata;
+	char *fpath;
+	asprintf(&fpath, "%s/mods/%" PRIu64 ".zip", l_mmi.root_path, req->mod_id);
+	FILE *fout = fsu_fopen(fpath, "wb");
+	free(fpath);
 
+	req->file = fout;
 
-void
-minimod_download(
-  uint64_t in_gameid,
-  uint64_t in_modid,
-  uint64_t in_modfileid,
-  minimod_download_fptr in_callback,
-  void *in_udata)
-{
-	// fetch meta-data
-	char uri[DOWNLOAD_URI_SIZE] = { 0 };
-	uri[sizeof uri - 1] = 1;
-	minimod_get_modfiles(
-		NULL,
-		in_gameid,
-		in_modid,
-		in_modfileid,
-		on_download_modfile,
-		&uri);
-
-	while (uri[sizeof uri - 1])
-	{
-		sys_sleep(10);
-	}
-
-	// meta data received
-	printf("[mm] download-url: %s\n", uri);
-	struct task *task = alloc_task();
-	if (netw_download(uri, task))
-	{
-		task->handler = handle_download;
-		task->callback.fptr.download = in_callback;
-		task->callback.userdata = in_udata;
-	}
-	else
-	{
-		free_task(task);
-	}
-}
-
-
-static void
-on_install_download(void *in_udata, char const *in_path)
-{
-	struct task *task = in_udata;
-
-	char *path = NULL;
-	// extract zip?
-	if (l_mmi.unzip)
-	{
-		// unzip it
-	}
-	else
-	{
-		// todo move file
-		asprintf(&path, "%s/mods/%" PRIu64 ".zip", l_mmi.root_path, task->meta64);
-		printf("[mm] installing mod to %s\n", path);
-		// always overwrites
-		if (fsu_mvfile(in_path, path, true))
-		{
-			printf("[mm] file moved\n");
-		}
-		else
-		{
-			printf("[mm] file NOT moved\n");
-		}
-	}
-
-	// callback
-	task->callback.fptr.install(task->callback.userdata, path);
-
-	free(path);
-	free_task(task);
+	netw_download_to(
+	  NETW_VERB_GET,
+	  modfiles[0].url,
+	  NULL,
+	  NULL,
+	  0,
+	  fout,
+	  on_install_download,
+	  req);
 }
 
 
@@ -1024,17 +972,18 @@ minimod_install(
   minimod_install_fptr in_callback,
   void *in_udata)
 {
-	struct task *task = alloc_task();
-	task->callback.fptr.install = in_callback;
-	task->callback.userdata = in_udata;
-	task->meta64 = in_modid;
-
-	minimod_download(
+	// fetch meta-data and proceed from there
+	struct install_request *req = malloc(sizeof *req);
+	req->callback = in_callback;
+	req->userdata = in_udata;
+	req->mod_id = in_modid;
+	minimod_get_modfiles(
+		NULL,
 		in_gameid,
 		in_modid,
 		in_modfileid,
-		on_install_download,
-		task);
+		on_download_modfile,
+		req);
 }
 
 

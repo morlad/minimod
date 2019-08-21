@@ -2,11 +2,11 @@
 #include "minimod/minimod.h"
 
 #include <ctype.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <inttypes.h>
 
 #ifdef _WIN32
 #	include <Windows.h>
@@ -314,35 +314,6 @@ test_6(void)
 
 	int wait = 1;
 	minimod_get_modfiles(NULL, 0, 1720, 0, on_get_modfiles, &wait);
-
-	while (wait)
-	{
-		sys_sleep(10);
-	}
-
-	minimod_deinit();
-}
-
-
-static void
-on_downloaded(void *in_udata, char const *in_path)
-{
-	printf("mod downloaded to: %s\n", in_path);
-	*((int *)in_udata) = 0;
-}
-
-
-static void
-test_7(void)
-{
-	minimod_init(
-		MINIMOD_ENVIRONMENT_TEST,
-		309,
-		"f90f25ceed3708627a5b85ee52e4f930",
-		NULL);
-
-	int wait = 1;
-	minimod_download(0, 1720, 1685, on_downloaded, &wait);
 
 	while (wait)
 	{
