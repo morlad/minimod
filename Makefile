@@ -45,7 +45,7 @@ DIRENT_VERSION = v1.23
 USE_SANITIZER = 0
 Q = @
 
-NDOCS = mono ~/bin/Natural\ Docs/NaturalDocs.exe
+NDOCS = ~/bin/NaturalDocs-1.52/NaturalDocs
 
 ifeq ($(os),macos)
 LIBRARY_NAME = libminimod.dylib
@@ -86,12 +86,14 @@ ifeq ($(os),windows)
 	CC = "$(LLVM_PATH)\bin\clang.exe"
 	LINKER = "$(LLVM_PATH)\bin\lld-link.exe"
 	ensure_dir=mkdir $(subst /,\,$(@D)) 2> $(DEVNULL) || exit 0
+	ensure_selfdir=mkdir $(subst /,\,$@) 2> $(DEVNULL) || exit 0
 	RM = del
 	TOUCH = copy /b $(subst /,\,$(1)) +,, $(subst /,\,$(1)) > $(DEVNULL)
 	CONDITIONAL_CLONE=if not exist $(2) ( git clone -q $(1) $(2) )
 else
 	DEVNULL = /dev/null
 	ensure_dir=mkdir -p $(@D) 2> $(DEVNULL) || exit 0
+	ensure_selfdir=mkdir -p $@ 2> $(DEVNULL) || exit 0
 	RM = rm
 	TOUCH = touch $(1)
 	CONDITIONAL_CLONE=if [ ! -d $(2) ]; then git clone -q $(1) $(2) ; fi
@@ -355,6 +357,5 @@ format:
 	$(Q)clang-format -i tests/* src/* include/minimod/*
 
 docs:
-	$(Q)$(ensure_dir)
-	$(Q)$(NDOCS) -p docs.cfg -o html docs
-
+	$(Q)$(ensure_selfdir)
+	$(Q)$(NDOCS) -i src -i include -p docs.cfg -o html docs
