@@ -104,11 +104,11 @@ task_handler(void *in_context)
 {
 	struct task *task = in_context;
 
-	curl_easy_setopt(task->curl, CURLOPT_VERBOSE, 1);
+	curl_easy_setopt(task->curl, CURLOPT_VERBOSE, 0);
 
 	curl_easy_setopt(task->curl, CURLOPT_FOLLOWLOCATION, 1);
 
-	CURLcode err = curl_easy_perform(task->curl);
+	curl_easy_perform(task->curl);
 
 	curl_slist_free_all(task->header_list);
 
