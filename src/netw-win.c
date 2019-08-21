@@ -280,7 +280,11 @@ task_handler(LPVOID context)
 			{
 				buffer = realloc(buffer, bytes + avail_bytes);
 				DWORD actual_bytes = 0;
-				WinHttpReadData(hrequest, buffer + bytes, avail_bytes, &actual_bytes);
+				WinHttpReadData(
+				  hrequest,
+				  buffer + bytes,
+				  avail_bytes,
+				  &actual_bytes);
 				bytes += actual_bytes;
 				printf(
 				  "[netw] Read %lu from %lu bytes\n",

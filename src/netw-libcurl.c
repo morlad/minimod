@@ -125,7 +125,8 @@ task_handler(void *in_context)
 	else
 	{
 		printf("[netw] received bytes: %zu\n", task->bytes);
-		task->callback.request(task->udata, task->buffer, task->bytes, (int)status_code);
+		task->callback
+		  .request(task->udata, task->buffer, task->bytes, (int)status_code);
 	}
 
 	// TODO free all header lines

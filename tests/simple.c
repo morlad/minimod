@@ -9,14 +9,14 @@
 #include <time.h>
 
 #ifdef _WIN32
-#	include <Windows.h>
+	#include <Windows.h>
 static void
 sys_sleep(uint32_t ms)
 {
 	Sleep(ms);
 }
 #else
-#	include <unistd.h>
+	#include <unistd.h>
 static void
 sys_sleep(uint32_t ms)
 {
@@ -31,10 +31,10 @@ test_1(void)
 {
 	printf("\n= Simple init()/deinit() test\n");
 	minimod_init(
-		MINIMOD_ENVIRONMENT_TEST,
-		309,
-		"f90f25ceed3708627a5b85ee52e4f930",
-		NULL);
+	  MINIMOD_ENVIRONMENT_TEST,
+	  309,
+	  "f90f25ceed3708627a5b85ee52e4f930",
+	  NULL);
 
 	minimod_deinit();
 }
@@ -67,10 +67,10 @@ static void
 test_2(void)
 {
 	minimod_init(
-		MINIMOD_ENVIRONMENT_LIVE,
-		0,
-		"4cb29b99f25a2f0d1ba30c5a71419e5b",
-		NULL);
+	  MINIMOD_ENVIRONMENT_LIVE,
+	  0,
+	  "4cb29b99f25a2f0d1ba30c5a71419e5b",
+	  NULL);
 
 	printf("\n= Requesting list of live games on mod.io\n");
 
@@ -125,12 +125,14 @@ test_3(uint64_t game_id)
 
 
 	minimod_init(
-		MINIMOD_ENVIRONMENT_LIVE,
-		0,
-		"4cb29b99f25a2f0d1ba30c5a71419e5b",
-		NULL);
+	  MINIMOD_ENVIRONMENT_LIVE,
+	  0,
+	  "4cb29b99f25a2f0d1ba30c5a71419e5b",
+	  NULL);
 
-	printf("\n= Requesting list of mods for game {%" PRIu64 "} on live-mod.io\n", game_id);
+	printf(
+	  "\n= Requesting list of mods for game {%" PRIu64 "} on live-mod.io\n",
+	  game_id);
 
 	int nrequests_completed = 0;
 	minimod_get_mods(NULL, game_id, get_mods_callback, &nrequests_completed);
@@ -166,10 +168,10 @@ static bool
 test_4(void)
 {
 	minimod_init(
-		MINIMOD_ENVIRONMENT_TEST,
-		309,
-		"f90f25ceed3708627a5b85ee52e4f930",
-		NULL);
+	  MINIMOD_ENVIRONMENT_TEST,
+	  309,
+	  "f90f25ceed3708627a5b85ee52e4f930",
+	  NULL);
 
 	printf("\n= Email authentication workflow\n");
 
@@ -266,10 +268,10 @@ static void
 test_5(void)
 {
 	minimod_init(
-		MINIMOD_ENVIRONMENT_TEST,
-		309,
-		"f90f25ceed3708627a5b85ee52e4f930",
-		NULL);
+	  MINIMOD_ENVIRONMENT_TEST,
+	  309,
+	  "f90f25ceed3708627a5b85ee52e4f930",
+	  NULL);
 
 	int wait = 1;
 	minimod_get_me(on_get_users, &wait);
@@ -307,10 +309,10 @@ static void
 test_6(void)
 {
 	minimod_init(
-		MINIMOD_ENVIRONMENT_TEST,
-		309,
-		"f90f25ceed3708627a5b85ee52e4f930",
-		NULL);
+	  MINIMOD_ENVIRONMENT_TEST,
+	  309,
+	  "f90f25ceed3708627a5b85ee52e4f930",
+	  NULL);
 
 	int wait = 1;
 	minimod_get_modfiles(NULL, 0, 1720, 0, on_get_modfiles, &wait);
@@ -336,10 +338,10 @@ static void
 test_8(void)
 {
 	minimod_init(
-		MINIMOD_ENVIRONMENT_TEST,
-		309,
-		"f90f25ceed3708627a5b85ee52e4f930",
-		NULL);
+	  MINIMOD_ENVIRONMENT_TEST,
+	  309,
+	  "f90f25ceed3708627a5b85ee52e4f930",
+	  NULL);
 
 	int wait = 1;
 	minimod_install(0, 1720, 1685, on_installed, &wait);
@@ -376,10 +378,10 @@ static void
 test_9(void)
 {
 	minimod_init(
-		MINIMOD_ENVIRONMENT_TEST,
-		309,
-		"f90f25ceed3708627a5b85ee52e4f930",
-		NULL);
+	  MINIMOD_ENVIRONMENT_TEST,
+	  309,
+	  "f90f25ceed3708627a5b85ee52e4f930",
+	  NULL);
 
 
 	int rating = -2;
@@ -421,10 +423,10 @@ static void
 test_10(void)
 {
 	minimod_init(
-		MINIMOD_ENVIRONMENT_TEST,
-		309,
-		"f90f25ceed3708627a5b85ee52e4f930",
-		NULL);
+	  MINIMOD_ENVIRONMENT_TEST,
+	  309,
+	  "f90f25ceed3708627a5b85ee52e4f930",
+	  NULL);
 
 	int wait = 1;
 	minimod_get_subscriptions(NULL, on_subscriptions, &wait);

@@ -11,9 +11,9 @@
 #include <string.h>
 
 #if defined(_MSC_VER) && !defined(__clang__)
-#	define UNUSED(X) __pragma(warning(suppress : 4100)) X
+	#define UNUSED(X) __pragma(warning(suppress : 4100)) X
 #else
-#	define UNUSED(X) __attribute__((unused)) X
+	#define UNUSED(X) __attribute__((unused)) X
 #endif
 
 /**********/
@@ -402,7 +402,10 @@ handle_get_modfiles(
 			populate_modfile(&modfiles[i], QAJ4C_array_get(data, i));
 		}
 
-		in_callback.fptr.get_modfiles(in_callback.userdata, nmodfiles, modfiles);
+		in_callback.fptr.get_modfiles(
+		  in_callback.userdata,
+		  nmodfiles,
+		  modfiles);
 
 		free(modfiles);
 	}
@@ -762,8 +765,11 @@ minimod_email_exchange(
 	};
 
 	char *payload;
-	int nbytes =
-	  asprintf(&payload, "api_key=%s&security_code=%s", l_mmi.api_key, in_code);
+	int nbytes = asprintf(
+	  &payload,
+	  "api_key=%s&security_code=%s",
+	  l_mmi.api_key,
+	  in_code);
 	printf("[mm] payload: %s (%i)\n", payload, nbytes);
 
 	assert(nbytes > 0);
@@ -975,12 +981,12 @@ minimod_install(
 	req->userdata = in_udata;
 	req->mod_id = in_modid;
 	minimod_get_modfiles(
-		NULL,
-		in_gameid,
-		in_modid,
-		in_modfileid,
-		on_download_modfile,
-		req);
+	  NULL,
+	  in_gameid,
+	  in_modid,
+	  in_modfileid,
+	  on_download_modfile,
+	  req);
 }
 
 
@@ -1098,8 +1104,10 @@ handle_subscription_change(
 	{
 		if (error == 201)
 		{
-			task->callback.fptr
-			  .subscription_change(task->callback.userdata, task->meta64, 1);
+			task->callback.fptr.subscription_change(
+			  task->callback.userdata,
+			  task->meta64,
+			  1);
 		}
 		else
 		{
@@ -1107,16 +1115,20 @@ handle_subscription_change(
 			  "[mm] failed to subscribe %i [modid: %" PRIu64 "]\n",
 			  error,
 			  task->meta64);
-			task->callback.fptr
-			  .subscription_change(task->callback.userdata, task->meta64, 0);
+			task->callback.fptr.subscription_change(
+			  task->callback.userdata,
+			  task->meta64,
+			  0);
 		}
 	}
 	else
 	{
 		if (error == 204)
 		{
-			task->callback.fptr
-			  .subscription_change(task->callback.userdata, -task->meta64, -1);
+			task->callback.fptr.subscription_change(
+			  task->callback.userdata,
+			  -task->meta64,
+			  -1);
 		}
 		else
 		{
@@ -1124,8 +1136,10 @@ handle_subscription_change(
 			  "[mm] failed to unsubscribe %i [modid: %" PRIu64 "]\n",
 			  error,
 			  -task->meta64);
-			task->callback.fptr
-			  .subscription_change(task->callback.userdata, -task->meta64, 0);
+			task->callback.fptr.subscription_change(
+			  task->callback.userdata,
+			  -task->meta64,
+			  0);
 		}
 	}
 
