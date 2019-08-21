@@ -31,6 +31,7 @@ struct task
 	} callback;
 	void *udata;
 	NSMutableData *buffer;
+	FILE *file;
 };
 
 
@@ -73,12 +74,20 @@ task_from_dictionary(CFDictionaryRef in_dict, NSURLSessionTask *in_task)
 	// downloads have no buffer object
 	if (task->buffer)
 	{
+		assert(!task->file);
 		task->callback.request(
 		  task->udata,
 		  task->buffer.bytes,
 		  task->buffer.length,
 		  (int)((NSHTTPURLResponse *)nstask.response).statusCode);
 		task->buffer = nil;
+	}
+	else
+	{
+		task->callback.download(
+		  task->udata,
+		  "deprecated",
+		  (int)((NSHTTPURLResponse *)nstask.response).statusCode);
 	}
 
 	// clean up
@@ -92,21 +101,16 @@ task_from_dictionary(CFDictionaryRef in_dict, NSURLSessionTask *in_task)
     didReceiveData:(NSData *)in_data
 {
 	struct task *task = task_from_dictionary(l_netw.task_dict, nstask);
-	[task->buffer appendData:in_data];
-}
-
-
-- (void)URLSession:(NSURLSession *)UNUSED(session)
-               downloadTask:(NSURLSessionDownloadTask *)nstask
-  didFinishDownloadingToURL:(NSURL *)location
-{
-	struct task *task = task_from_dictionary(l_netw.task_dict, nstask);
-
-	task->callback.download(
-	  task->udata,
-	  location.path.UTF8String,
-	  (int)((NSHTTPURLResponse *)nstask.response).statusCode);
-	// didCompleteWithError is also called, so free resources there
+	if (task->file)
+	{
+		assert(!task->buffer);
+		fwrite(in_data.bytes, in_data.length, 1, task->file);
+	}
+	else
+	{
+		assert(!task->file);
+		[task->buffer appendData:in_data];
+	}
 }
 @end
 
@@ -175,20 +179,6 @@ netw_post_request(
 }
 
 
-bool
-netw_download(char const *in_uri, void *in_udata)
-{
-	return netw_request_download(
-	  NETW_VERB_GET,
-	  in_uri,
-	  NULL,
-	  NULL,
-	  0,
-	  l_netw.callbacks.downloaded,
-	  in_udata);
-}
-
-
 static NSString *l_verbs[] = { @"GET", @"POST", @"PUT", @"DELETE" };
 
 
@@ -246,16 +236,18 @@ netw_request(
 
 
 bool
-netw_request_download(
+netw_download_to(
   enum netw_verb in_verb,
   char const *in_uri,
   char const *const headers[],
   void const *in_body,
   size_t in_nbytes,
+  FILE *fout,
   netw_download_callback in_callback,
   void *in_udata)
 {
 	assert(in_uri);
+	assert(fout);
 
 	NSString *uri = [NSString stringWithUTF8String:in_uri];
 	NSURL *url = [NSURL URLWithString:uri];
@@ -274,17 +266,22 @@ netw_request_download(
 		}
 	}
 
+	NSURLSessionDataTask *nstask;
 	if (in_body)
 	{
-		request.HTTPBody = [NSData dataWithBytes:in_body length:in_nbytes];
+		NSData *body = [NSData dataWithBytes:in_body length:in_nbytes];
+		nstask = [l_netw.session uploadTaskWithRequest:request fromData:body];
 	}
-
-	NSURLSessionDownloadTask *nstask =
-	  [l_netw.session downloadTaskWithRequest:request];
+	else
+	{
+		nstask = [l_netw.session dataTaskWithRequest:request];
+	}
 
 	struct task *task = alloc_task();
 	task->udata = in_udata;
 	task->callback.download = in_callback;
+	// this is the only difference to netw_request()
+	task->file = fout;
 
 	CFDictionarySetValue(l_netw.task_dict, nstask, task);
 
