@@ -448,7 +448,6 @@ main(int argc, char const *argv[])
 	test_4();
 	test_5();
 	test_6();
-	test_7();
 	test_8();
 	test_9();
 	test_10();
