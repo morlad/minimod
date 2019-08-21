@@ -532,9 +532,6 @@ on_completion(void *in_udata, void const *data, size_t bytes, int error)
 	{
 		printf("[mm] on_completion(%i):\n%s\n--\n", error, (char const *)data);
 	}
-	FILE *f = fsu_fopen("tmp.json", "wb");
-	fwrite(data, bytes, 1, f);
-	fclose(f);
 
 	assert(in_udata);
 	struct task const *task = in_udata;
