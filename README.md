@@ -1,8 +1,9 @@
 # minimod
 A lightweight C library to wrap the https://mod.io API.
 
-- No dependencies on other libraries during runtime other than the system libraries and libcurl under Linux.
+- No dependencies on other libraries during runtime other than the system libraries and libcurl under Linux and FreeBSD.
 - Small filesize of the library
+- Works on Windows, MacOS, Linux and FreeBSD
 
 ## Examples
 
@@ -43,10 +44,12 @@ int main(void)
 }
 ```
 
-## Design Choices
+## Design
 
 ### Caching
 
 ### Mega-structs vs. 'more'
 
 ### Filtering: minimod vs. API
+
+### Low on dependencies
