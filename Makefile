@@ -56,6 +56,10 @@ ifeq ($(os),linux)
 LIBRARY_NAME = libminimod.so
 TEST_NAME = testsuite
 endif
+ifeq ($(os),freebsd)
+LIBRARY_NAME = libminimod.so
+TEST_NAME = testsuite
+endif
 
 TEST_PATH = $(OUTPUT_DIR)/$(TEST_NAME)
 LIB_PATH = $(OUTPUT_DIR)/$(LIBRARY_NAME)
@@ -74,13 +78,6 @@ WARNINGS += -Werror
 
 # MACROS/HELPERS
 # --------------
-ifeq ($(os),macos)
-	DEVNULL = /dev/null
-	ensure_dir=mkdir -p $(@D) 2> $(DEVNULL) || exit 0
-	RM = rm
-	TOUCH = touch $(1)
-	CONDITIONAL_CLONE=if [ ! -d $(2) ]; then git clone -q $(1) $(2) ; fi
-endif
 ifeq ($(os),windows)
 	DEVNULL = NUL
 	CC = "$(LLVM_PATH)\bin\clang.exe"
@@ -89,8 +86,7 @@ ifeq ($(os),windows)
 	RM = del
 	TOUCH = copy /b $(subst /,\,$(1)) +,, $(subst /,\,$(1)) > $(DEVNULL)
 	CONDITIONAL_CLONE=if not exist $(2) ( git clone -q $(1) $(2) )
-endif
-ifeq ($(os),linux)
+else
 	DEVNULL = /dev/null
 	ensure_dir=mkdir -p $(@D) 2> $(DEVNULL) || exit 0
 	RM = rm
@@ -100,11 +96,6 @@ endif
 
 # SOURCE FILES
 # ------------
-srcs += deps/qajson4c/src/qajson4c/qajson4c.c
-srcs += deps/qajson4c/src/qajson4c/qajson4c_internal.c
-
-srcs += deps/miniz/miniz.c
-
 srcs += src/minimod.c
 
 srcs += src/util.c
@@ -114,14 +105,20 @@ srcs += src/netw.c
 ifeq ($(os),macos)
 srcs += src/netw-macos.m
 endif
-
 ifeq ($(os),windows)
 srcs += src/netw-win.c
 endif
-
 ifeq ($(os),linux)
 srcs += src/netw-libcurl.c
 endif
+ifeq ($(os),freebsd)
+srcs += src/netw-libcurl.c
+endif
+
+srcs += deps/qajson4c/src/qajson4c/qajson4c.c
+srcs += deps/qajson4c/src/qajson4c/qajson4c_internal.c
+
+srcs += deps/miniz/miniz.c
 
 test_srcs += tests/simple.c
 
@@ -173,6 +170,11 @@ LDLIBS += kernel32.lib
 LDLIBS += winhttp.lib
 endif
 
+ifeq ($(os),freebsd)
+LDFLAGS += -L/usr/local/lib
+$(LIB_PATH): LDLIBS += -lcurl
+endif
+
 ifeq ($(os),linux)
 # do not add exoprts from included static libs (i.e. OpenSSL)
 # to this shared library's list of exports.
@@ -210,6 +212,11 @@ CFLAGS += -fvisibility=hidden
 OBJCFLAGS += -fvisibility=hidden
 endif
 
+ifeq ($(os),freebsd)
+CFLAGS += -fvisibility=hidden
+CFLAGS += -fPIC
+endif
+
 # TARGETS
 # -------
 
@@ -231,15 +238,10 @@ ifdef Q
 	@echo Linking $@
 endif
 	$(Q)$(ensure_dir)
-ifeq ($(os),macos)
-	$(Q)$(CC) $(TARGET_ARCH) $(LDFLAGS) $(filter %.o,$^) $(LIB_PATH) $(LDLIBS) $(OUTPUT_OPTION)
-endif
 ifeq ($(os),windows)
 	$(Q)$(LINKER) $(LDFLAGS) /OUT:$@ $(filter %.o,$^) $(filter %.res,$^) $(LDLIBS)
-endif
-ifeq ($(os),linux)
+else
 	$(Q)$(CC) $(TARGET_ARCH) $(LDFLAGS) $(filter %.o,$^) $(LIB_PATH) $(LDLIBS) $(OUTPUT_OPTION)
-	$(Q)strip --strip-debug $@
 endif
 
 test: $(TEST_PATH)
@@ -257,6 +259,10 @@ ifeq ($(os),windows)
 	$(Q)$(LINKER) /DLL $(LDFLAGS) $(LDLIBS) $(filter %.o,$^) /OUT:$(subst /,\,$@)
 endif
 ifeq ($(os),linux)
+	$(Q)$(CC) -shared $(TARGET_ARCH) $(LDFLAGS) $(filter %.o,$^) $(LDLIBS) $(OUTPUT_OPTION)
+	$(Q)strip --strip-debug $@
+endif
+ifeq ($(os),freebsd)
 	$(Q)$(CC) -shared $(TARGET_ARCH) $(LDFLAGS) $(filter %.o,$^) $(LDLIBS) $(OUTPUT_OPTION)
 	$(Q)strip --strip-debug $@
 endif
@@ -293,6 +299,12 @@ ifeq ($(os),windows)
 $(OUTPUT_DIR)/src/%.o: CPPFLAGS += -Ideps/dirent/include
 $(OUTPUT_DIR)/src/%.o: NOWARNINGS += -Wno-error-reserved-id-macro
 $(OUTPUT_DIR)/src/%.o: NOWARNINGS += -Wno-error-nonportable-system-include-path
+endif
+
+ifeq ($(os),freebsd)
+$(OUTPUT_DIR)/src/netw-libcurl.o: CPPFLAGS += -I/usr/local/include
+$(OUTPUT_DIR)/src/netw-libcurl.o: NOWARNINGS += -Wno-disabled-macro-expansion
+$(OUTPUT_DIR)/src/netw-libcurl.o: NOWARNINGS += -Wno-error-reserved-id-macro
 endif
 
 # clang implied
