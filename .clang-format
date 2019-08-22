@@ -33,6 +33,7 @@ AllowShortBlocksOnASingleLine: false
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
+ReflowComments: false
 
 # function decl/def/call
 BinPackParameters: false
