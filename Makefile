@@ -149,7 +149,7 @@ $(OUTPUT_DIR)/src/util.o: src/util.h
 $(OUTPUT_DIR)/src/netw.o: src/netw.h
 $(OUTPUT_DIR)/src/netw-macos.o: src/netw.h
 $(OUTPUT_DIR)/src/netw-win.o: src/netw.h src/util.h
-$(OUTPUT_DIR)/tests/%.o: include/minimod/minimod.h
+$(test_objs): include/minimod/minimod.h
 
 # LINKER OPTIONS
 # --------------
