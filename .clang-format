@@ -20,8 +20,9 @@ BraceWrapping:
 
 # pp directives
 # not supported in clang-format < 9
-IndentPPDirectives: BeforeHash
+#IndentPPDirectives: BeforeHash
 #IndentPPDirectives: AfterHash
+IndentPPDirectives: None
 
 # misc
 MaxEmptyLinesToKeep: 2

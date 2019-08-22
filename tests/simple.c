@@ -18,14 +18,14 @@
 #define GAME_ID_TEST 309
 
 #ifdef _WIN32
-	#include <Windows.h>
+#include <Windows.h>
 static void
 sys_sleep(uint32_t ms)
 {
 	Sleep(ms);
 }
 #else
-	#include <unistd.h>
+#include <unistd.h>
 static void
 sys_sleep(uint32_t ms)
 {

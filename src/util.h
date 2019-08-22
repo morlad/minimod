@@ -106,7 +106,7 @@ int
 asprintf(char **strp, const char *fmt, ...);
 int
 vasprintf(char **strp, const char *fmt, va_list ap);
-	#define strdup _strdup
+#define strdup _strdup
 
 #endif // _WIN32
 

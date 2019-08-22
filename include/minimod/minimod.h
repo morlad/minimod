@@ -19,17 +19,17 @@
 #include <sys/types.h>
 
 #if defined(_WIN32)
-	#if defined(MINIMOD_BUILD_LIB)
-		#define MINIMOD_LIB __declspec(dllexport)
-	#else
-		#define MINIMOD_LIB __declspec(dllimport)
-	#endif
+#if defined(MINIMOD_BUILD_LIB)
+#define MINIMOD_LIB __declspec(dllexport)
 #else
-	#if defined(MINIMOD_BUILD_LIB)
-		#define MINIMOD_LIB __attribute__((visibility("default")))
-	#else
-		#define MINIMOD_LIB
-	#endif
+#define MINIMOD_LIB __declspec(dllimport)
+#endif
+#else
+#if defined(MINIMOD_BUILD_LIB)
+#define MINIMOD_LIB __attribute__((visibility("default")))
+#else
+#define MINIMOD_LIB
+#endif
 #endif
 
 #define MINIMOD_CURRENT_ABI 1

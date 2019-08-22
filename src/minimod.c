@@ -11,9 +11,9 @@
 #include <string.h>
 
 #if defined(_MSC_VER) && !defined(__clang__)
-	#define UNUSED(X) __pragma(warning(suppress : 4100)) X
+#define UNUSED(X) __pragma(warning(suppress : 4100)) X
 #else
-	#define UNUSED(X) __attribute__((unused)) X
+#define UNUSED(X) __attribute__((unused)) X
 #endif
 
 /**********/

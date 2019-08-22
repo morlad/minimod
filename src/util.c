@@ -5,11 +5,11 @@
 #include <stdlib.h>
 #include <string.h>
 #ifdef _WIN32
-	#include <Windows.h>
+#include <Windows.h>
 #else
-	#include <unistd.h>
-	#include <sys/stat.h>
-	#include <errno.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <errno.h>
 #endif
 
 
