@@ -116,3 +116,8 @@ Format: 1.52
 Alter Language: C/C++
 
    Callback Prototype Ender: ;
+
+
+Alter Language: C/C++
+
+   Struct Prototype Ender: ;

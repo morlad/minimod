@@ -46,17 +46,17 @@ File: Public API  (no auto-title, /Users/morlad/minimod/include/minimod/minimod.
 
 Group: Internal  {
 
-   File: netw.h  (/Users/morlad/minimod/src/netw.h)
+   File: netw.h  (no auto-title, /Users/morlad/minimod/src/netw.h)
    }  # Group: Internal
 
 Group: Index  {
 
    Index: Everything
    Constant Index: Constants
-   File Index: Files
    Function Index: Functions
    Type Index: Types
    Callback Index: Callbacks
+   Struct Index: Structs
    }  # Group: Index
 
 Group: Links  {

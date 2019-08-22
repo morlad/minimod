@@ -89,3 +89,12 @@ Topic Type: Callback
 
    Keywords:
       callback, callbacks
+
+
+Topic Type: Struct
+
+   Plural: Structs
+   Class Hierarchy: Yes
+
+   Keywords:
+      struct
