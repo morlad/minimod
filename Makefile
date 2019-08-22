@@ -349,7 +349,7 @@ endif
 # MISC TARGETS
 # ------------
 cloc-all:
-	$(Q)cloc . --quiet --exclude-dir=deps,build
+	$(Q)cloc . --quiet --exclude-dir=deps,build,docs,docs.cfg
 
 cloc:
 	$(Q)cloc src include Makefile --quiet
