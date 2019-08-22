@@ -10,7 +10,6 @@
 // size of download -> file buffer
 #define BUFFERSIZE 4096
 #define USER_AGENT L"minimod/0.1"
-#define TEMPFILE_PREFIX L"mmi"
 
 #define PRINTERR(X) \
 	printf("[netw] " X " failed %lu (%lx)\n", GetLastError(), GetLastError())
@@ -136,31 +135,6 @@ struct task
 	uint16_t port;
 	FILE *file;
 };
-
-
-static HANDLE
-create_temp_file(wchar_t out_path[MAX_PATH])
-{
-	// funny how GetTempPath() requires up to MAX_PATH+1 characters without
-	// the terminating \0, while GetTempFileName(), which appends to this
-	// very string requires its output-buffer to be MAX_PATH only (including
-	// \0). And in fact GetTempFileName() fails with ERROR_BUFFER_OVERFLOW
-	// when its first argument is > MAX_PATH-14.
-	// Well done Microsoft.
-	wchar_t temp_dir[MAX_PATH + 1 + 1] = { 0 };
-	GetTempPathW(MAX_PATH + 1, temp_dir);
-	GetTempFileName(temp_dir, TEMPFILE_PREFIX, 0, out_path);
-	wprintf(L"[netw] Setting up temporary file: %s\n", out_path);
-	HANDLE hfile = CreateFile(
-	  out_path,
-	  GENERIC_WRITE,
-	  FILE_SHARE_READ | FILE_SHARE_DELETE,
-	  NULL,
-	  CREATE_ALWAYS,
-	  FILE_ATTRIBUTE_TEMPORARY,
-	  NULL);
-	return hfile;
-}
 
 
 static DWORD
