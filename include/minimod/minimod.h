@@ -278,10 +278,10 @@ typedef void (*minimod_install_callback)(void *userdata, char const *path);
  * Called once for each currently installed mod.
  */
 typedef void (*minimod_enum_installed_mods_callback)(
-	void *in_userdata,
-	uint64_t in_game_id,
-	uint64_t in_mod_id,
-	char const *in_path);
+  void *in_userdata,
+  uint64_t in_game_id,
+  uint64_t in_mod_id,
+  char const *in_path);
 
 
 /*
@@ -521,7 +521,9 @@ minimod_is_downloading(uint64_t in_game_id, uint64_t in_mod_id);
  * Function: minimod_enum_installed_mods()
  */
 MINIMOD_LIB void
-minimod_enum_installed_mods(minimod_enum_installed_mods_callback in_callback, void *in_userdata);
+minimod_enum_installed_mods(
+  minimod_enum_installed_mods_callback in_callback,
+  void *in_userdata);
 
 
 /*

@@ -60,7 +60,7 @@ fsu_mvfile(char const *from, char const *to, bool in_replace);
 /* Function: fsu_rmfile()
  *
  *	Remove file.
-*/
+ */
 bool
 fsu_rmfile(char const *path);
 

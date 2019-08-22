@@ -445,7 +445,10 @@ handle_email_exchange(
 	fwrite(tok, tok_bytes, 1, f);
 	fclose(f);
 
-	task->callback.fptr.email_exchange(task->callback.userdata, tok, tok_bytes);
+	task->callback.fptr.email_exchange(
+	  task->callback.userdata,
+	  tok,
+	  tok_bytes);
 }
 
 
@@ -508,7 +511,10 @@ handle_get_ratings(
 		ratings[i].rating = QAJ4C_get_int(QAJ4C_object_get(item, "rating"));
 	}
 
-	task->callback.fptr.get_ratings(task->callback.userdata, nratings, ratings);
+	task->callback.fptr.get_ratings(
+	  task->callback.userdata,
+	  nratings,
+	  ratings);
 
 	free(ratings);
 	free(buffer);
@@ -623,7 +629,14 @@ minimod_get_games(
 	};
 
 	struct task *task = alloc_task();
-	if (netw_request(NETW_VERB_GET, path, headers, NULL, 0, handle_get_games, task))
+	if (netw_request(
+	      NETW_VERB_GET,
+	      path,
+	      headers,
+	      NULL,
+	      0,
+	      handle_get_games,
+	      task))
 	{
 		task->callback.fptr.get_games = in_callback;
 		task->callback.userdata = in_udata;
@@ -664,7 +677,14 @@ minimod_get_mods(
 	struct task *task = alloc_task();
 	task->callback.fptr.get_mods = in_callback;
 	task->callback.userdata = in_userdata;
-	if (!netw_request(NETW_VERB_GET, path, headers, NULL, 0, handle_get_mods, task))
+	if (!netw_request(
+	      NETW_VERB_GET,
+	      path,
+	      headers,
+	      NULL,
+	      0,
+	      handle_get_mods,
+	      task))
 	{
 		free_task(task);
 	}
@@ -788,7 +808,14 @@ minimod_get_me(minimod_get_users_callback in_callback, void *in_udata)
 	struct task *task = alloc_task();
 	task->callback.fptr.get_users = in_callback;
 	task->callback.userdata = in_udata;
-	if (!netw_request(NETW_VERB_GET, path, headers, NULL, 0, handle_get_users, task))
+	if (!netw_request(
+	      NETW_VERB_GET,
+	      path,
+	      headers,
+	      NULL,
+	      0,
+	      handle_get_users,
+	      task))
 	{
 		free_task(task);
 	}
@@ -863,7 +890,14 @@ minimod_get_modfiles(
 	struct task *task = alloc_task();
 	task->callback.fptr.get_modfiles = in_callback;
 	task->callback.userdata = in_userdata;
-	if (!netw_request(NETW_VERB_GET, path, headers, NULL, 0, handle_get_modfiles, task))
+	if (!netw_request(
+	      NETW_VERB_GET,
+	      path,
+	      headers,
+	      NULL,
+	      0,
+	      handle_get_modfiles,
+	      task))
 	{
 		free_task(task);
 	}
@@ -967,7 +1001,7 @@ bool
 minimod_uninstall(uint64_t in_game_id, uint64_t in_mod_id)
 {
 	// TODO is not implemented yet
-	//fsu_rmfile();
+	// fsu_rmfile();
 	return false;
 }
 
@@ -1080,7 +1114,14 @@ minimod_get_ratings(
 	struct task *task = alloc_task();
 	task->callback.userdata = in_udata;
 	task->callback.fptr.get_ratings = in_callback;
-	if (!netw_request(NETW_VERB_GET, path, headers, NULL, 0, handle_get_ratings, task))
+	if (!netw_request(
+	      NETW_VERB_GET,
+	      path,
+	      headers,
+	      NULL,
+	      0,
+	      handle_get_ratings,
+	      task))
 	{
 		free_task(task);
 	}
@@ -1111,7 +1152,14 @@ minimod_get_subscriptions(
 	struct task *task = alloc_task();
 	task->callback.userdata = in_udata;
 	task->callback.fptr.get_mods = in_callback;
-	if (!netw_request(NETW_VERB_GET, path, headers, NULL, 0, handle_get_mods, task))
+	if (!netw_request(
+	      NETW_VERB_GET,
+	      path,
+	      headers,
+	      NULL,
+	      0,
+	      handle_get_mods,
+	      task))
 	{
 		free_task(task);
 	}
