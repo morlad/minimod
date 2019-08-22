@@ -26,16 +26,16 @@ struct callback
 {
 	union
 	{
-		minimod_get_games_fptr get_games;
-		minimod_get_mods_fptr get_mods;
-		minimod_email_request_fptr email_request;
-		minimod_email_exchange_fptr email_exchange;
-		minimod_get_users_fptr get_users;
-		minimod_get_modfiles_fptr get_modfiles;
-		minimod_install_fptr install;
-		minimod_rate_fptr rate;
-		minimod_get_ratings_fptr get_ratings;
-		minimod_subscription_change_fptr subscription_change;
+		minimod_get_games_callback get_games;
+		minimod_get_mods_callback get_mods;
+		minimod_email_request_callback email_request;
+		minimod_email_exchange_callback email_exchange;
+		minimod_get_users_callback get_users;
+		minimod_get_modfiles_callback get_modfiles;
+		minimod_install_callback install;
+		minimod_rate_callback rate;
+		minimod_get_ratings_callback get_ratings;
+		minimod_subscription_change_callback subscription_change;
 	} fptr;
 	void *userdata;
 };
@@ -53,7 +53,6 @@ struct mmi
 	char *api_key;
 	char *root_path;
 	char *cache_tokenpath;
-	uint64_t game_id;
 	char *token;
 	char *token_bearer;
 	enum minimod_environment env;
@@ -503,8 +502,8 @@ handle_get_ratings(
 		QAJ4C_Value const *item = QAJ4C_array_get(data, i);
 		assert(QAJ4C_is_object(item));
 
-		ratings[i].gameid = QAJ4C_get_uint(QAJ4C_object_get(item, "game_id"));
-		ratings[i].modid = QAJ4C_get_uint(QAJ4C_object_get(item, "mod_id"));
+		ratings[i].game_id = QAJ4C_get_uint(QAJ4C_object_get(item, "game_id"));
+		ratings[i].mod_id = QAJ4C_get_uint(QAJ4C_object_get(item, "mod_id"));
 		ratings[i].date = QAJ4C_get_uint(QAJ4C_object_get(item, "date_added"));
 		ratings[i].rating = QAJ4C_get_int(QAJ4C_object_get(item, "rating"));
 	}
@@ -537,22 +536,35 @@ read_token(void)
 }
 
 
-bool
+enum minimod_err
 minimod_init(
-  enum minimod_environment env,
-  uint32_t game_id,
-  char const *api_key,
-  char const *root_path)
+  enum minimod_environment in_env,
+  char const *in_api_key,
+  char const *in_root_path,
+  uint32_t in_abi_version)
 {
-	if (!netw_init())
+	// check version compatibility
+	if (in_abi_version != MINIMOD_CURRENT_ABI)
 	{
-		return false;
+		return MINIMOD_ERR_ABI;
 	}
 
-	l_mmi.env = env;
-	l_mmi.game_id = game_id;
+	// check if API key is given
+	if (!in_api_key)
+	{
+		// TODO more checks possible?
+		return MINIMOD_ERR_KEY;
+	}
 
-	l_mmi.root_path = strdup(root_path ? root_path : DEFAULT_ROOT);
+	// validate in_env
+	if (in_env != MINIMOD_ENVIRONMENT_LIVE && in_env != MINIMOD_ENVIRONMENT_TEST)
+	{
+		return MINIMOD_ERR_ENV;
+	}
+	l_mmi.env = in_env;
+
+	// TODO validate path
+	l_mmi.root_path = strdup(in_root_path ? in_root_path : DEFAULT_ROOT);
 	// make sure the path does not end with '/'
 	size_t len = strlen(l_mmi.root_path);
 	assert(len > 0);
@@ -561,11 +573,17 @@ minimod_init(
 		l_mmi.root_path[len - 1] = '\0';
 	}
 
-	l_mmi.api_key = api_key ? strdup(api_key) : NULL;
+	// attempt to initialize netw
+	if (!netw_init())
+	{
+		return MINIMOD_ERR_NET;
+	}
+
+	l_mmi.api_key = in_api_key ? strdup(in_api_key) : NULL;
 
 	read_token();
 
-	return true;
+	return MINIMOD_ERR_OK;
 }
 
 
@@ -587,7 +605,7 @@ minimod_deinit()
 void
 minimod_get_games(
   char const *in_filter,
-  minimod_get_games_fptr in_callback,
+  minimod_get_games_callback in_callback,
   void *in_udata)
 {
 	char *path;
@@ -622,16 +640,17 @@ minimod_get_games(
 void
 minimod_get_mods(
   char const *in_filter,
-  uint64_t in_gameid,
-  minimod_get_mods_fptr in_callback,
-  void *in_udata)
+  uint64_t in_game_id,
+  minimod_get_mods_callback in_callback,
+  void *in_userdata)
 {
+	assert(in_game_id > 0);
 	char *path;
 	asprintf(
 	  &path,
 	  "%s/games/%" PRIu64 "/mods?api_key=%s&%s",
 	  endpoints[l_mmi.env],
-	  in_gameid == 0 ? l_mmi.game_id : in_gameid,
+	  in_game_id,
 	  l_mmi.api_key,
 	  in_filter ? in_filter : "");
 
@@ -644,7 +663,7 @@ minimod_get_mods(
 
 	struct task *task = alloc_task();
 	task->callback.fptr.get_mods = in_callback;
-	task->callback.userdata = in_udata;
+	task->callback.userdata = in_userdata;
 	if (!netw_request(NETW_VERB_GET, path, headers, NULL, 0, handle_get_mods, task))
 	{
 		free_task(task);
@@ -657,7 +676,7 @@ minimod_get_mods(
 void
 minimod_email_request(
   char const *in_email,
-  minimod_email_request_fptr in_callback,
+  minimod_email_request_callback in_callback,
   void *in_udata)
 {
 	char *path;
@@ -703,7 +722,7 @@ minimod_email_request(
 void
 minimod_email_exchange(
   char const *in_code,
-  minimod_email_exchange_fptr in_callback,
+  minimod_email_exchange_callback in_callback,
   void *in_udata)
 {
 	char *path;
@@ -748,7 +767,7 @@ minimod_email_exchange(
 
 
 bool
-minimod_get_me(minimod_get_users_fptr in_callback, void *in_udata)
+minimod_get_me(minimod_get_users_callback in_callback, void *in_udata)
 {
 	if (!minimod_is_authenticated())
 	{
@@ -799,23 +818,25 @@ minimod_deauthenticate(void)
 void
 minimod_get_modfiles(
   char const *in_filter,
-  uint64_t in_gameid,
-  uint64_t in_modid,
-  uint64_t in_modfileid,
-  minimod_get_modfiles_fptr in_callback,
-  void *in_udata)
+  uint64_t in_game_id,
+  uint64_t in_mod_id,
+  uint64_t in_modfile_id,
+  minimod_get_modfiles_callback in_callback,
+  void *in_userdata)
 {
+	assert(in_game_id > 0);
+	assert(in_mod_id > 0);
 	char *path;
-	if (in_modfileid)
+	if (in_modfile_id)
 	{
 		asprintf(
 		  &path,
 		  "%s/games/%" PRIu64 "/mods/%" PRIu64 "/files/%" PRIu64
 		  "?api_key=%s&%s",
 		  endpoints[l_mmi.env],
-		  in_gameid == 0 ? l_mmi.game_id : in_gameid,
-		  in_modid,
-		  in_modfileid,
+		  in_game_id,
+		  in_mod_id,
+		  in_modfile_id,
 		  l_mmi.api_key,
 		  in_filter ? in_filter : "");
 	}
@@ -825,8 +846,8 @@ minimod_get_modfiles(
 		  &path,
 		  "%s/games/%" PRIu64 "/mods/%" PRIu64 "/files?api_key=%s&%s",
 		  endpoints[l_mmi.env],
-		  in_gameid == 0 ? l_mmi.game_id : in_gameid,
-		  in_modid,
+		  in_game_id,
+		  in_mod_id,
 		  l_mmi.api_key,
 		  in_filter ? in_filter : "");
 	}
@@ -841,7 +862,7 @@ minimod_get_modfiles(
 
 	struct task *task = alloc_task();
 	task->callback.fptr.get_modfiles = in_callback;
-	task->callback.userdata = in_udata;
+	task->callback.userdata = in_userdata;
 	if (!netw_request(NETW_VERB_GET, path, headers, NULL, 0, handle_get_modfiles, task))
 	{
 		free_task(task);
@@ -853,7 +874,7 @@ minimod_get_modfiles(
 
 struct install_request
 {
-	minimod_install_fptr callback;
+	minimod_install_callback callback;
 	void *userdata;
 	uint64_t mod_id;
 	FILE *file;
@@ -861,7 +882,7 @@ struct install_request
 
 
 static void
-on_install_download(void *in_udata, char const *in_path, int error)
+on_install_download(void *in_udata, FILE *in_file, int error)
 {
 	struct install_request *req = in_udata;
 
@@ -880,9 +901,9 @@ on_install_download(void *in_udata, char const *in_path, int error)
 	}
 
 	// callback
-	req->callback(req->userdata, in_path);
+	req->callback(req->userdata, "-deprecated-");
 
-	fclose(req->file);
+	fclose(in_file);
 	free(req);
 }
 
@@ -917,36 +938,86 @@ on_download_modfile(
 
 void
 minimod_install(
-  uint64_t in_gameid,
-  uint64_t in_modid,
-  uint64_t in_modfileid,
-  minimod_install_fptr in_callback,
-  void *in_udata)
+  uint64_t in_game_id,
+  uint64_t in_mod_id,
+  uint64_t in_modfile_id,
+  minimod_install_callback in_callback,
+  void *in_userdata)
 {
+	assert(in_game_id > 0);
+	assert(in_mod_id > 0);
+	assert(in_modfile_id > 0);
+
 	// fetch meta-data and proceed from there
 	struct install_request *req = malloc(sizeof *req);
 	req->callback = in_callback;
-	req->userdata = in_udata;
-	req->mod_id = in_modid;
+	req->userdata = in_userdata;
+	req->mod_id = in_mod_id;
 	minimod_get_modfiles(
 	  NULL,
-	  in_gameid,
-	  in_modid,
-	  in_modfileid,
+	  in_game_id,
+	  in_mod_id,
+	  in_modfile_id,
 	  on_download_modfile,
 	  req);
 }
 
 
+bool
+minimod_uninstall(uint64_t in_game_id, uint64_t in_mod_id)
+{
+	// TODO is not implemented yet
+	//fsu_rmfile();
+	return false;
+}
+
+
+void
+minimod_enum_installed_mods(
+  minimod_enum_installed_mods_callback in_callback,
+  void *in_userdata)
+{
+}
+
+
+bool
+minimod_get_installed_mod(
+  uint64_t in_game_id,
+  uint64_t in_mod_id,
+  minimod_get_mods_callback in_callback,
+  void *userdata)
+{
+	// TODO
+	return false;
+}
+
+
+bool
+minimod_is_installed(uint64_t in_game_id, uint64_t in_mod_id)
+{
+	// TODO
+	return false;
+}
+
+
+bool
+minimod_is_downloading(uint64_t in_game_id, uint64_t in_mod_id)
+{
+	// TODO
+	return false;
+}
+
+
 void
 minimod_rate(
-  uint64_t in_gameid,
-  uint64_t in_modid,
+  uint64_t in_game_id,
+  uint64_t in_mod_id,
   int in_rating,
-  minimod_rate_fptr in_callback,
-  void *in_udata)
+  minimod_rate_callback in_callback,
+  void *in_userdata)
 {
-	assert(in_rating == 1 || in_rating == -1);
+	assert(in_game_id > 0);
+	assert(in_rating != 0);
 	assert(minimod_is_authenticated());
 
 	char *path = NULL;
@@ -954,8 +1025,8 @@ minimod_rate(
 	  &path,
 	  "%s/games/%" PRIu64 "/mods/%" PRIu64 "/ratings",
 	  endpoints[l_mmi.env],
-	  in_gameid ? in_gameid : l_mmi.game_id,
-	  in_modid);
+	  in_game_id,
+	  in_mod_id);
 
 	char const *const headers[] = {
 		// clang-format off
@@ -969,7 +1040,7 @@ minimod_rate(
 	char const *data = in_rating == 1 ? "rating=1" : "rating=-1";
 
 	struct task *task = alloc_task();
-	task->callback.userdata = in_udata;
+	task->callback.userdata = in_userdata;
 	task->callback.fptr.rate = in_callback;
 	if (!netw_request(
 	      NETW_VERB_POST,
@@ -990,7 +1061,7 @@ minimod_rate(
 void
 minimod_get_ratings(
   char const *in_filter,
-  minimod_get_ratings_fptr in_callback,
+  minimod_get_ratings_callback in_callback,
   void *in_udata)
 {
 	assert(minimod_is_authenticated());
@@ -1021,7 +1092,7 @@ minimod_get_ratings(
 void
 minimod_get_subscriptions(
   char const *in_filter,
-  minimod_get_mods_fptr in_callback,
+  minimod_get_mods_callback in_callback,
   void *in_udata)
 {
 	assert(minimod_is_authenticated());
@@ -1107,11 +1178,13 @@ handle_subscription_change(
 
 bool
 minimod_subscribe(
-  uint64_t in_gameid,
-  uint64_t in_modid,
-  minimod_subscription_change_fptr in_callback,
-  void *in_udata)
+  uint64_t in_game_id,
+  uint64_t in_mod_id,
+  minimod_subscription_change_callback in_callback,
+  void *in_userdata)
 {
+	assert(in_game_id > 0);
+	assert(in_mod_id > 0);
 	if (!minimod_is_authenticated())
 	{
 		return false;
@@ -1122,8 +1195,8 @@ minimod_subscribe(
 	  &path,
 	  "%s/games/%" PRIu64 "/mods/%" PRIu64 "/subscribe",
 	  endpoints[l_mmi.env],
-	  in_gameid ? in_gameid : l_mmi.game_id,
-	  in_modid);
+	  in_game_id,
+	  in_mod_id);
 
 	char const *const headers[] = {
 		// clang-format off
@@ -1135,9 +1208,9 @@ minimod_subscribe(
 	};
 
 	struct task *task = alloc_task();
-	task->callback.userdata = in_udata;
+	task->callback.userdata = in_userdata;
 	task->callback.fptr.subscription_change = in_callback;
-	task->meta64 = in_modid;
+	task->meta64 = in_mod_id;
 
 	netw_request(
 	  NETW_VERB_POST,
@@ -1156,11 +1229,13 @@ minimod_subscribe(
 
 bool
 minimod_unsubscribe(
-  uint64_t in_gameid,
-  uint64_t in_modid,
-  minimod_subscription_change_fptr in_callback,
-  void *in_udata)
+  uint64_t in_game_id,
+  uint64_t in_mod_id,
+  minimod_subscription_change_callback in_callback,
+  void *in_userdata)
 {
+	assert(in_game_id > 0);
+	assert(in_mod_id > 0);
 	if (!minimod_is_authenticated())
 	{
 		return false;
@@ -1171,8 +1246,8 @@ minimod_unsubscribe(
 	  &path,
 	  "%s/games/%" PRIu64 "/mods/%" PRIu64 "/subscribe",
 	  endpoints[l_mmi.env],
-	  in_gameid ? in_gameid : l_mmi.game_id,
-	  in_modid);
+	  in_game_id,
+	  in_mod_id);
 
 	char const *const headers[] = {
 		// clang-format off
@@ -1184,9 +1259,9 @@ minimod_unsubscribe(
 	};
 
 	struct task *task = alloc_task();
-	task->callback.userdata = in_udata;
+	task->callback.userdata = in_userdata;
 	task->callback.fptr.subscription_change = in_callback;
-	task->meta64 = -in_modid;
+	task->meta64 = -in_mod_id;
 
 	netw_request(
 	  NETW_VERB_DELETE,

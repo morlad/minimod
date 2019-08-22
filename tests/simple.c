@@ -1,4 +1,4 @@
-// vi: noexpandtab tabstop=4 softtabstop=4 shiftwidth=0 list
+// vi: noexpandtab tabstop=4 softtabstop=4 shiftwidth=0
 #include "minimod/minimod.h"
 
 #include <ctype.h>
@@ -7,6 +7,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+#define STR_IMPL_(X) #X
+#define STR(X) STR_IMPL_(X)
+
+// CONFIG
+// ------
+#define API_KEY_LIVE "4cb29b99f25a2f0d1ba30c5a71419e5b"
+#define API_KEY_TEST "f90f25ceed3708627a5b85ee52e4f930"
+#define GAME_ID_TEST 309
 
 #ifdef _WIN32
 	#include <Windows.h>
@@ -30,11 +39,7 @@ static void
 test_1(void)
 {
 	printf("\n= Simple init()/deinit() test\n");
-	minimod_init(
-	  MINIMOD_ENVIRONMENT_TEST,
-	  309,
-	  "f90f25ceed3708627a5b85ee52e4f930",
-	  NULL);
+	minimod_init(MINIMOD_ENVIRONMENT_TEST, API_KEY_TEST, NULL, MINIMOD_CURRENT_ABI);
 
 	minimod_deinit();
 }
@@ -66,11 +71,7 @@ get_games_callback(
 static void
 test_2(void)
 {
-	minimod_init(
-	  MINIMOD_ENVIRONMENT_LIVE,
-	  0,
-	  "4cb29b99f25a2f0d1ba30c5a71419e5b",
-	  NULL);
+	minimod_init(MINIMOD_ENVIRONMENT_LIVE, API_KEY_LIVE, NULL, MINIMOD_CURRENT_ABI);
 
 	printf("\n= Requesting list of live games on mod.io\n");
 
@@ -104,16 +105,12 @@ static void
 test_3(uint64_t game_id)
 {
 #if 0
-	minimod_init(
-		MINIMOD_ENVIRONMENT_TEST,
-		309,
-		"f90f25ceed3708627a5b85ee52e4f930",
-		NULL);
+	minimod_init(MINIMOD_ENVIRONMENT_TEST, API_KEY_TEST, NULL, MINIMOD_CURRENT_ABI);
 
 	printf("\n= Requesting list of mods for game X on test-mod.io\n");
 
 	int nrequests_completed = 0;
-	minimod_get_mods(NULL, 0, get_mods_callback, &nrequests_completed);
+	minimod_get_mods(NULL, GAME_ID_TEST, get_mods_callback, &nrequests_completed);
 
 	while (nrequests_completed < 1)
 	{
@@ -124,11 +121,7 @@ test_3(uint64_t game_id)
 #endif
 
 
-	minimod_init(
-	  MINIMOD_ENVIRONMENT_LIVE,
-	  0,
-	  "4cb29b99f25a2f0d1ba30c5a71419e5b",
-	  NULL);
+	minimod_init(MINIMOD_ENVIRONMENT_LIVE, API_KEY_LIVE, NULL, MINIMOD_CURRENT_ABI);
 
 	printf(
 	  "\n= Requesting list of mods for game {%" PRIu64 "} on live-mod.io\n",
@@ -167,11 +160,7 @@ on_email_exchange(void *in_udata, char const *in_token, size_t in_bytes)
 static bool
 test_4(void)
 {
-	minimod_init(
-	  MINIMOD_ENVIRONMENT_TEST,
-	  309,
-	  "f90f25ceed3708627a5b85ee52e4f930",
-	  NULL);
+	minimod_init(MINIMOD_ENVIRONMENT_TEST, API_KEY_TEST, NULL, MINIMOD_CURRENT_ABI);
 
 	printf("\n= Email authentication workflow\n");
 
@@ -267,11 +256,7 @@ on_get_users(void *in_udata, size_t nusers, struct minimod_user const *users)
 static void
 test_5(void)
 {
-	minimod_init(
-	  MINIMOD_ENVIRONMENT_TEST,
-	  309,
-	  "f90f25ceed3708627a5b85ee52e4f930",
-	  NULL);
+	minimod_init(MINIMOD_ENVIRONMENT_TEST, API_KEY_TEST, NULL, MINIMOD_CURRENT_ABI);
 
 	int wait = 1;
 	minimod_get_me(on_get_users, &wait);
@@ -308,14 +293,10 @@ on_get_modfiles(
 static void
 test_6(void)
 {
-	minimod_init(
-	  MINIMOD_ENVIRONMENT_TEST,
-	  309,
-	  "f90f25ceed3708627a5b85ee52e4f930",
-	  NULL);
+	minimod_init(MINIMOD_ENVIRONMENT_TEST, API_KEY_TEST, NULL, MINIMOD_CURRENT_ABI);
 
 	int wait = 1;
-	minimod_get_modfiles(NULL, 0, 1720, 0, on_get_modfiles, &wait);
+	minimod_get_modfiles(NULL, GAME_ID_TEST, 1720, 0, on_get_modfiles, &wait);
 
 	while (wait)
 	{
@@ -337,14 +318,10 @@ on_installed(void *in_udata, char const *in_path)
 static void
 test_8(void)
 {
-	minimod_init(
-	  MINIMOD_ENVIRONMENT_TEST,
-	  309,
-	  "f90f25ceed3708627a5b85ee52e4f930",
-	  NULL);
+	minimod_init(MINIMOD_ENVIRONMENT_TEST, API_KEY_TEST, NULL, MINIMOD_CURRENT_ABI);
 
 	int wait = 1;
-	minimod_install(0, 1720, 1685, on_installed, &wait);
+	minimod_install(GAME_ID_TEST, 1720, 1685, on_installed, &wait);
 
 	while (wait)
 	{
@@ -377,15 +354,10 @@ on_rated(void *in_udata, bool in_success)
 static void
 test_9(void)
 {
-	minimod_init(
-	  MINIMOD_ENVIRONMENT_TEST,
-	  309,
-	  "f90f25ceed3708627a5b85ee52e4f930",
-	  NULL);
-
+	minimod_init(MINIMOD_ENVIRONMENT_TEST, API_KEY_TEST, NULL, MINIMOD_CURRENT_ABI);
 
 	int rating = -2;
-	minimod_get_ratings("game_id=309&mod_id=1720", on_get_ratings, &rating);
+	minimod_get_ratings("game_id=" STR(GAME_ID_TEST) "&mod_id=1720", on_get_ratings, &rating);
 	while (rating == -2)
 	{
 		sys_sleep(10);
@@ -393,7 +365,7 @@ test_9(void)
 	printf("mod-rating is %i\n", rating);
 
 	int wait = 1;
-	minimod_rate(0, 1720, rating == 1 ? -1 : 1, on_rated, &wait);
+	minimod_rate(GAME_ID_TEST, 1720, rating == 1 ? -1 : 1, on_rated, &wait);
 	while (wait)
 	{
 		sys_sleep(10);
@@ -422,11 +394,7 @@ on_subscriptions(void *udata, size_t nmods, struct minimod_mod const *mods)
 static void
 test_10(void)
 {
-	minimod_init(
-	  MINIMOD_ENVIRONMENT_TEST,
-	  309,
-	  "f90f25ceed3708627a5b85ee52e4f930",
-	  NULL);
+	minimod_init(MINIMOD_ENVIRONMENT_TEST, API_KEY_TEST, NULL, MINIMOD_CURRENT_ABI);
 
 	int wait = 1;
 	minimod_get_subscriptions(NULL, on_subscriptions, &wait);
