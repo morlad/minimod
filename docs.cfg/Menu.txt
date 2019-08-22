@@ -46,7 +46,8 @@ File: Public API  (no auto-title, /Users/morlad/minimod/include/minimod/minimod.
 
 Group: Internal  {
 
-   File: netw.h  (no auto-title, /Users/morlad/minimod/src/netw.h)
+   File: netw  (no auto-title, /Users/morlad/minimod/src/netw.h)
+   File: util  (no auto-title, /Users/morlad/minimod/src/util.h)
    }  # Group: Internal
 
 Group: Index  {
