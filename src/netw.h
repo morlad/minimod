@@ -214,10 +214,6 @@ netw_percent_encode(char const *in_input, size_t in_len, size_t *out_len);
  */
 
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
-
 /* Section: Examples */
 
 /*
@@ -265,5 +261,9 @@ netw_percent_encode(char const *in_input, size_t in_len, size_t *out_len);
  * }
  * (end)
  */
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif
