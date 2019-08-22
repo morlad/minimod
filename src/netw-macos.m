@@ -83,9 +83,10 @@ task_from_dictionary(CFDictionaryRef in_dict, NSURLSessionTask *in_task)
 	}
 	else
 	{
+		assert(task->file);
 		task->callback.download(
 		  task->udata,
-		  "deprecated",
+		  task->file,
 		  (int)((NSHTTPURLResponse *)nstask.response).statusCode);
 	}
 

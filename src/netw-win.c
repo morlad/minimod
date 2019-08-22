@@ -259,7 +259,7 @@ task_handler(LPVOID context)
 			}
 		} while (avail_bytes > 0);
 
-		task->callback.download(task->udata, "hello world", (int)status_code);
+		task->callback.download(task->udata, task->file, (int)status_code);
 	}
 	else
 	{

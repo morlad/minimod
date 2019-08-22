@@ -76,7 +76,7 @@ task_handler(void *in_context)
 	if (task->file)
 	{
 		printf("[netw] probably written to FILE\n");
-		task->callback.download(task->udata, "tmppath", (int)status_code);
+		task->callback.download(task->udata, task->file, (int)status_code);
 	}
 	else
 	{
