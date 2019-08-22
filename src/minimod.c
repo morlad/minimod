@@ -1,4 +1,4 @@
-// vi: noexpandtab tabstop=4 softtabstop=4 shiftwidth=0 list
+// vi: noexpandtab tabstop=4 softtabstop=4 shiftwidth=0
 #include "minimod/minimod.h"
 #include "netw.h"
 #include "qajson4c/src/qajson4c/qajson4c.h"

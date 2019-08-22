@@ -1,4 +1,4 @@
-// vi: noexpandtab tabstop=4 softtabstop=4 shiftwidth=0 list
+// vi: noexpandtab tabstop=4 softtabstop=4 shiftwidth=0
 #pragma once
 #ifndef MINIMOD_NETW_H_INCLUDED
 #define MINIMOD_NETW_H_INCLUDED
