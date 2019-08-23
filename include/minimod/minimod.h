@@ -322,12 +322,24 @@ typedef void (*minimod_enum_installed_mods_callback)(
 
 /*
  * Callback: minimod_get_events_callback()
+ *
+ * Used in <minimod_get_user_events()> and <minimod_get_mod_events()>
  */
 typedef void (*minimod_get_events_callback)(
   void *userdata,
   size_t nevents,
   struct minimod_event const *events);
 
+
+/*
+ * Callback: minimod_get_dependencies_callback()
+ *
+ * Used in <minimod_get_dependencies()>
+ */
+typedef void (*minimod_get_dependencies_callback)(
+  void *userdata,
+  size_t ndependencies,
+  uint64_t const *dependencies);
 
 /*
  * Callback: minimod_rate_callback()
@@ -431,7 +443,7 @@ minimod_get_games(
  *
  *	Parameters:
  *		in_filter - Can be NULL, otherwise see <[Filtering Sorting Pagination]>
- *		in_game_id - Id of the game for which a list of mods shall be retrieved
+ *		in_game_id - ID of the game for which a list of mods shall be retrieved
  */
 MINIMOD_LIB void
 minimod_get_mods(
@@ -448,10 +460,10 @@ minimod_get_mods(
  *
  *	Parameters:
  *		in_filter - Can be NULL, otherwise see <[Filtering Sorting Pagination]>
- *		in_game_id - Id of the game for which the mod was made
- *		in_mod_id - id of the mod for which available modfiles shall be retrieved
+ *		in_game_id - ID of the game for which the mod was made
+ *		in_mod_id - ID of the mod for which available modfiles shall be retrieved
  *		in_modfile_id - Either 0 to request a list of all available modfiles
- *			for the specified mod, or an actual modfile-id to request only
+ *			for the specified mod, or an actual modfile-ID to request only
  *			information for this specific modfile_id
  */
 MINIMOD_LIB void
@@ -461,6 +473,56 @@ minimod_get_modfiles(
   uint64_t in_mod_id,
   uint64_t in_modfile_id,
   minimod_get_modfiles_callback in_callback,
+  void *in_userdata);
+
+
+/*
+ * Function: minimod_get_mod_events()
+ *
+ * Get events for the specified mod.
+ *
+ * Parameters:
+ *		in_filter - Can be NULL, otherwise see <[Filtering Sorting Pagination]>
+ *		in_game_id - ID of the game for which the request is made
+ *		in_mod_id - Is optional and can be set to 0, requesting events for
+ *			all the mods of the specified game to be fetched
+ *		in_date_cutoff - Is optional and can be set to 0 and is otherwise
+ *			just a shorthand to limit the events to newer ones than the
+ *			cutoff date, without requiring to use in_filter just for that
+ *
+ * Example:
+ *		This way it is easy to check for an updated version of an already
+ *		installed mod. If *on_check_for_updates()* is called with
+ *		*nevents == 0*, then the installed modfile is up to date.
+ *
+ * (start code)
+ * minimod_get_mod_events(
+ *		"event_type-eq=MODFILE_CHANGED&latest=true",
+ *		YOUR_GAME_ID,
+ *		MOD_IN_QUESTION,
+ *		TIME_OF_INSTALL,
+ *		on_check_for_updates,
+ *		NULL);
+ * (end)
+ */
+MINIMOD_LIB void
+minimod_get_mod_events(
+  char const *in_filter,
+  uint64_t in_game_id,
+  uint64_t in_mod_id,
+  uint64_t in_date_cutoff,
+  minimod_get_events_callback in_callback,
+  void *in_userdata);
+
+
+/*
+ * Function: minimod_get_dependencies()
+ */
+MINIMOD_LIB void
+minimod_get_dependencies(
+  uint64_t in_game_id,
+  uint64_t in_mod_id,
+  minimod_get_dependencies_callback in_callback,
   void *in_userdata);
 
 
@@ -515,7 +577,7 @@ minimod_get_me(minimod_get_users_callback in_callback, void *in_userdata);
 
 
 /*
- * Function: minimod_get_events()
+ * Function: minimod_get_user_events()
  *
  * Get events for the currently authenticated user.
  *
@@ -532,7 +594,7 @@ minimod_get_me(minimod_get_users_callback in_callback, void *in_userdata);
  *	false if no user is currently authenticated.
  */
 MINIMOD_LIB bool
-minimod_get_me_events(
+minimod_get_user_events(
   char const *in_filter,
   uint64_t in_game_id,
   uint64_t in_date_cutoff,
@@ -750,7 +812,7 @@ main(void)
 {
 	minimod_init(
 		MINIMOD_ENVIRONMENT_LIVE, // choose mod.io's live or test environment
-		0, // your game's id on mod.io
+		0, // your game's ID on mod.io
 		YOUR_API_KEY, // your API key
 		".modio"); // local path for mods + data
 

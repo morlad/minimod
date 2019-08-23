@@ -36,6 +36,7 @@ struct callback
 		minimod_rate_callback rate;
 		minimod_get_ratings_callback get_ratings;
 		minimod_subscription_change_callback subscription_change;
+		minimod_get_dependencies_callback get_dependencies;
 	} fptr;
 	void *userdata;
 };
@@ -399,6 +400,48 @@ handle_get_modfiles(
 		task->callback.fptr.get_modfiles(task->callback.userdata, 1, &modfile);
 	}
 	free(buffer);
+}
+
+
+static void
+handle_get_dependencies(
+  void *in_udata,
+  void const *in_data,
+  size_t in_len,
+  int error)
+{
+	struct task *task = in_udata;
+	if (error != 200)
+	{
+		task->callback.fptr.get_dependencies(task->callback.userdata, 0, NULL);
+		return;
+	}
+
+	// parse data
+	QAJ4C_Value const *document = NULL;
+	size_t nbuffer = QAJ4C_calculate_max_buffer_size_n(in_data, in_len);
+	void *buffer = malloc(nbuffer);
+	QAJ4C_parse_opt(in_data, in_len, 0, buffer, nbuffer, &document);
+	assert(QAJ4C_is_object(document));
+
+	// single item or array of items?
+	QAJ4C_Value const *data = QAJ4C_object_get(document, "data");
+	assert(QAJ4C_is_array(data));
+
+	size_t ndeps = QAJ4C_array_size(data);
+	uint64_t *deps = malloc(sizeof *deps * ndeps);
+
+	for (size_t i = 0; i < QAJ4C_array_size(data); ++i)
+	{
+		deps[i] = QAJ4C_get_uint64(QAJ4C_array_get(data, i));
+	}
+
+	task->callback.fptr.get_dependencies(
+	  task->callback.userdata,
+	  ndeps,
+	  deps);
+
+	free(deps);
 }
 
 
@@ -823,6 +866,43 @@ minimod_get_me(minimod_get_users_callback in_callback, void *in_udata)
 	free(path);
 
 	return true;
+}
+
+
+void
+minimod_get_dependencies(
+  uint64_t in_game_id,
+  uint64_t in_mod_id,
+  minimod_get_dependencies_callback in_callback,
+  void *in_userdata)
+{
+	assert(in_game_id > 0);
+	assert(in_mod_id > 0);
+
+	char *path;
+	asprintf(
+	  &path,
+	  "%s/games/%" PRIu64 "/mods/%" PRIu64 "/dependencies",
+	  endpoints[l_mmi.env],
+	  in_game_id,
+	  in_mod_id);
+
+	struct task *task = alloc_task();
+	task->callback.fptr.get_dependencies = in_callback;
+	task->callback.userdata = in_userdata;
+	if (!netw_request(
+	      NETW_VERB_GET,
+	      path,
+	      NULL,
+	      NULL,
+	      0,
+	      handle_get_dependencies,
+	      task))
+	{
+		free_task(task);
+	}
+
+	free(path);
 }
 
 
