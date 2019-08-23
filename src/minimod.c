@@ -349,6 +349,8 @@ populate_modfile(struct minimod_modfile *modfile, QAJ4C_Value const *node)
 
 	QAJ4C_Value const *download = QAJ4C_object_get(node, "download");
 	modfile->url = QAJ4C_get_string(QAJ4C_object_get(download, "binary_url"));
+
+	modfile->more = node;
 }
 
 
@@ -1145,9 +1147,34 @@ minimod_install(
 bool
 minimod_uninstall(uint64_t in_game_id, uint64_t in_mod_id)
 {
-	// TODO is not implemented yet
-	// fsu_rmfile();
-	return false;
+	// check if a json file exists. if it does not, then there is no mod either
+	char *path;
+	asprintf(&path, "%s/mods/%" PRIu64 "/%" PRIu64 ".json", l_mmi.root_path, in_game_id, in_mod_id);
+	if (fsu_ptype(path) != FSU_PATHTYPE_FILE)
+	{
+		free(path);
+		return false;
+	}
+	fsu_rmfile(path);
+	free(path);
+
+	// check if the mod was stored as zip
+	asprintf(&path, "%s/mods/%" PRIu64 "/%" PRIu64 ".zip", l_mmi.root_path, in_game_id, in_mod_id);
+	if (fsu_ptype(path) == FSU_PATHTYPE_FILE)
+	{
+		fsu_rmfile(path);
+	}
+	free(path);
+
+	// finally and probably redundantly check for dir
+	asprintf(&path, "%s/mods/%" PRIu64 "/%" PRIu64, l_mmi.root_path, in_game_id, in_mod_id);
+	if (fsu_ptype(path) == FSU_PATHTYPE_DIR)
+	{
+		fsu_rmdir_recursive(path);
+	}
+	free(path);
+
+	return true;
 }
 
 
@@ -1174,8 +1201,10 @@ minimod_get_installed_mod(
 bool
 minimod_is_installed(uint64_t in_game_id, uint64_t in_mod_id)
 {
-	// TODO
-	return false;
+	// check if a json file exists. if it does not, then there is no mod either
+	char *path;
+	asprintf(&path, "%s/mods/%" PRIu64 "/%" PRIu64 ".json", l_mmi.root_path, in_game_id, in_mod_id);
+	return (fsu_ptype(path) == FSU_PATHTYPE_FILE);
 }
 
 
