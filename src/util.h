@@ -20,6 +20,26 @@ extern "C" {
 
 /* Section: API */
 
+
+/* Enum: fsu_pathtype
+ */
+enum fsu_pathtype
+{
+	FSU_PATHTYPE_NONE,
+	FSU_PATHTYPE_FILE,
+	FSU_PATHTYPE_DIR,
+	FSU_PATHTYPE_OTHER,
+};
+
+
+/* Function: fsu_ftype()
+ *
+ * Check if a path directes at a directory, file, nothing or something else.
+ */
+enum fsu_pathtype
+fsu_ptype(char const *path);
+
+
 /* Function: fsu_fsize()
  *
  *	Get byte-size of file.
@@ -47,6 +67,22 @@ fsu_fopen(char const *path, char const *mode);
  */
 bool
 fsu_mkdir(char const *path);
+
+
+/* Function: fsu_rmdir()
+ *
+ *	TL;DR: rm -f
+ */
+bool
+fsu_rmdir(char const *path);
+
+
+/* Function: fsu_rmdir_recursive()
+ *
+ *	TL;DR: rm -rf
+ */
+bool
+fsu_rmdir_recursive(char const *path);
 
 
 /* Function: fsu_mvfile()

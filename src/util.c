@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <dirent.h>
 #endif
 
 
@@ -72,6 +73,56 @@ bool
 fsu_rmfile(char const *in_path)
 {
 	return (unlink(in_path) == 0);
+}
+#endif
+
+
+#ifdef _WIN32
+enum fsu_pathtype fsu_ptype(char const *in_path)
+{
+  // convert utf8 to utf16/wide char
+  size_t nchars = sys_wchar_from_utf8(in_path, NULL, 0);
+  ML_ASSERT(nchars > 0);
+  wchar_t *utf16 = malloc(nchars * sizeof *utf16);
+  sys_wchar_from_utf8(in_path, utf16, nchars);
+
+  DWORD const result = GetFileAttributes(utf16);
+  free(utf16);
+  if (result == INVALID_FILE_ATTRIBUTES)
+  {
+    return FSU_PATHTYPE_NONE;
+  }
+  if (result & FILE_ATTRIBUTE_DIRECTORY)
+  {
+    return FSU_PATHTYPE_DIR;
+  }
+  else
+  {
+    return FSU_PATHTYPE_FILE;
+  }
+}
+#else
+enum fsu_pathtype fsu_ptype(char const *in_path)
+{
+  struct stat sbuffer;
+  int const result = stat(in_path, &sbuffer);
+  if (result != 0)
+  {
+    return FSU_PATHTYPE_NONE;
+  }
+
+  if (S_ISDIR(sbuffer.st_mode))
+  {
+    return FSU_PATHTYPE_DIR;
+  }
+  else if (S_ISREG(sbuffer.st_mode))
+  {
+    return FSU_PATHTYPE_FILE;
+  }
+  else
+  {
+    return FSU_PATHTYPE_OTHER;
+  }
 }
 #endif
 
@@ -199,6 +250,118 @@ fsu_mkdir(char const *in_dir)
 }
 #endif
 
+
+#ifdef _WIN32
+
+bool
+fsu_rmdir(char const *in_path)
+{
+	// convert to utf16
+	size_t nchars = sys_wchar_from_utf8(in_path, NULL, 0);
+	assert(nchars > 0);
+	wchar_t *utf16 = malloc(nchars * sizeof *utf16);
+	sys_wchar_from_utf8(in_path, utf16, nchars);
+
+	RemoveDirectory(utf16);
+
+	free(utf16);
+
+	return true;
+}
+
+
+bool
+fsu_rmdir_recursive_utf16(wchar_t const *in_path)
+{
+	// pa = path + asterisk
+	size_t clen = wcslen(in_path);
+	wchar_t *pa = malloc(2 * (clen + 2));
+	memcpy(pa, in_path, 2 * clen);
+	pa[clen] = '*';
+	pa[clen + 1] = '\0';
+	wprintf("pa = '%s'\n", pa);
+
+	WIN32_FIND_DATA fdata;
+	if ((HANDLE h = FindFirstFile(pa, &fdata)))
+	{
+		do {
+			wprintf("entry: %s\n", fdata.cFileName);
+			if (fdata.dwFileAttribute == FILE_ATTRIBUTE_DIRECTORY)
+			{
+				fsu_rmdir_recursive(fdata.cFileName);
+			}
+			else
+			{
+				wprintf("deleting file: %s\n", fdata.cFileName);
+				//DeleteFile(fdata.cFileName);
+			}
+		} while (FindNextFile(h, &fdata));
+	}
+
+	wprintf("RemoveDirectory(%s)\n", in_path);
+	//RemoveDirectory(in_path);
+}
+
+
+bool
+fsu_rmdir_recursive(char const *in_path)
+{
+	// convert to utf16
+	size_t nchars = sys_wchar_from_utf8(in_path, NULL, 0);
+	assert(nchars > 0);
+	wchar_t *utf16 = malloc(nchars * sizeof *utf16);
+	sys_wchar_from_utf8(in_path, utf16, nchars);
+
+	bool ok = fsu_rmdir_recursive_utf16(utf16);
+
+	free(utf16);
+
+	return ok;
+}
+
+#else
+
+bool
+fsu_rmdir(char const *in_path)
+{
+	return 0 == rmdir(in_path);
+}
+
+
+bool
+fsu_rmdir_recursive(char const *in_path)
+{
+	printf("fsu_rmdir_recursive(%s)\n", in_path);
+	DIR *dir = opendir(in_path);
+	struct dirent *entry;
+	while ((entry = readdir(dir)))
+	{
+		if (entry->d_name[0] == '.')
+		{
+			continue;
+		}
+		if (entry->d_type == DT_DIR)
+		{
+			char *subdir;
+			asprintf(&subdir, "%s/%s", in_path, entry->d_name);
+			fsu_rmdir_recursive(subdir);
+			free(subdir);
+		}
+		else
+		{
+			char *file;
+			asprintf(&file, "%s/%s", in_path, entry->d_name);
+			printf("deleting file %s\n", file);
+			unlink(file);
+			free(file);
+		}
+	}
+	closedir(dir);
+
+	return 0 == rmdir(in_path);
+}
+
+#endif
 
 #ifdef _WIN32
 FILE *
