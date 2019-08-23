@@ -46,10 +46,12 @@ int main(void)
 
 ## Design
 
-### Caching
-
 ### Mega-structs vs. 'more'
+
+### Caching
 
 ### Filtering: minimod vs. API
 
 ### Low on dependencies
+
+### Unzip or Not
