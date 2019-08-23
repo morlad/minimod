@@ -43,6 +43,7 @@ test_1(void)
 	  MINIMOD_ENVIRONMENT_TEST,
 	  API_KEY_TEST,
 	  NULL,
+	  false,
 	  MINIMOD_CURRENT_ABI);
 
 	minimod_deinit();
@@ -79,6 +80,7 @@ test_2(void)
 	  MINIMOD_ENVIRONMENT_LIVE,
 	  API_KEY_LIVE,
 	  NULL,
+	  false,
 	  MINIMOD_CURRENT_ABI);
 
 	printf("\n= Requesting list of live games on mod.io\n");
@@ -113,7 +115,7 @@ static void
 test_3(uint64_t game_id)
 {
 #if 0
-	minimod_init(MINIMOD_ENVIRONMENT_TEST, API_KEY_TEST, NULL, MINIMOD_CURRENT_ABI);
+	minimod_init(MINIMOD_ENVIRONMENT_TEST, API_KEY_TEST, NULL, false MINIMOD_CURRENT_ABI);
 
 	printf("\n= Requesting list of mods for game X on test-mod.io\n");
 
@@ -133,6 +135,7 @@ test_3(uint64_t game_id)
 	  MINIMOD_ENVIRONMENT_LIVE,
 	  API_KEY_LIVE,
 	  NULL,
+	  false,
 	  MINIMOD_CURRENT_ABI);
 
 	printf(
@@ -176,6 +179,7 @@ test_4(void)
 	  MINIMOD_ENVIRONMENT_TEST,
 	  API_KEY_TEST,
 	  NULL,
+	  false,
 	  MINIMOD_CURRENT_ABI);
 
 	printf("\n= Email authentication workflow\n");
@@ -276,6 +280,7 @@ test_5(void)
 	  MINIMOD_ENVIRONMENT_TEST,
 	  API_KEY_TEST,
 	  NULL,
+	  false,
 	  MINIMOD_CURRENT_ABI);
 
 	int wait = 1;
@@ -317,6 +322,7 @@ test_6(void)
 	  MINIMOD_ENVIRONMENT_TEST,
 	  API_KEY_TEST,
 	  NULL,
+	  false,
 	  MINIMOD_CURRENT_ABI);
 
 	int wait = 1;
@@ -340,14 +346,38 @@ on_installed(void *in_udata, char const *in_path)
 
 
 static void
+installed_mod_enumerator(
+  void *in_userdata,
+  uint64_t in_game_id,
+  uint64_t in_mod_id,
+  char const *in_path)
+{
+	printf("- %" PRIu64 ":%" PRIu64 " = %s\n", in_game_id, in_mod_id, in_path);
+}
+
+
+static void
+on_installed_mod(
+  void *in_userdata,
+  size_t in_nmods,
+  struct minimod_mod const *mods)
+{
+	*((int *)in_userdata) = 0;
+}
+
+
+static void
 test_8(void)
 {
 	minimod_init(
 	  MINIMOD_ENVIRONMENT_TEST,
 	  API_KEY_TEST,
 	  NULL,
+	  true,
 	  MINIMOD_CURRENT_ABI);
 
+	// install the mod
+	printf("Installing Mod\n");
 	int wait = 1;
 	minimod_install(GAME_ID_TEST, 1720, 1685, on_installed, &wait);
 
@@ -355,6 +385,28 @@ test_8(void)
 	{
 		sys_sleep(10);
 	}
+
+	// make sure the mod is installed
+	bool is_installed = minimod_is_installed(GAME_ID_TEST, 1720);
+	printf("Mod is installed: %s\n", is_installed ? "YES" : "NO");
+
+	// enum all installed mods
+	printf("Installed mods:\n");
+	minimod_enum_installed_mods(installed_mod_enumerator, NULL);
+
+	// get data for the installed mod
+#if 0
+	wait = 1;
+	minimod_get_installed_mod(GAME_ID_TEST, 1720, on_installed_mod, wait);
+	while (wait)
+	{
+		sys_sleep(10);
+	}
+#endif
+
+	// undo stuff and deinstall the mod
+	printf("Uninstalling Mod\n");
+	minimod_uninstall(GAME_ID_TEST, 1720);
 
 	minimod_deinit();
 }
@@ -386,6 +438,7 @@ test_9(void)
 	  MINIMOD_ENVIRONMENT_TEST,
 	  API_KEY_TEST,
 	  NULL,
+	  false,
 	  MINIMOD_CURRENT_ABI);
 
 	int rating = -2;
@@ -433,6 +486,7 @@ test_10(void)
 	  MINIMOD_ENVIRONMENT_TEST,
 	  API_KEY_TEST,
 	  NULL,
+	  false,
 	  MINIMOD_CURRENT_ABI);
 
 	int wait = 1;

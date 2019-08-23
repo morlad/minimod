@@ -2,10 +2,12 @@
 #include "minimod/minimod.h"
 #include "netw.h"
 #include "qajson4c/src/qajson4c/qajson4c.h"
+#include "miniz/miniz.h"
 #include "util.h"
 
 #include <assert.h>
 #include <dirent.h>
+#include <errno.h>
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
@@ -590,6 +592,7 @@ minimod_init(
   enum minimod_environment in_env,
   char const *in_api_key,
   char const *in_root_path,
+  bool in_unzip,
   uint32_t in_abi_version)
 {
 	// check version compatibility
@@ -629,6 +632,8 @@ minimod_init(
 	}
 
 	l_mmi.api_key = in_api_key ? strdup(in_api_key) : NULL;
+
+	l_mmi.unzip = in_unzip;
 
 	read_token();
 
@@ -990,7 +995,9 @@ struct install_request
 {
 	minimod_install_callback callback;
 	void *userdata;
+	uint64_t game_id;
 	uint64_t mod_id;
+	char *zip_path;
 	FILE *file;
 };
 
@@ -1011,14 +1018,61 @@ on_install_download(void *in_udata, FILE *in_file, int error)
 	// extract zip?
 	if (l_mmi.unzip)
 	{
+		long s = ftell(in_file);
+		assert(s >= 0);
+		int seek_err = fseek(in_file, 0, SEEK_SET);
+		if (seek_err != 0)
+		{
+			printf("Seek failed %i\n", errno);
+		}
 		// unzip it
+		mz_zip_archive zip = { 0 };
+		if (!mz_zip_reader_init_cfile(&zip, in_file, (mz_uint64)s, 0))
+		{
+			printf("zip error: %i\n", zip.m_last_error);
+		}
+		mz_uint nfiles = mz_zip_reader_get_num_files(&zip);
+		printf("#files in zip: %u\n", nfiles);
+		for (mz_uint i = 0; i < nfiles; ++i)
+		{
+			mz_zip_archive_file_stat stat;
+			mz_zip_reader_file_stat(&zip, i, &stat);
+			if (!stat.m_is_directory)
+			{
+				char *path;
+				asprintf(
+					&path,
+					"%s/mods/%" PRIu64 "/%" PRIu64 "/%s",
+					l_mmi.root_path,
+					req->game_id,
+					req->mod_id,
+					stat.m_filename);
+				printf("  + extracting %s\n", path);
+				FILE *f = fsu_fopen(path, "wb");
+				mz_zip_reader_extract_to_cfile(&zip, i, f, 0);
+				free(path);
+
+				fclose(f);
+			}
+		}
+		mz_zip_reader_end(&zip);
+		fsu_rmfile(req->zip_path);
 	}
 
 	// callback
 	req->callback(req->userdata, "-deprecated-");
 
 	fclose(in_file);
+	free(req->zip_path);
 	free(req);
+}
+
+
+static bool
+json_print_callback(void *ptr, const char *buffer, size_t size)
+{
+	fwrite(buffer, size, 1, ptr);
+	return true;
 }
 
 
@@ -1031,10 +1085,20 @@ on_download_modfile(
 	assert(nmodfiles == 1);
 
 	struct install_request *req = udata;
-	char *fpath;
-	asprintf(&fpath, "%s/mods/%" PRIu64 ".zip", l_mmi.root_path, req->mod_id);
-	FILE *fout = fsu_fopen(fpath, "wb");
-	free(fpath);
+
+	// write json file
+	char *jpath;
+	asprintf(&jpath, "%s/mods/%" PRIu64 "/%" PRIu64 ".json", l_mmi.root_path, req->game_id, req->mod_id);
+
+	FILE *jout = fsu_fopen(jpath, "wb");
+	QAJ4C_print_buffer_callback(modfiles[0].more, json_print_callback, jout);
+	fclose(jout);
+
+	free(jpath);
+
+	// write actual file
+	asprintf(&req->zip_path, "%s/mods/%" PRIu64 "/%" PRIu64 ".zip", l_mmi.root_path, req->game_id, req->mod_id);
+	FILE *fout = fsu_fopen(req->zip_path, "w+rb");
 
 	req->file = fout;
 
@@ -1067,6 +1131,7 @@ minimod_install(
 	req->callback = in_callback;
 	req->userdata = in_userdata;
 	req->mod_id = in_mod_id;
+	req->game_id = in_game_id;
 	minimod_get_modfiles(
 	  NULL,
 	  in_game_id,

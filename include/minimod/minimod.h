@@ -378,6 +378,7 @@ typedef void (*minimod_subscription_change_callback)(
  *	in_root_path - Absolute or relative root path where data/mods &c. will
  *		be stored. Needs to be writeable by the user (surprise). If the
  *		directory does not yet exist, it will be created automatically.
+ *	in_unzip - should downloaded mods be extracted or left as .zip files?
  *	in_abi_version - Has to be MINIMOD_CURRENT_ABI.
  *		This bit is used to make sure the actual library and the header
  *		you were compiling against are ABI compatible.
@@ -390,6 +391,7 @@ minimod_init(
   enum minimod_environment in_env,
   char const *in_api_key,
   char const *in_root_path,
+  bool in_unzip,
   uint32_t in_abi_version);
 
 
