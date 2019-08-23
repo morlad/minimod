@@ -79,6 +79,23 @@ enum minimod_err
 
 
 /*
+ * Enum: minimod_eventtype
+ */
+enum minimod_eventtype
+{
+	MINIMOD_EVENTTYPE_SUBSCRIBE,
+	MINIMOD_EVENTTYPE_UNSUBSCRIBE,
+	MINIMOD_EVENTTYPE_TEAM_JOIN,
+	MINIMOD_EVENTTYPE_TEAM_LEAVE,
+	MINIMOD_EVENTTYPE_MOD_AVAILABLE,
+	MINIMOD_EVENTTYPE_MOD_UNAVAILABLE,
+	MINIMOD_EVENTTYPE_MOD_EDITED,
+	MINIMOD_EVENTTYPE_MOD_DELETED,
+	MINIMOD_EVENTTYPE_MODFILE_CHANGED,
+};
+
+
+/*
  * Struct: minimod_game
  *
  * https://docs.mod.io/#game-object
@@ -157,7 +174,7 @@ struct minimod_modfile
 	char const *md5;
 	char const *url;
 	uint64_t filesize;
-	void *more;
+	void const *more;
 };
 
 
@@ -172,6 +189,25 @@ struct minimod_rating
 	uint64_t mod_id;
 	uint64_t date;
 	int64_t rating;
+	void const *more;
+};
+
+
+/*
+ * Struct: minimod_event
+ *
+ * https://docs.mod.io/#user-event-object
+ * https://docs.mod.io/#mod-event-object
+ */
+struct minimod_event
+{
+	uint64_t id;
+	uint64_t game_id;
+	uint64_t mod_id;
+	uint64_t user_id;
+	uint64_t date_added;
+	void const *more;
+	enum minimod_eventtype type;
 };
 
 
@@ -282,6 +318,15 @@ typedef void (*minimod_enum_installed_mods_callback)(
   uint64_t in_game_id,
   uint64_t in_mod_id,
   char const *in_path);
+
+
+/*
+ * Callback: minimod_get_events_callback()
+ */
+typedef void (*minimod_get_events_callback)(
+  void *userdata,
+  size_t nevents,
+  struct minimod_event const *events);
 
 
 /*
@@ -436,18 +481,6 @@ minimod_deauthenticate(void);
 
 
 /*
- * Function: minimod_get_me()
- *
- * Fetch information about the currently authenticated user.
- *
- * Returns:
- *	false if no user is currently authenticated.
- */
-MINIMOD_LIB bool
-minimod_get_me(minimod_get_users_callback in_callback, void *in_userdata);
-
-
-/*
  * Function: minimod_email_request()
  */
 MINIMOD_LIB void
@@ -464,6 +497,46 @@ MINIMOD_LIB void
 minimod_email_exchange(
   char const *in_code,
   minimod_email_exchange_callback in_callback,
+  void *in_userdata);
+
+
+/* Topic: ¶ Me */
+
+/*
+ * Function: minimod_get_me()
+ *
+ * Fetch information about the currently authenticated user.
+ *
+ * Returns:
+ *	false if no user is currently authenticated.
+ */
+MINIMOD_LIB bool
+minimod_get_me(minimod_get_users_callback in_callback, void *in_userdata);
+
+
+/*
+ * Function: minimod_get_events()
+ *
+ * Get events for the currently authenticated user.
+ *
+ * Parameters:
+ *		in_filter - Can be NULL, otherwise see <[Filtering Sorting Pagination]>
+ *		in_game_id - Is optional and can be set to 0 and is otherwise just
+ *			a shorthand to limit the events to game_id, without requiring
+ *			to use in_filter just for that
+ *		in_date_cutoff - Is optional and can be set to 0 and is otherwise
+ *			just a shorthand to limit the events to newer ones than the
+ *			cutoff date, without requiring to use in_filter just for that
+ *
+ * Returns:
+ *	false if no user is currently authenticated.
+ */
+MINIMOD_LIB bool
+minimod_get_me_events(
+  char const *in_filter,
+  uint64_t in_game_id,
+  uint64_t in_date_cutoff,
+  minimod_get_events_callback in_callback,
   void *in_userdata);
 
 
