@@ -149,7 +149,7 @@ fsu_recursive_mkdir(wchar_t *in_dir)
 			*ptr = '\0';
 			BOOL result = CreateDirectory(in_dir, NULL);
 			DWORD err = GetLastError();
-			printf("<CreateDirectory(%ls) %lu\n", in_dir, err);
+			printf("CreateDirectory(%ls) %lu\n", in_dir, err);
 			*ptr = old;
 
 			if (result || err == ERROR_ALREADY_EXISTS)
