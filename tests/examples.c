@@ -69,7 +69,7 @@ get_games_callback(
 		printf("\t+ date added: %s\n", ctime(&added));
 	}
 
-	++(*(int *)udata);
+	*((int *)udata) = 1;
 }
 
 
