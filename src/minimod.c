@@ -1268,6 +1268,7 @@ on_install_download(void *in_udata, FILE *in_file, int error)
 	if (error != 200)
 	{
 		printf("[mm] mod NOT downloaded\n");
+		req->callback(req->userdata, NULL);
 		return;
 	}
 
