@@ -82,7 +82,7 @@ enum fsu_pathtype fsu_ptype(char const *in_path)
 {
   // convert utf8 to utf16/wide char
   size_t nchars = sys_wchar_from_utf8(in_path, NULL, 0);
-  ML_ASSERT(nchars > 0);
+  assert(nchars > 0);
   wchar_t *utf16 = malloc(nchars * sizeof *utf16);
   sys_wchar_from_utf8(in_path, utf16, nchars);
 
@@ -270,7 +270,7 @@ fsu_rmdir(char const *in_path)
 }
 
 
-bool
+static bool
 fsu_rmdir_recursive_utf16(wchar_t const *in_path)
 {
 	// pa = path + asterisk
@@ -279,27 +279,29 @@ fsu_rmdir_recursive_utf16(wchar_t const *in_path)
 	memcpy(pa, in_path, 2 * clen);
 	pa[clen] = '*';
 	pa[clen + 1] = '\0';
-	wprintf("pa = '%s'\n", pa);
+	wprintf(L"pa = '%s'\n", pa);
 
 	WIN32_FIND_DATA fdata;
-	if ((HANDLE h = FindFirstFile(pa, &fdata)))
+	HANDLE h;
+	if ((h = FindFirstFile(pa, &fdata)))
 	{
 		do {
-			wprintf("entry: %s\n", fdata.cFileName);
-			if (fdata.dwFileAttribute == FILE_ATTRIBUTE_DIRECTORY)
+			wprintf(L"entry: %s\n", fdata.cFileName);
+			if (fdata.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY)
 			{
-				fsu_rmdir_recursive(fdata.cFileName);
+				fsu_rmdir_recursive_utf16(fdata.cFileName);
 			}
 			else
 			{
-				wprintf("deleting file: %s\n", fdata.cFileName);
+				wprintf(L"deleting file: %s\n", fdata.cFileName);
 				//DeleteFile(fdata.cFileName);
 			}
 		} while (FindNextFile(h, &fdata));
 	}
 
-	wprintf("RemoveDirectory(%s)\n", in_path);
+	wprintf(L"RemoveDirectory(%s)\n", in_path);
 	//RemoveDirectory(in_path);
+	return true;
 }
 
 
@@ -365,6 +367,58 @@ fsu_rmdir_recursive(char const *in_path)
 
 
 #ifdef _WIN32
+
+bool
+fsu_enum_dir(
+  char const *in_dir,
+  fsu_enum_dir_callback in_callback,
+  void *in_userdata)
+{
+	// convert to utf16
+	size_t nchars = sys_wchar_from_utf8(in_dir, NULL, 0);
+	assert(nchars > 0);
+	wchar_t *utf16 = malloc(nchars * sizeof *utf16);
+	sys_wchar_from_utf8(in_dir, utf16, nchars);
+
+	// pa = path + asterisk
+	size_t clen = wcslen(utf16);
+	wchar_t *pa = malloc(2 * (clen + 2));
+	memcpy(pa, utf16, 2 * clen);
+	pa[clen] = '*';
+	pa[clen + 1] = '\0';
+	wprintf(L"enum-pa = '%s'\n", pa);
+
+	WIN32_FIND_DATA fdata;
+	HANDLE h;
+	if ((h = FindFirstFile(pa, &fdata)))
+	{
+		do {
+			wprintf(L"entry: %s\n", fdata.cFileName);
+
+			// convert fdata.cFileName
+			size_t nbytes = sys_utf8_from_wchar(fdata.cFileName, NULL, 0);
+			assert(nbytes > 0);
+			char *utf8 = malloc(nbytes);
+			sys_utf8_from_wchar(fdata.cFileName, utf8, nbytes);
+
+			if (fdata.cFileName[0] == '.')
+			{
+				// do nothing, just skip
+			}
+			else if (fdata.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY)
+			{
+				in_callback(in_dir, utf8, true, in_userdata);
+			}
+			else
+			{
+				in_callback(in_dir, utf8, false, in_userdata);
+			}
+			free(utf8);
+		} while (FindNextFile(h, &fdata));
+	}
+
+	return true;
+}
 
 #else
 
