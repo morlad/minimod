@@ -288,32 +288,45 @@ fsu_rmdir_recursive_utf16(wchar_t const *in_path)
 		pa[clen + 0] = '*';
 		pa[clen + 1] = '\0';
 	}
-	wprintf(L"pa = '%s'\n", pa);
 
 	WIN32_FIND_DATA fdata;
 	HANDLE h;
 	if ((h = FindFirstFile(pa, &fdata)))
 	{
 		do {
-			wprintf(L"entry: %s\n", fdata.cFileName);
 			if (fdata.cFileName[0] == '.')
 			{
 				// do nothing, just skip
 			}
-			else if (fdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-			{
-				fsu_rmdir_recursive_utf16(fdata.cFileName);
-			}
 			else
 			{
-				wprintf(L"deleting file: %s\n", fdata.cFileName);
-				//DeleteFile(fdata.cFileName);
+				size_t path_len = wcslen(in_path);
+				size_t file_len = wcslen(fdata.cFileName);
+				size_t sub_len = path_len + 1 /*NUL*/ + file_len;
+				wchar_t *sub = malloc(sizeof *sub * (sub_len + 1));
+				memcpy(sub, in_path, 2 * path_len);
+				sub[path_len] = '/';
+				memcpy(sub + path_len + 1, fdata.cFileName, 2 * (file_len + 1 /*NUL*/));
+				if (fdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+				{
+					fsu_rmdir_recursive_utf16(sub);
+				}
+				else
+				{
+					wprintf(L"deleting file: %s\n", sub);
+					DeleteFile(sub);
+				}
+				free(sub);
 			}
 		} while (FindNextFile(h, &fdata));
+		FindClose(h);
 	}
 
 	wprintf(L"RemoveDirectory(%s)\n", in_path);
-	//RemoveDirectory(in_path);
+	if (!RemoveDirectory(in_path))
+	{
+		wprintf(L"Failed to remove %s (%u)\n", in_path, GetLastError());
+	}
 	return true;
 }
 
@@ -415,8 +428,6 @@ fsu_enum_dir(
 	if ((h = FindFirstFile(pa, &fdata)))
 	{
 		do {
-			wprintf(L"entry: %s\n", fdata.cFileName);
-
 			// convert fdata.cFileName
 			size_t nbytes = sys_utf8_from_wchar(fdata.cFileName, NULL, 0);
 			assert(nbytes > 0);
@@ -437,6 +448,7 @@ fsu_enum_dir(
 			}
 			free(utf8);
 		} while (FindNextFile(h, &fdata));
+		FindClose(h);
 	}
 
 	return true;
