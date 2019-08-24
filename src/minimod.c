@@ -1356,7 +1356,8 @@ on_download_modfile(
 
 	// write actual file
 	asprintf(&req->zip_path, "%s/mods/%" PRIu64 "/%" PRIu64 ".zip", l_mmi.root_path, req->game_id, req->mod_id);
-	FILE *fout = fsu_fopen(req->zip_path, "w+rb");
+	FILE *fout = fsu_fopen(req->zip_path, "w+b");
+	assert(fout);
 
 	req->file = fout;
 
