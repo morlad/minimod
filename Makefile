@@ -241,7 +241,6 @@ clean-test:
 
 clean: clean-library clean-test
 
-$(objs): deps/dirent/include/dirent.h
 $(objs): deps/qajson4c/src/qajson4c/qajson4c.h
 
 minimod: $(LIB_PATH)
@@ -282,15 +281,6 @@ ifeq ($(os),freebsd)
 endif
 
 
-deps/dirent/include/dirent.h: Makefile
-ifdef Q
-	@echo Updating dependency: tronkko/dirent @ $(DIRENT_VERSION)
-endif
-	$(Q)$(call CONDITIONAL_CLONE,https://github.com/tronkko/dirent.git,deps/dirent)
-	$(Q)git -C deps/dirent fetch --all --tags --quiet
-	$(Q)git -C deps/dirent checkout $(DIRENT_VERSION) --quiet
-	$(Q)$(call TOUCH,$@)
-
 deps/qajson4c/src/qajson4c/qajson4c.h: Makefile
 ifdef Q
 	@echo Updating dependency: DeHecht/qajson4c @ $(QAJSON4C_VERSION)
@@ -311,7 +301,6 @@ $(OUTPUT_DIR)/src/minimod.o: NOWARNINGS += -Wno-error-documentation
 endif
 
 ifeq ($(os),windows)
-$(OUTPUT_DIR)/src/%.o: CPPFLAGS += -Ideps/dirent/include
 $(OUTPUT_DIR)/src/%.o: NOWARNINGS += -Wno-error-reserved-id-macro
 $(OUTPUT_DIR)/src/%.o: NOWARNINGS += -Wno-error-nonportable-system-include-path
 $(OUTPUT_DIR)/deps/miniz/miniz.o: CPPFLAGS += -D_LARGEFILE64_SOURCE=1
