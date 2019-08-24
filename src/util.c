@@ -270,13 +270,100 @@ fsu_rmdir(char const *in_path)
 }
 
 
+static bool
+fsu_rmdir_recursive_utf16(wchar_t const *in_path)
+{
+	// pa = path + asterisk
+	size_t clen = wcslen(in_path);
+	wchar_t *pa = malloc(2 * (clen + 3));
+	memcpy(pa, in_path, 2 * clen);
+	if (pa[clen - 1] != '/')
+	{
+		pa[clen + 0] = '/';
+		pa[clen + 1] = '*';
+		pa[clen + 2] = '\0';
+	}
+	else
+	{
+		pa[clen + 0] = '*';
+		pa[clen + 1] = '\0';
+	}
+
+	WIN32_FIND_DATA fdata;
+	HANDLE h;
+	if ((h = FindFirstFile(pa, &fdata)))
+	{
+		do {
+			if (fdata.cFileName[0] == '.')
+			{
+				// do nothing, just skip
+			}
+			else
+			{
+				size_t path_len = wcslen(in_path);
+				size_t file_len = wcslen(fdata.cFileName);
+				size_t sub_len = path_len + 1 /*NUL*/ + file_len;
+				wchar_t *sub = malloc(sizeof *sub * (sub_len + 1));
+				memcpy(sub, in_path, 2 * path_len);
+				sub[path_len] = '/';
+				memcpy(sub + path_len + 1, fdata.cFileName, 2 * (file_len + 1 /*NUL*/));
+				if (fdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+				{
+					fsu_rmdir_recursive_utf16(sub);
+				}
+				else
+				{
+					wprintf(L"deleting file: %s\n", sub);
+					DeleteFile(sub);
+				}
+				free(sub);
+			}
+		} while (FindNextFile(h, &fdata));
+		FindClose(h);
+	}
+
+	wprintf(L"RemoveDirectory(%s)\n", in_path);
+	if (!RemoveDirectory(in_path))
+	{
+		wprintf(L"Failed to remove %s (%u)\n", in_path, GetLastError());
+	}
+	return true;
+}
+
+
+// Why not use SHFileOperation()?
+// o It is the only thing requiring shell32, which is no biggy, but still
+// o It explicitely warns about using relative pathnames, what we do
+//   (but most likely the same problems happen with the hand-written version
+//    as well, since it is about other threads changing the current working
+//    directory).
+// So maybe there is no reason not to use it. Input appreciated.
 bool
 fsu_rmdir_recursive(char const *in_path)
 {
 	// convert to utf16
 	size_t nchars = sys_wchar_from_utf8(in_path, NULL, 0);
 	assert(nchars > 0);
+	wchar_t *utf16 = malloc(nchars * sizeof *utf16);
+	sys_wchar_from_utf8(in_path, utf16, nchars);
+
+	bool ok = fsu_rmdir_recursive_utf16(utf16);
+
+	free(utf16);
+
+	return ok;
+}
+
+#if 0
+bool
+fsu_rmdir_recursive(char const *in_path)
+{
+	// convert to utf16
+	size_t nchars = sys_wchar_from_utf8(in_path, NULL, 0);
+	assert(nchars > 0);
+	// string to SHFileOperation needs to be double-NUL terminated.
 	wchar_t *utf16 = calloc(1, sizeof *utf16 * (nchars + 1));
+	wchar_t *utf16 = malloc(nchars * sizeof *utf16);
 	sys_wchar_from_utf8(in_path, utf16, nchars);
 
 	SHFILEOPSTRUCT op = { 0 };
@@ -284,11 +371,14 @@ fsu_rmdir_recursive(char const *in_path)
 	op.pFrom = utf16;
 	op.fFlags = FOF_NO_UI;
 	int err = SHFileOperation(&op);
+	bool ok = fsu_rmdir_recursive_utf16(utf16);
 
 	free(utf16);
 
 	return !err;
+	return ok;
 }
+#endif
 
 #else
 
