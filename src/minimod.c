@@ -1475,8 +1475,16 @@ game_enumerator(char const *root, char const *name, bool is_dir, void *in_userda
 		char *path = NULL;
 		// TODO check if zip or directory
 		asprintf(&path, "%s%" PRIu64 ".zip", root, mod_id);
-		//asprintf(&path, "%s/%" PRIu64 "/", root, mod_id);
-		edata->callback(edata->userdata, edata->game_id, mod_id, path);
+		if (fsu_ptype(path) == FSU_PATHTYPE_FILE)
+		{
+			edata->callback(edata->userdata, edata->game_id, mod_id, path);
+			free(path);
+		}
+		else
+		{
+			asprintf(&path, "%s%" PRIu64 "/", root, mod_id);
+			edata->callback(edata->userdata, edata->game_id, mod_id, path);
+		}
 		free(path);
 	}
 }
