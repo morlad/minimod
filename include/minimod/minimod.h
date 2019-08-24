@@ -661,6 +661,7 @@ minimod_is_downloading(uint64_t in_game_id, uint64_t in_mod_id);
  */
 MINIMOD_LIB void
 minimod_enum_installed_mods(
+  uint64_t in_game_id,
   minimod_enum_installed_mods_callback in_callback,
   void *in_userdata);
 

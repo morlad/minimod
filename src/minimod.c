@@ -6,6 +6,7 @@
 #include "util.h"
 
 #include <assert.h>
+#include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
 #include <inttypes.h>
@@ -1422,11 +1423,101 @@ minimod_uninstall(uint64_t in_game_id, uint64_t in_mod_id)
 }
 
 
+struct enum_data
+{
+  minimod_enum_installed_mods_callback callback;
+  void *userdata;
+  uint64_t game_id;
+};
+
+
+static bool
+is_str_numeric(char const *str, size_t len)
+{
+	for (size_t i = 0; i < len; ++i)
+	{
+		if (!isdigit(str[i]))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+
+static void
+game_enumerator(char const *root, char const *name, bool is_dir, void *in_userdata)
+{
+	struct enum_data *edata = in_userdata;
+
+	if (is_dir)
+	{
+		return;
+	}
+
+	size_t l = strlen(name);
+	if (l > 5 && 0 == strcmp(name + l - 5, ".json") && is_str_numeric(name, l - 5))
+	{
+		printf("found mod: %s %s\n", root, name);
+		uint64_t mod_id = strtoul(name, NULL, 10);
+		printf("mod_id: %" PRIu64 "\n", mod_id);
+		char *path = NULL;
+		// TODO check if zip or directory
+		asprintf(&path, "%s%" PRIu64 ".zip", root, mod_id);
+		//asprintf(&path, "%s/%" PRIu64 "/", root, mod_id);
+		edata->callback(edata->userdata, edata->game_id, mod_id, path);
+		free(path);
+	}
+}
+
+
+static void
+root_enumerator(char const *root, char const *name, bool is_dir, void *in_userdata)
+{
+	struct enum_data *edata = in_userdata;
+
+	if (is_dir)
+	{
+		printf("[mm] found dir: %s - %s\n", root, name);
+		size_t l = strlen(name);
+		bool is_game_id = is_str_numeric(name, l);
+		if (is_game_id)
+		{
+			edata->game_id = strtoull(name, NULL, 10);
+			char *path;
+			asprintf(&path, "%s%s/", root, name);
+			fsu_enum_dir(path, game_enumerator, edata);
+			free(path);
+		}
+	}
+}
+
+
 void
 minimod_enum_installed_mods(
+  uint64_t in_game_id,
   minimod_enum_installed_mods_callback in_callback,
   void *in_userdata)
 {
+	struct enum_data edata;
+	edata.callback = in_callback;
+	edata.userdata = in_userdata;
+	edata.game_id = in_game_id;
+
+	char *path;
+	if (in_game_id)
+	{
+		asprintf(&path, "%s/mods/%" PRIu64 "/", l_mmi.root_path, in_game_id);
+		printf("[mm] path-wid: %s\n", path);
+		fsu_enum_dir(path, game_enumerator, &edata);
+	}
+	else
+	{
+		asprintf(&path, "%s/mods/", l_mmi.root_path);
+		printf("[mm] path-noid: %s\n", path);
+		fsu_enum_dir(path, root_enumerator, &edata);
+	}
+	free(path);
 }
 
 
