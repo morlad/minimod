@@ -75,6 +75,7 @@ NOWARNINGS += -Wno-error-unused-variable
 else
 WARNINGS += -Wall
 NOWARNINGS += -Wno-unused-result
+NOWARNINGS += -Wno-unused-function
 endif
 
 WARNINGS += -Werror
