@@ -363,6 +363,43 @@ fsu_rmdir_recursive(char const *in_path)
 
 #endif
 
+
+#ifdef _WIN32
+
+#else
+
+bool
+fsu_enum_dir(char const *in_dir, fsu_enum_dir_callback in_callback, void *in_userdata)
+{
+	DIR *dir = opendir(in_dir);
+	assert(dir);
+
+	struct dirent *entry;
+	while ((entry = readdir(dir)))
+	{
+		printf("[util] %s\n", entry->d_name);
+		if (entry->d_name[0] == '.')
+		{
+			continue;
+		}
+		if (entry->d_type == DT_DIR)
+		{
+			in_callback(in_dir, entry->d_name, true, in_userdata);
+		}
+		else
+		{
+			in_callback(in_dir, entry->d_name, false, in_userdata);
+		}
+	}
+
+	closedir(dir);
+
+	return true;
+}
+
+#endif
+
+
 #ifdef _WIN32
 FILE *
 fsu_fopen(char const *in_path, char const *in_mode)
