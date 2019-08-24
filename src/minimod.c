@@ -808,7 +808,9 @@ minimod_get_games(
 	};
 
 	struct task *task = alloc_task();
-	if (netw_request(
+	task->callback.fptr.get_games = in_callback;
+	task->callback.userdata = in_udata;
+	if (!netw_request(
 	      NETW_VERB_GET,
 	      path,
 	      headers,
@@ -816,11 +818,6 @@ minimod_get_games(
 	      0,
 	      handle_get_games,
 	      task))
-	{
-		task->callback.fptr.get_games = in_callback;
-		task->callback.userdata = in_udata;
-	}
-	else
 	{
 		free_task(task);
 	}
