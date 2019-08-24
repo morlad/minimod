@@ -39,6 +39,7 @@ struct callback
 		minimod_get_ratings_callback get_ratings;
 		minimod_subscription_change_callback subscription_change;
 		minimod_get_dependencies_callback get_dependencies;
+		minimod_get_events_callback get_events;
 	} fptr;
 	void *userdata;
 };
@@ -403,6 +404,119 @@ handle_get_modfiles(
 		populate_modfile(&modfile, document);
 		task->callback.fptr.get_modfiles(task->callback.userdata, 1, &modfile);
 	}
+	free(buffer);
+}
+
+
+static void
+populate_event(struct minimod_event *event, QAJ4C_Value const *node)
+{
+	assert(event);
+
+	assert(node);
+	assert(QAJ4C_is_object(node));
+
+	event->id = QAJ4C_get_uint64(QAJ4C_object_get(node, "id"));
+
+	// game_id is only part of user-events
+	QAJ4C_Value const *game_id = QAJ4C_object_get(node, "game_id");
+	if (game_id)
+	{
+		event->game_id = QAJ4C_get_uint64(game_id);
+	}
+	else
+	{
+		event->game_id = 0;
+	}
+	event->mod_id = QAJ4C_get_uint64(QAJ4C_object_get(node, "mod_id"));
+	event->user_id = QAJ4C_get_uint64(QAJ4C_object_get(node, "user_id"));
+	event->date_added = QAJ4C_get_uint64(QAJ4C_object_get(node, "date_added"));
+
+	// uses string length in comparisons first to save on strcmp()s
+	event->type = MINIMOD_EVENTTYPE_UNKNOWN;
+	QAJ4C_Value const *event_type = QAJ4C_object_get(node, "event_type");
+	size_t et_len = QAJ4C_get_string_length(event_type);
+	char const* et = QAJ4C_get_string(event_type);
+	if (et_len == 15 && 0 == strcmp(et, "MODFILE_CHANGED"))
+	{
+		event->type = MINIMOD_EVENTTYPE_MODFILE_CHANGED;
+	}
+	else if (et_len == 14 && 0 == strcmp(et, "USER_SUBSCRIBE"))
+	{
+		event->type = MINIMOD_EVENTTYPE_SUBSCRIBE;
+	}
+	else if (et_len == 16 && 0 == strcmp(et, "USER_UNSUBSCRIBE"))
+	{
+		event->type = MINIMOD_EVENTTYPE_UNSUBSCRIBE;
+	}
+	else if (et_len == 13 && 0 == strcmp(et, "MOD_AVAILABLE"))
+	{
+		event->type = MINIMOD_EVENTTYPE_MOD_AVAILABLE;
+	}
+	else if (et_len == 15 && 0 == strcmp(et, "MOD_UNAVAILABLE"))
+	{
+		event->type = MINIMOD_EVENTTYPE_MOD_UNAVAILABLE;
+	}
+	else if (et_len == 10 && 0 == strcmp(et, "MOD_EDITED"))
+	{
+		event->type = MINIMOD_EVENTTYPE_MOD_EDITED;
+	}
+	else if (et_len == 11 && 0 == strcmp(et, "MOD_DELETED"))
+	{
+		event->type = MINIMOD_EVENTTYPE_MOD_DELETED;
+	}
+	else if (et_len == 14 && 0 == strcmp(et, "USER_TEAM_JOIN"))
+	{
+		event->type = MINIMOD_EVENTTYPE_TEAM_JOIN;
+	}
+	else if (et_len == 15 && 0 == strcmp(et, "USER_TEAM_LEAVE"))
+	{
+		event->type = MINIMOD_EVENTTYPE_MOD_DELETED;
+	}
+
+	event->more = node;
+}
+
+
+static void
+handle_get_events(
+  void *in_udata,
+  void const *in_data,
+  size_t in_len,
+  int error)
+{
+	struct task *task = in_udata;
+	if (error != 200)
+	{
+		task->callback.fptr.get_events(task->callback.userdata, 0, NULL);
+		return;
+	}
+
+	// parse data
+	QAJ4C_Value const *document = NULL;
+	size_t nbuffer = QAJ4C_calculate_max_buffer_size_n(in_data, in_len);
+	void *buffer = malloc(nbuffer);
+	QAJ4C_parse_opt(in_data, in_len, 0, buffer, nbuffer, &document);
+	assert(QAJ4C_is_object(document));
+
+	QAJ4C_Value const *data = QAJ4C_object_get(document, "data");
+	assert(QAJ4C_is_array(data));
+
+	size_t nevents = QAJ4C_array_size(data);
+	struct minimod_event *events = malloc(sizeof *events * nevents);
+
+	for (size_t i = 0; i < nevents; ++i)
+	{
+		populate_event(&events[i], QAJ4C_array_get(data, i));
+	}
+
+	task->callback.fptr.get_events(
+	  task->callback.userdata,
+	  nevents,
+	  events);
+
+	free(events);
+
 	free(buffer);
 }
 
@@ -876,6 +990,66 @@ minimod_get_me(minimod_get_users_callback in_callback, void *in_udata)
 }
 
 
+bool
+minimod_get_user_events(
+  char const *in_filter,
+  uint64_t in_game_id,
+  uint64_t in_date_cutoff,
+  minimod_get_events_callback in_callback,
+  void *in_userdata)
+{
+	if (!minimod_is_authenticated())
+	{
+		return false;
+	}
+
+	char *game_filter = NULL;
+	if (in_game_id)
+	{
+		asprintf(&game_filter, "&game_id=%" PRIu64, in_game_id);
+	}
+	char *cutoff_filter = NULL;
+	if (in_date_cutoff)
+	{
+		asprintf(&cutoff_filter, "&date_added-gt=%" PRIu64, in_date_cutoff);
+	}
+	char *path;
+	asprintf(&path, "%s/me/events?%s%s%s",
+		endpoints[l_mmi.env],
+		in_filter ? in_filter : "",
+		game_filter ? game_filter : "",
+		cutoff_filter ? cutoff_filter : "");
+
+	char const *const headers[] = {
+		// clang-format off
+		"Accept", "application/json",
+		"Authorization", l_mmi.token_bearer,
+		NULL
+		// clang-format on
+	};
+	printf("[mm] request: %s\n", path);
+
+	struct task *task = alloc_task();
+	task->callback.fptr.get_events = in_callback;
+	task->callback.userdata = in_userdata;
+	if (!netw_request(
+	      NETW_VERB_GET,
+	      path,
+	      headers,
+	      NULL,
+	      0,
+	      handle_get_events,
+	      task))
+	{
+		free_task(task);
+	}
+
+	free(path);
+
+	return true;
+}
+
+
 void
 minimod_get_dependencies(
   uint64_t in_game_id,
@@ -984,6 +1158,76 @@ minimod_get_modfiles(
 	      NULL,
 	      0,
 	      handle_get_modfiles,
+	      task))
+	{
+		free_task(task);
+	}
+
+	free(path);
+}
+
+
+void
+minimod_get_mod_events(
+  char const *in_filter,
+  uint64_t in_game_id,
+  uint64_t in_mod_id,
+  uint64_t in_date_cutoff,
+  minimod_get_events_callback in_callback,
+  void *in_userdata)
+{
+	assert(in_game_id > 0);
+
+	char *cutoff = NULL;
+	if (in_date_cutoff)
+	{
+		asprintf(&cutoff, "&date_added-gt=%" PRIu64, in_date_cutoff);
+	}
+	char *path;
+	if (in_mod_id)
+	{
+		asprintf(
+		  &path,
+		  "%s/games/%" PRIu64 "/mods/%" PRIu64 "/events/"
+		  "?api_key=%s&%s%s",
+		  endpoints[l_mmi.env],
+		  in_game_id,
+		  in_mod_id,
+		  l_mmi.api_key,
+		  in_filter ? in_filter : "",
+		  cutoff ? cutoff : "");
+	}
+	else
+	{
+		asprintf(
+		  &path,
+		  "%s/games/%" PRIu64 "/mods/events?api_key=%s&%s%s",
+		  endpoints[l_mmi.env],
+		  in_game_id,
+		  l_mmi.api_key,
+		  in_filter ? in_filter : "",
+		  cutoff ? cutoff : "");
+	}
+	free(cutoff);
+
+	char const *const headers[] = {
+		// clang-format off
+		"Accept", "application/json",
+		NULL
+		// clang-format on
+	};
+	printf("[mm] request: %s\n", path);
+
+	struct task *task = alloc_task();
+	task->callback.fptr.get_events = in_callback;
+	task->callback.userdata = in_userdata;
+	if (!netw_request(
+	      NETW_VERB_GET,
+	      path,
+	      headers,
+	      NULL,
+	      0,
+	      handle_get_events,
 	      task))
 	{
 		free_task(task);

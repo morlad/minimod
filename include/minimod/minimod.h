@@ -83,6 +83,7 @@ enum minimod_err
  */
 enum minimod_eventtype
 {
+	MINIMOD_EVENTTYPE_UNKNOWN,
 	MINIMOD_EVENTTYPE_SUBSCRIBE,
 	MINIMOD_EVENTTYPE_UNSUBSCRIBE,
 	MINIMOD_EVENTTYPE_TEAM_JOIN,
@@ -208,6 +209,7 @@ struct minimod_event
 	uint64_t date_added;
 	void const *more;
 	enum minimod_eventtype type;
+	char _padding[4];
 };
 
 

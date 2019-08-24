@@ -500,6 +500,98 @@ test_10(void)
 	minimod_deinit();
 }
 
+
+// get_mod_events
+static void
+on_mod_events(void *in_userdata, size_t nevents, struct minimod_event const *events)
+{
+	for (size_t i = 0; i < nevents; ++i)
+	{
+		time_t t = (time_t)events[i].date_added;
+		printf(
+			"- %" PRIu64 ":%" PRIu64 " et=%i %s",
+			events[i].game_id, events[i].mod_id,
+			events[i].type,
+			ctime(&t));
+	}
+	*((int *)in_userdata) = 0;
+}
+
+
+static void
+test_11(void)
+{
+	minimod_init(
+	  MINIMOD_ENVIRONMENT_TEST,
+	  API_KEY_TEST,
+	  NULL,
+	  false,
+	  MINIMOD_CURRENT_ABI);
+
+	printf("Get all mod events for game:\n");
+	int wait = 1;
+	minimod_get_mod_events(
+		NULL,
+		GAME_ID_TEST,
+		0,
+		0,
+		on_mod_events,
+		&wait);
+
+	while (wait)
+	{
+		sys_sleep(10);
+	}
+
+	minimod_deinit();
+}
+
+
+// get_user_events
+static void
+on_user_events(void *in_userdata, size_t nevents, struct minimod_event const *events)
+{
+	for (size_t i = 0; i < nevents; ++i)
+	{
+		time_t t = (time_t)events[i].date_added;
+		printf(
+			"- %" PRIu64 ":%" PRIu64 " et=%i %s",
+			events[i].game_id, events[i].mod_id,
+			events[i].type,
+			ctime(&t));
+	}
+	*((int *)in_userdata) = 0;
+}
+
+
+static void
+test_12(void)
+{
+	minimod_init(
+	  MINIMOD_ENVIRONMENT_TEST,
+	  API_KEY_TEST,
+	  NULL,
+	  false,
+	  MINIMOD_CURRENT_ABI);
+
+	printf("Get all user events:\n");
+	int wait = 1;
+	minimod_get_user_events(
+		NULL,
+		GAME_ID_TEST,
+		0,
+		on_user_events,
+		&wait);
+
+	while (wait)
+	{
+		sys_sleep(10);
+	}
+
+	minimod_deinit();
+}
+
+
 int
 main(int argc, char const *argv[])
 {
@@ -514,6 +606,8 @@ main(int argc, char const *argv[])
 	test_8();
 	test_9();
 	test_10();
+	test_11();
+	test_12();
 
 	printf("[test] Done\n");
 
