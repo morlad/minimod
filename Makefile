@@ -144,7 +144,7 @@ test_objs += $(subst .c,.o,$(addprefix $(OUTPUT_DIR)/,$(filter %.c,$(test_srcs))
 # HEADER DEPENDENCIES
 # -------------------
 $(OUTPUT_DIR)/src/minimod.o: include/minimod/minimod.h src/netw.h src/util.h deps/qajson4c/src/qajson4c/qajson4c.h
-$(OUTPUT_DIR)/deps/qajson4c/src/qajson4c/%.o: deps/qajson4c/src/qajson4c/%.h
+$(OUTPUT_DIR)/deps/qajson4c/src/qajson4c/%.o: deps/qajson4c/src/qajson4c/qajson4c.h
 $(OUTPUT_DIR)/deps/miniz/miniz.o: deps/miniz/miniz.h
 $(OUTPUT_DIR)/src/util.o: src/util.h
 $(OUTPUT_DIR)/src/netw.o: src/netw.h
