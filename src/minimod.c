@@ -724,6 +724,20 @@ minimod_init(
 		// TODO more checks possible?
 		return MINIMOD_ERR_KEY;
 	}
+	else
+	{
+		if (strlen(in_api_key) != 32)
+		{
+			return MINIMOD_ERR_KEY;
+		}
+		for (size_t i = 0; i < 32; ++i)
+		{
+			if (!isalnum(in_api_key[i]))
+			{
+				return MINIMOD_ERR_KEY;
+			}
+		}
+	}
 
 	// validate in_env
 	if (in_env != MINIMOD_ENVIRONMENT_LIVE && in_env != MINIMOD_ENVIRONMENT_TEST)
