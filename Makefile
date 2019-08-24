@@ -129,7 +129,7 @@ srcs += deps/qajson4c/src/qajson4c/qajson4c_internal.c
 
 srcs += deps/miniz/miniz.c
 
-test_srcs += tests/simple.c
+test_srcs += tests/examples.c
 
 # OBJECT FILES
 # ------------
