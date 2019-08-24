@@ -318,7 +318,7 @@ ifeq ($(os),freebsd)
 $(OUTPUT_DIR)/src/netw-libcurl.o: CPPFLAGS += -I/usr/local/include
 $(OUTPUT_DIR)/src/netw-libcurl.o: NOWARNINGS += -Wno-disabled-macro-expansion
 $(OUTPUT_DIR)/src/netw-libcurl.o: NOWARNINGS += -Wno-error-reserved-id-macro
-$(OUTPUT_DIR)/deps/miniz/miniz.o: CPPFLAGS += -D_LARGEFILE64_SOURCE=1
+$(OUTPUT_DIR)/src/minimod.o: NOWARNINGS += -Wno-error-padded
 endif
 
 ifeq ($(os),linux)
