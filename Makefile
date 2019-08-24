@@ -305,6 +305,7 @@ endif
 # ---------------------
 $(OUTPUT_DIR)/src/%.o: CPPFLAGS += -Iinclude -Ideps/miniz -Ideps
 $(OUTPUT_DIR)/tests/%.o: CPPFLAGS += -Iinclude
+$(OUTPUT_DIR)/deps/miniz/miniz.o: CPPFLAGS += -DMINIZ_USE_UNALIGNED_LOADS_AND_STORES=0
 ifneq ($(os),linux)
 $(OUTPUT_DIR)/src/minimod.o: NOWARNINGS += -Wno-error-documentation
 endif
@@ -313,6 +314,7 @@ ifeq ($(os),windows)
 $(OUTPUT_DIR)/src/%.o: CPPFLAGS += -Ideps/dirent/include
 $(OUTPUT_DIR)/src/%.o: NOWARNINGS += -Wno-error-reserved-id-macro
 $(OUTPUT_DIR)/src/%.o: NOWARNINGS += -Wno-error-nonportable-system-include-path
+$(OUTPUT_DIR)/deps/miniz/miniz.o: CPPFLAGS += -D_LARGEFILE64_SOURCE=1
 endif
 
 ifeq ($(os),macos)
@@ -325,6 +327,11 @@ ifeq ($(os),freebsd)
 $(OUTPUT_DIR)/src/netw-libcurl.o: CPPFLAGS += -I/usr/local/include
 $(OUTPUT_DIR)/src/netw-libcurl.o: NOWARNINGS += -Wno-disabled-macro-expansion
 $(OUTPUT_DIR)/src/netw-libcurl.o: NOWARNINGS += -Wno-error-reserved-id-macro
+$(OUTPUT_DIR)/deps/miniz/miniz.o: CPPFLAGS += -D_LARGEFILE64_SOURCE=1
+endif
+
+ifeq ($(os),linux)
+$(OUTPUT_DIR)/deps/miniz/miniz.o: CPPFLAGS += -D_LARGEFILE64_SOURCE=1
 endif
 
 # clang implied
