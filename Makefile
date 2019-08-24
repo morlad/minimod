@@ -354,6 +354,9 @@ cloc-all:
 cloc:
 	$(Q)cloc src include Makefile --quiet
 
+cloc-by-file:
+	$(Q)cloc . --by-file --quiet --exclude-dir=deps,build,docs,docs.cfg
+
 format:
 	$(Q)clang-format -i tests/* src/* include/minimod/*
 
