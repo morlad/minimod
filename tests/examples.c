@@ -392,7 +392,7 @@ test_8(void)
 
 	// enum all installed mods
 	printf("Installed mods:\n");
-	minimod_enum_installed_mods(installed_mod_enumerator, NULL);
+	minimod_enum_installed_mods(0, installed_mod_enumerator, NULL);
 
 	// get data for the installed mod
 #if 0
