@@ -275,10 +275,19 @@ fsu_rmdir_recursive_utf16(wchar_t const *in_path)
 {
 	// pa = path + asterisk
 	size_t clen = wcslen(in_path);
-	wchar_t *pa = malloc(2 * (clen + 2));
+	wchar_t *pa = malloc(2 * (clen + 3));
 	memcpy(pa, in_path, 2 * clen);
-	pa[clen] = '*';
-	pa[clen + 1] = '\0';
+	if (pa[clen - 1] != '/')
+	{
+		pa[clen + 0] = '/';
+		pa[clen + 1] = '*';
+		pa[clen + 2] = '\0';
+	}
+	else
+	{
+		pa[clen + 0] = '*';
+		pa[clen + 1] = '\0';
+	}
 	wprintf(L"pa = '%s'\n", pa);
 
 	WIN32_FIND_DATA fdata;
@@ -287,7 +296,11 @@ fsu_rmdir_recursive_utf16(wchar_t const *in_path)
 	{
 		do {
 			wprintf(L"entry: %s\n", fdata.cFileName);
-			if (fdata.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY)
+			if (fdata.cFileName[0] == '.')
+			{
+				// do nothing, just skip
+			}
+			else if (fdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			{
 				fsu_rmdir_recursive_utf16(fdata.cFileName);
 			}
@@ -382,10 +395,19 @@ fsu_enum_dir(
 
 	// pa = path + asterisk
 	size_t clen = wcslen(utf16);
-	wchar_t *pa = malloc(2 * (clen + 2));
+	wchar_t *pa = malloc(2 * (clen + 3));
 	memcpy(pa, utf16, 2 * clen);
-	pa[clen] = '*';
-	pa[clen + 1] = '\0';
+	if (pa[clen - 1] != '/')
+	{
+		pa[clen + 0] = '/';
+		pa[clen + 1] = '*';
+		pa[clen + 2] = '\0';
+	}
+	else
+	{
+		pa[clen + 0] = '*';
+		pa[clen + 1] = '\0';
+	}
 	wprintf(L"enum-pa = '%s'\n", pa);
 
 	WIN32_FIND_DATA fdata;
@@ -405,7 +427,7 @@ fsu_enum_dir(
 			{
 				// do nothing, just skip
 			}
-			else if (fdata.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY)
+			else if (fdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			{
 				in_callback(in_dir, utf8, true, in_userdata);
 			}
