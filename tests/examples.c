@@ -592,6 +592,46 @@ test_12(void)
 }
 
 
+// get_dependencies
+static void
+on_dependencies(void *in_userdata, size_t ndeps, uint64_t const *deps)
+{
+	printf("Num dependencies: %zu\n", ndeps);
+	for (size_t i = 0; i < ndeps; ++i)
+	{
+		printf("- %" PRIu64 "\n", deps[i]);
+	}
+	*((int *)in_userdata) = 0;
+}
+
+
+static void
+test_13(void)
+{
+	minimod_init(
+	  MINIMOD_ENVIRONMENT_TEST,
+	  API_KEY_TEST,
+	  NULL,
+	  false,
+	  MINIMOD_CURRENT_ABI);
+
+	printf("Get dependencies:\n");
+	int wait = 1;
+	minimod_get_dependencies(
+		GAME_ID_TEST,
+		1720,
+		on_dependencies,
+		&wait);
+
+	while (wait)
+	{
+		sys_sleep(10);
+	}
+
+	minimod_deinit();
+}
+
+
 int
 main(int argc, char const *argv[])
 {
@@ -608,6 +648,7 @@ main(int argc, char const *argv[])
 	test_10();
 	test_11();
 	test_12();
+	test_13();
 
 	printf("[test] Done\n");
 
