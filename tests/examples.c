@@ -503,16 +503,20 @@ test_10(void)
 
 // get_mod_events
 static void
-on_mod_events(void *in_userdata, size_t nevents, struct minimod_event const *events)
+on_mod_events(
+  void *in_userdata,
+  size_t nevents,
+  struct minimod_event const *events)
 {
 	for (size_t i = 0; i < nevents; ++i)
 	{
 		time_t t = (time_t)events[i].date_added;
 		printf(
-			"- %" PRIu64 ":%" PRIu64 " et=%i %s",
-			events[i].game_id, events[i].mod_id,
-			events[i].type,
-			ctime(&t));
+		  "- %" PRIu64 ":%" PRIu64 " et=%i %s",
+		  events[i].game_id,
+		  events[i].mod_id,
+		  events[i].type,
+		  ctime(&t));
 	}
 	*((int *)in_userdata) = 0;
 }
@@ -549,16 +553,20 @@ test_11(void)
 
 // get_user_events
 static void
-on_user_events(void *in_userdata, size_t nevents, struct minimod_event const *events)
+on_user_events(
+  void *in_userdata,
+  size_t nevents,
+  struct minimod_event const *events)
 {
 	for (size_t i = 0; i < nevents; ++i)
 	{
 		time_t t = (time_t)events[i].date_added;
 		printf(
-			"- %" PRIu64 ":%" PRIu64 " et=%i %s",
-			events[i].game_id, events[i].mod_id,
-			events[i].type,
-			ctime(&t));
+		  "- %" PRIu64 ":%" PRIu64 " et=%i %s",
+		  events[i].game_id,
+		  events[i].mod_id,
+		  events[i].type,
+		  ctime(&t));
 	}
 	*((int *)in_userdata) = 0;
 }

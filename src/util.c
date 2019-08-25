@@ -7,10 +7,10 @@
 #ifdef _WIN32
 #include <Windows.h>
 #else
-#include <unistd.h>
-#include <sys/stat.h>
-#include <errno.h>
 #include <dirent.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #endif
 
 
@@ -78,51 +78,53 @@ fsu_rmfile(char const *in_path)
 
 
 #ifdef _WIN32
-enum fsu_pathtype fsu_ptype(char const *in_path)
+enum fsu_pathtype
+fsu_ptype(char const *in_path)
 {
-  // convert utf8 to utf16/wide char
-  size_t nchars = sys_wchar_from_utf8(in_path, NULL, 0);
-  assert(nchars > 0);
-  wchar_t *utf16 = malloc(nchars * sizeof *utf16);
-  sys_wchar_from_utf8(in_path, utf16, nchars);
+	// convert utf8 to utf16/wide char
+	size_t nchars = sys_wchar_from_utf8(in_path, NULL, 0);
+	assert(nchars > 0);
+	wchar_t *utf16 = malloc(nchars * sizeof *utf16);
+	sys_wchar_from_utf8(in_path, utf16, nchars);
 
-  DWORD const result = GetFileAttributes(utf16);
-  free(utf16);
-  if (result == INVALID_FILE_ATTRIBUTES)
-  {
-    return FSU_PATHTYPE_NONE;
-  }
-  if (result & FILE_ATTRIBUTE_DIRECTORY)
-  {
-    return FSU_PATHTYPE_DIR;
-  }
-  else
-  {
-    return FSU_PATHTYPE_FILE;
-  }
+	DWORD const result = GetFileAttributes(utf16);
+	free(utf16);
+	if (result == INVALID_FILE_ATTRIBUTES)
+	{
+		return FSU_PATHTYPE_NONE;
+	}
+	if (result & FILE_ATTRIBUTE_DIRECTORY)
+	{
+		return FSU_PATHTYPE_DIR;
+	}
+	else
+	{
+		return FSU_PATHTYPE_FILE;
+	}
 }
 #else
-enum fsu_pathtype fsu_ptype(char const *in_path)
+enum fsu_pathtype
+fsu_ptype(char const *in_path)
 {
-  struct stat sbuffer;
-  int const result = stat(in_path, &sbuffer);
-  if (result != 0)
-  {
-    return FSU_PATHTYPE_NONE;
-  }
+	struct stat sbuffer;
+	int const result = stat(in_path, &sbuffer);
+	if (result != 0)
+	{
+		return FSU_PATHTYPE_NONE;
+	}
 
-  if (S_ISDIR(sbuffer.st_mode))
-  {
-    return FSU_PATHTYPE_DIR;
-  }
-  else if (S_ISREG(sbuffer.st_mode))
-  {
-    return FSU_PATHTYPE_FILE;
-  }
-  else
-  {
-    return FSU_PATHTYPE_OTHER;
-  }
+	if (S_ISDIR(sbuffer.st_mode))
+	{
+		return FSU_PATHTYPE_DIR;
+	}
+	else if (S_ISREG(sbuffer.st_mode))
+	{
+		return FSU_PATHTYPE_FILE;
+	}
+	else
+	{
+		return FSU_PATHTYPE_OTHER;
+	}
 }
 #endif
 
@@ -293,7 +295,8 @@ fsu_rmdir_recursive_utf16(wchar_t const *in_path)
 	HANDLE h;
 	if ((h = FindFirstFile(pa, &fdata)))
 	{
-		do {
+		do
+		{
 			if (fdata.cFileName[0] == '.')
 			{
 				// do nothing, just skip
@@ -306,7 +309,10 @@ fsu_rmdir_recursive_utf16(wchar_t const *in_path)
 				wchar_t *sub = malloc(sizeof *sub * (sub_len + 1));
 				memcpy(sub, in_path, 2 * path_len);
 				sub[path_len] = '/';
-				memcpy(sub + path_len + 1, fdata.cFileName, 2 * (file_len + 1 /*NUL*/));
+				memcpy(
+				  sub + path_len + 1,
+				  fdata.cFileName,
+				  2 * (file_len + 1 /*NUL*/));
 				if (fdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 				{
 					fsu_rmdir_recursive_utf16(sub);
@@ -460,7 +466,8 @@ fsu_enum_dir(
 	HANDLE h;
 	if ((h = FindFirstFile(pa, &fdata)))
 	{
-		do {
+		do
+		{
 			// convert fdata.cFileName
 			size_t nbytes = sys_utf8_from_wchar(fdata.cFileName, NULL, 0);
 			assert(nbytes > 0);
@@ -490,7 +497,10 @@ fsu_enum_dir(
 #else
 
 bool
-fsu_enum_dir(char const *in_dir, fsu_enum_dir_callback in_callback, void *in_userdata)
+fsu_enum_dir(
+  char const *in_dir,
+  fsu_enum_dir_callback in_callback,
+  void *in_userdata)
 {
 	DIR *dir = opendir(in_dir);
 	assert(dir);

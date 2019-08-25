@@ -103,8 +103,11 @@ fsu_rmfile(char const *path);
 
 /** Callback: fsu_enum_dir_callback()
  */
-typedef void
-(*fsu_enum_dir_callback)(char const *root, char const *name, bool is_dir, void *in_userdata);
+typedef void (*fsu_enum_dir_callback)(
+  char const *root,
+  char const *name,
+  bool is_dir,
+  void *in_userdata);
 
 
 /* Function: fsu_enum_dir()
@@ -113,7 +116,10 @@ typedef void
  *	in_dir - Needs to end with '/' and be a valid directory.
  */
 bool
-fsu_enum_dir(char const *in_dir, fsu_enum_dir_callback in_callback, void *in_userdata);
+fsu_enum_dir(
+  char const *in_dir,
+  fsu_enum_dir_callback in_callback,
+  void *in_userdata);
 
 
 /* Function: sys_sleep()

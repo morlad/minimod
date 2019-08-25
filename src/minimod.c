@@ -1,8 +1,8 @@
 // vi: noexpandtab tabstop=4 softtabstop=4 shiftwidth=0
 #include "minimod/minimod.h"
+#include "miniz/miniz.h"
 #include "netw.h"
 #include "qajson4c/src/qajson4c/qajson4c.h"
-#include "miniz/miniz.h"
 #include "util.h"
 
 #include <assert.h>
@@ -436,7 +436,7 @@ populate_event(struct minimod_event *event, QAJ4C_Value const *node)
 	event->type = MINIMOD_EVENTTYPE_UNKNOWN;
 	QAJ4C_Value const *event_type = QAJ4C_object_get(node, "event_type");
 	size_t et_len = QAJ4C_get_string_length(event_type);
-	char const* et = QAJ4C_get_string(event_type);
+	char const *et = QAJ4C_get_string(event_type);
 	if (et_len == 15 && 0 == strcmp(et, "MODFILE_CHANGED"))
 	{
 		event->type = MINIMOD_EVENTTYPE_MODFILE_CHANGED;
@@ -510,10 +510,7 @@ handle_get_events(
 		populate_event(&events[i], QAJ4C_array_get(data, i));
 	}
 
-	task->callback.fptr.get_events(
-	  task->callback.userdata,
-	  nevents,
-	  events);
+	task->callback.fptr.get_events(task->callback.userdata, nevents, events);
 
 	free(events);
 
@@ -554,10 +551,7 @@ handle_get_dependencies(
 		deps[i] = QAJ4C_get_uint64(QAJ4C_array_get(data, i));
 	}
 
-	task->callback.fptr.get_dependencies(
-	  task->callback.userdata,
-	  ndeps,
-	  deps);
+	task->callback.fptr.get_dependencies(task->callback.userdata, ndeps, deps);
 
 	free(deps);
 }
@@ -1025,11 +1019,13 @@ minimod_get_user_events(
 		asprintf(&cutoff_filter, "&date_added-gt=%" PRIu64, in_date_cutoff);
 	}
 	char *path;
-	asprintf(&path, "%s/me/events?%s%s%s",
-		endpoints[l_mmi.env],
-		in_filter ? in_filter : "",
-		game_filter ? game_filter : "",
-		cutoff_filter ? cutoff_filter : "");
+	asprintf(
+	  &path,
+	  "%s/me/events?%s%s%s",
+	  endpoints[l_mmi.env],
+	  in_filter ? in_filter : "",
+	  game_filter ? game_filter : "",
+	  cutoff_filter ? cutoff_filter : "");
 
 	char const *const headers[] = {
 		// clang-format off
@@ -1299,12 +1295,12 @@ on_install_download(void *in_udata, FILE *in_file, int error)
 			{
 				char *path;
 				asprintf(
-					&path,
-					"%s/mods/%" PRIu64 "/%" PRIu64 "/%s",
-					l_mmi.root_path,
-					req->game_id,
-					req->mod_id,
-					stat.m_filename);
+				  &path,
+				  "%s/mods/%" PRIu64 "/%" PRIu64 "/%s",
+				  l_mmi.root_path,
+				  req->game_id,
+				  req->mod_id,
+				  stat.m_filename);
 				printf("  + extracting %s\n", path);
 				FILE *f = fsu_fopen(path, "wb");
 				mz_zip_reader_extract_to_cfile(&zip, i, f, 0);
@@ -1346,7 +1342,12 @@ on_download_modfile(
 
 	// write json file
 	char *jpath;
-	asprintf(&jpath, "%s/mods/%" PRIu64 "/%" PRIu64 ".json", l_mmi.root_path, req->game_id, req->mod_id);
+	asprintf(
+	  &jpath,
+	  "%s/mods/%" PRIu64 "/%" PRIu64 ".json",
+	  l_mmi.root_path,
+	  req->game_id,
+	  req->mod_id);
 
 	FILE *jout = fsu_fopen(jpath, "wb");
 	QAJ4C_print_buffer_callback(modfiles[0].more, json_print_callback, jout);
@@ -1355,7 +1356,12 @@ on_download_modfile(
 	free(jpath);
 
 	// write actual file
-	asprintf(&req->zip_path, "%s/mods/%" PRIu64 "/%" PRIu64 ".zip", l_mmi.root_path, req->game_id, req->mod_id);
+	asprintf(
+	  &req->zip_path,
+	  "%s/mods/%" PRIu64 "/%" PRIu64 ".zip",
+	  l_mmi.root_path,
+	  req->game_id,
+	  req->mod_id);
 	FILE *fout = fsu_fopen(req->zip_path, "w+b");
 	assert(fout);
 
@@ -1406,7 +1412,12 @@ minimod_uninstall(uint64_t in_game_id, uint64_t in_mod_id)
 {
 	// check if a json file exists. if it does not, then there is no mod either
 	char *path;
-	asprintf(&path, "%s/mods/%" PRIu64 "/%" PRIu64 ".json", l_mmi.root_path, in_game_id, in_mod_id);
+	asprintf(
+	  &path,
+	  "%s/mods/%" PRIu64 "/%" PRIu64 ".json",
+	  l_mmi.root_path,
+	  in_game_id,
+	  in_mod_id);
 	if (fsu_ptype(path) != FSU_PATHTYPE_FILE)
 	{
 		free(path);
@@ -1416,7 +1427,12 @@ minimod_uninstall(uint64_t in_game_id, uint64_t in_mod_id)
 	free(path);
 
 	// check if the mod was stored as zip
-	asprintf(&path, "%s/mods/%" PRIu64 "/%" PRIu64 ".zip", l_mmi.root_path, in_game_id, in_mod_id);
+	asprintf(
+	  &path,
+	  "%s/mods/%" PRIu64 "/%" PRIu64 ".zip",
+	  l_mmi.root_path,
+	  in_game_id,
+	  in_mod_id);
 	if (fsu_ptype(path) == FSU_PATHTYPE_FILE)
 	{
 		fsu_rmfile(path);
@@ -1424,7 +1440,12 @@ minimod_uninstall(uint64_t in_game_id, uint64_t in_mod_id)
 	free(path);
 
 	// finally and probably redundantly check for dir
-	asprintf(&path, "%s/mods/%" PRIu64 "/%" PRIu64, l_mmi.root_path, in_game_id, in_mod_id);
+	asprintf(
+	  &path,
+	  "%s/mods/%" PRIu64 "/%" PRIu64,
+	  l_mmi.root_path,
+	  in_game_id,
+	  in_mod_id);
 	if (fsu_ptype(path) == FSU_PATHTYPE_DIR)
 	{
 		fsu_rmdir_recursive(path);
@@ -1437,9 +1458,9 @@ minimod_uninstall(uint64_t in_game_id, uint64_t in_mod_id)
 
 struct enum_data
 {
-  minimod_enum_installed_mods_callback callback;
-  void *userdata;
-  uint64_t game_id;
+	minimod_enum_installed_mods_callback callback;
+	void *userdata;
+	uint64_t game_id;
 };
 
 
@@ -1458,7 +1479,11 @@ is_str_numeric(char const *str, size_t len)
 
 
 static void
-game_enumerator(char const *root, char const *name, bool is_dir, void *in_userdata)
+game_enumerator(
+  char const *root,
+  char const *name,
+  bool is_dir,
+  void *in_userdata)
 {
 	struct enum_data *edata = in_userdata;
 
@@ -1491,7 +1516,11 @@ game_enumerator(char const *root, char const *name, bool is_dir, void *in_userda
 
 
 static void
-root_enumerator(char const *root, char const *name, bool is_dir, void *in_userdata)
+root_enumerator(
+  char const *root,
+  char const *name,
+  bool is_dir,
+  void *in_userdata)
 {
 	struct enum_data *edata = in_userdata;
 
@@ -1557,7 +1586,12 @@ minimod_is_installed(uint64_t in_game_id, uint64_t in_mod_id)
 {
 	// check if a json file exists. if it does not, then there is no mod either
 	char *path;
-	asprintf(&path, "%s/mods/%" PRIu64 "/%" PRIu64 ".json", l_mmi.root_path, in_game_id, in_mod_id);
+	asprintf(
+	  &path,
+	  "%s/mods/%" PRIu64 "/%" PRIu64 ".json",
+	  l_mmi.root_path,
+	  in_game_id,
+	  in_mod_id);
 	return (fsu_ptype(path) == FSU_PATHTYPE_FILE);
 }
 
