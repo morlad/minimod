@@ -106,7 +106,7 @@ srcs += src/minimod.c
 srcs += src/netw.c
 
 ifeq ($(os),macos)
-srcs += src/util.c
+srcs += src/util-posix.c
 ifeq ($(USE_LIBCURL_ON_MACOS),0)
 srcs += src/netw-macos.m
 else
@@ -118,11 +118,11 @@ srcs += src/util-win.c
 srcs += src/netw-win.c
 endif
 ifeq ($(os),linux)
-srcs += src/util.c
+srcs += src/util-posix.c
 srcs += src/netw-libcurl.c
 endif
 ifeq ($(os),freebsd)
-srcs += src/util.c
+srcs += src/util-posix.c
 srcs += src/netw-libcurl.c
 endif
 
