@@ -1,5 +1,40 @@
 # vi: noexpandtab tabstop=4 softtabstop=4 shiftwidth=0
 
+# CONFIG
+# ------
+# destination of the build output (object files and executables)
+OUTPUT_DIR := build
+
+# by default the macos-build uses NSURLSession
+# to use libcurl instead set USE_LIBCURL_ON_MACOS to 1
+USE_LIBCURL_ON_MACOS = 0
+
+# windows only:
+# path to the LLVM installation
+# ! do NOT add trailing \ 
+# ! do NOT quote it
+LLVM_PATH = C:\Program Files\LLVM
+
+# set to 1 to enable all available sanitizers on this platform, 0 otherwise
+ENABLE_SANITIZERS = 0
+
+# path to NaturalDocs for 'docs'-target
+NDOCS = ~/bin/NaturalDocs-1.52/NaturalDocs
+
+
+# INTERNAL CONFIG
+# ---------------
+QAJSON4C_VERSION = tags/1.1.1
+
+Q = @
+
+OPT = -O2
+OPT += -fstrict-aliasing
+
+# macos only:
+MIN_MACOS_VERSION = 10.9
+
+
 # OS DETECTION
 # ------------
 ifdef ComSpec
@@ -17,68 +52,6 @@ else
 	endif
 endif
 
-# PRIMARY TARGETS
-# ---------------
-all: library
-.PHONY: library clean clean-library minimod all test docs
-
-# CONFIG
-# ------
-OUTPUT_DIR := build
-
-USE_LIBCURL_ON_MACOS = 0
-
-# macos only:
-MIN_MACOS_VERSION = 10.9
-
-# windows only:
-# path to the LLVM installation
-# ! do NOT add trailing \ 
-# ! do NOT quote it
-LLVM_PATH = C:\Program Files\LLVM
-
-OPT = -O2
-OPT += -fstrict-aliasing
-QAJSON4C_VERSION = tags/1.1.1
-DIRENT_VERSION = v1.23
-
-USE_SANITIZER = 0
-Q = @
-
-NDOCS = ~/bin/NaturalDocs-1.52/NaturalDocs
-
-ifeq ($(os),macos)
-LIBRARY_NAME = libminimod.dylib
-TEST_NAME = testsuite
-endif
-ifeq ($(os),windows)
-LIBRARY_NAME = minimod.dll
-TEST_NAME = testsuite.exe
-endif
-ifeq ($(os),linux)
-LIBRARY_NAME = libminimod.so
-TEST_NAME = testsuite
-endif
-ifeq ($(os),freebsd)
-LIBRARY_NAME = libminimod.so
-TEST_NAME = testsuite
-endif
-
-TEST_PATH = $(OUTPUT_DIR)/$(TEST_NAME)
-LIB_PATH = $(OUTPUT_DIR)/$(LIBRARY_NAME)
-
-ifneq ($(os),linux)
-WARNINGS += -Weverything
-NOWARNINGS += -Wno-error-unused-parameter
-NOWARNINGS += -Wno-error-unused-function
-NOWARNINGS += -Wno-error-unused-variable
-else
-WARNINGS += -Wall
-NOWARNINGS += -Wno-unused-result
-NOWARNINGS += -Wno-unused-function
-endif
-
-WARNINGS += -Werror
 
 # MACROS/HELPERS
 # --------------
@@ -100,46 +73,78 @@ else
 	CONDITIONAL_CLONE=if [ ! -d $(2) ]; then git clone -q $(1) $(2) ; fi
 endif
 
+
+# NAMING OF THINGS
+# ----------------
+ifeq ($(os),macos)
+LIBRARY_NAME = libminimod.dylib
+TEST_NAME = testsuite
+endif
+
+ifeq ($(os),windows)
+LIBRARY_NAME = minimod.dll
+TEST_NAME = testsuite.exe
+endif
+
+ifeq ($(os),linux)
+LIBRARY_NAME = libminimod.so
+TEST_NAME = testsuite
+endif
+
+ifeq ($(os),freebsd)
+LIBRARY_NAME = libminimod.so
+TEST_NAME = testsuite
+endif
+
+TEST_PATH = $(OUTPUT_DIR)/$(TEST_NAME)
+LIB_PATH = $(OUTPUT_DIR)/$(LIBRARY_NAME)
+
+
+# PRIMARY TARGETS
+# ---------------
+all: library
+.PHONY: library clean clean-library minimod all test docs format
+
+
 # SOURCE FILES
 # ------------
-srcs += src/minimod.c
-srcs += src/netw.c
+lib_srcs += src/minimod.c
+lib_srcs += src/netw.c
 
 ifeq ($(os),macos)
-srcs += src/util-posix.c
+lib_srcs += src/util-posix.c
 ifeq ($(USE_LIBCURL_ON_MACOS),0)
-srcs += src/netw-macos.m
+lib_srcs += src/netw-macos.m
 else
-srcs += src/netw-libcurl.c
+lib_srcs += src/netw-libcurl.c
 endif
 endif
+
 ifeq ($(os),windows)
-srcs += src/util-win.c
-srcs += src/netw-win.c
+lib_srcs += src/util-win.c
+lib_srcs += src/netw-win.c
 endif
+
 ifeq ($(os),linux)
-srcs += src/util-posix.c
-srcs += src/netw-libcurl.c
+lib_srcs += src/util-posix.c
+lib_srcs += src/netw-libcurl.c
 endif
+
 ifeq ($(os),freebsd)
-srcs += src/util-posix.c
-srcs += src/netw-libcurl.c
+lib_srcs += src/util-posix.c
+lib_srcs += src/netw-libcurl.c
 endif
 
-srcs += deps/qajson4c/src/qajson4c/qajson4c.c
-srcs += deps/qajson4c/src/qajson4c/qajson4c_internal.c
-
-srcs += deps/miniz/miniz.c
+lib_srcs += deps/qajson4c/src/qajson4c/qajson4c.c
+lib_srcs += deps/qajson4c/src/qajson4c/qajson4c_internal.c
+lib_srcs += deps/miniz/miniz.c
 
 test_srcs += tests/examples.c
 
 # OBJECT FILES
 # ------------
-objs += $(subst .c,.o,$(addprefix $(OUTPUT_DIR)/,$(filter %.c,$(srcs))))
-objs += $(subst .m,.o,$(addprefix $(OUTPUT_DIR)/,$(filter %.m,$(srcs))))
-
-$(objs): CPPFLAGS += -DMINIMOD_BUILD_LIB
-
+lib_objs += $(subst .c,.o,$(addprefix $(OUTPUT_DIR)/,$(filter %.c,$(lib_srcs))))
+lib_objs += $(subst .m,.o,$(addprefix $(OUTPUT_DIR)/,$(filter %.m,$(lib_srcs))))
 test_objs += $(subst .c,.o,$(addprefix $(OUTPUT_DIR)/,$(filter %.c,$(test_srcs))))
 
 # HEADER DEPENDENCIES
@@ -153,49 +158,23 @@ $(OUTPUT_DIR)/src/netw-macos.o: src/netw.h
 $(OUTPUT_DIR)/src/netw-win.o: src/netw.h src/util.h
 $(test_objs): include/minimod/minimod.h
 
-# LINKER OPTIONS
-# --------------
-TARGET_ARCH = -m64 -g -march=core2
 
-ifeq ($(os),macos)
-TARGET_ARCH += -arch x86_64 -mmacosx-version-min=$(MIN_MACOS_VERSION)
-$(LIB_PATH): LDLIBS += -framework Foundation
-ifneq ($(USE_LIBCURL_ON_MACOS),0)
-$(LIB_PATH): LDLIBS += -lcurl
-endif
-$(LIB_PATH): LDLIBS += -framework Foundation
-ifeq ($(USE_SANITIZER),1)
-TARGET_ARCH += -fsanitize=address
-TARGET_ARCH += -fsanitize=undefined
-endif
-endif
+# WARNINGS
+# --------
+WARNINGS += -Werror
 
-ifeq ($(os),windows)
-TARGET_ARCH += -gcodeview
-LDFLAGS += /NOLOGO /MACHINE:X64 /NODEFAULTLIB /INCREMENTAL:NO
-$(LIB_PATH): LDFLAGS += /SUBSYSTEM:WINDOWS
-$(TEST_PATH): LDFLAGS += /SUBSYSTEM:CONSOLE
-LDLIBS += libucrt.lib
-$(TEST_PATH): LDLIBS += $(subst .dll,.lib,$(LIB_PATH))
-LDLIBS += libvcruntime.lib
-LDLIBS += libcmt.lib
-LDLIBS += kernel32.lib
-LDLIBS += shell32.lib
-LDLIBS += winhttp.lib
+# basically GCC vs clang
+ifneq ($(os),linux)
+WARNINGS += -Weverything
+NOWARNINGS += -Wno-error-unused-parameter
+NOWARNINGS += -Wno-error-unused-function
+NOWARNINGS += -Wno-error-unused-variable
+else
+WARNINGS += -Wall
+NOWARNINGS += -Wno-unused-result
+NOWARNINGS += -Wno-unused-function
 endif
 
-ifeq ($(os),freebsd)
-LDFLAGS += -L/usr/local/lib
-$(LIB_PATH): LDLIBS += -lcurl
-endif
-
-ifeq ($(os),linux)
-# do not add exoprts from included static libs (i.e. OpenSSL)
-# to this shared library's list of exports.
-LDFLAGS += -Wl,--exclude-libs,ALL
-LDLIBS += -lpthread
-$(LIB_PATH): LDLIBS += -lcurl
-endif
 
 # COMPILER OPTIONS
 # ----------------
@@ -203,13 +182,15 @@ CFLAGS += -std=c99
 CFLAGS += $(WARNINGS) $(NOWARNINGS) $(OPT)
 OBJCFLAGS += $(WARNINGS) $(NOWARNINGS) $(OPT)
 
-CPPFLAGS += -DMZ_ZIP_NO_ENCRYPTION
+ifeq ($(os),macos)
+CFLAGS += -fvisibility=hidden
+OBJCFLAGS += -fvisibility=hidden
+endif
 
 ifeq ($(os),windows)
 CPPFLAGS += -DUNICODE -D_UNICODE
 CPPFLAGS += -DNDEBUG
 CPPFLAGS += -D_CRT_SECURE_NO_WARNINGS
-CPPFLAGS += -DCURL_STATICLIB
 CPPFLAGS += -DHAS_STDINT_H
 endif
 
@@ -221,29 +202,108 @@ CFLAGS += -fPIC
 CFLAGS += -fvisibility=hidden
 endif
 
-ifeq ($(os),macos)
-CFLAGS += -fvisibility=hidden
-OBJCFLAGS += -fvisibility=hidden
-endif
-
 ifeq ($(os),freebsd)
 CFLAGS += -fvisibility=hidden
 CFLAGS += -fPIC
 endif
 
+
+# SPECIAL FILE HANDLING
+# ---------------------
+$(lib_objs): CPPFLAGS += -DMINIMOD_BUILD_LIB
+$(lib_objs): CPPFLAGS += -DMZ_ZIP_NO_ENCRYPTION
+
+$(OUTPUT_DIR)/src/%.o: CPPFLAGS += -Iinclude -Ideps/miniz -Ideps
+$(OUTPUT_DIR)/tests/%.o: CPPFLAGS += -Iinclude
+
+$(OUTPUT_DIR)/deps/miniz/miniz.o: CPPFLAGS += -DMINIZ_USE_UNALIGNED_LOADS_AND_STORES=0
+
+ifeq ($(os),macos)
+$(OUTPUT_DIR)/src/netw-libcurl.o: NOWARNINGS += -Wno-disabled-macro-expansion
+# padding in miniz
+$(OUTPUT_DIR)/src/minimod.o: NOWARNINGS += -Wno-error-padded
+endif
+
+ifeq ($(os),windows)
+$(OUTPUT_DIR)/deps/miniz/miniz.o: CPPFLAGS += -D_LARGEFILE64_SOURCE=1
+$(OUTPUT_DIR)/src/%.o: NOWARNINGS += -Wno-error-reserved-id-macro
+$(OUTPUT_DIR)/src/%.o: NOWARNINGS += -Wno-error-nonportable-system-include-path
+endif
+
+ifeq ($(os),linux)
+$(OUTPUT_DIR)/deps/miniz/miniz.o: CPPFLAGS += -D_LARGEFILE64_SOURCE=1
+endif
+
+ifeq ($(os),freebsd)
+$(OUTPUT_DIR)/src/netw-libcurl.o: CPPFLAGS += -I/usr/local/include
+$(OUTPUT_DIR)/src/netw-libcurl.o: NOWARNINGS += -Wno-disabled-macro-expansion
+$(OUTPUT_DIR)/src/netw-libcurl.o: NOWARNINGS += -Wno-error-reserved-id-macro
+$(OUTPUT_DIR)/src/minimod.o: NOWARNINGS += -Wno-error-padded
+endif
+
+# basically clang
+ifneq ($(os),linux)
+$(OUTPUT_DIR)/src/minimod.o: NOWARNINGS += -Wno-error-documentation
+$(OUTPUT_DIR)/deps/%.o: NOWARNINGS += -Wno-everything
+endif
+
+
+# LINKER OPTIONS
+# --------------
+TARGET_ARCH = -m64 -g -march=core2
+
+ifeq ($(os),macos)
+TARGET_ARCH += -arch x86_64 -mmacosx-version-min=$(MIN_MACOS_VERSION)
+$(LIB_PATH): LDLIBS += -framework Foundation
+ifneq ($(USE_LIBCURL_ON_MACOS),0)
+$(LIB_PATH): LDLIBS += -lcurl
+endif
+$(LIB_PATH): LDLIBS += -framework Foundation
+ifeq ($(ENABLE_SANITIZERS),1)
+TARGET_ARCH += -fsanitize=address
+TARGET_ARCH += -fsanitize=undefined
+endif
+endif
+
+ifeq ($(os),windows)
+TARGET_ARCH += -gcodeview
+LDFLAGS += /NOLOGO /MACHINE:X64 /NODEFAULTLIB /INCREMENTAL:NO
+LDLIBS += libucrt.lib
+LDLIBS += libvcruntime.lib
+LDLIBS += libcmt.lib
+LDLIBS += kernel32.lib
+$(LIB_PATH): LDFLAGS += /SUBSYSTEM:WINDOWS
+$(LIB_PATH): LDLIBS += winhttp.lib
+$(TEST_PATH): LDFLAGS += /SUBSYSTEM:CONSOLE
+$(TEST_PATH): LDLIBS += $(subst .dll,.lib,$(LIB_PATH))
+endif
+
+ifeq ($(os),linux)
+# do not add exoprts from included static libs
+# to this shared library's list of exports.
+LDFLAGS += -Wl,--exclude-libs,ALL
+LDLIBS += -lpthread
+$(LIB_PATH): LDLIBS += -lcurl
+endif
+
+ifeq ($(os),freebsd)
+LDFLAGS += -L/usr/local/lib
+$(LIB_PATH): LDLIBS += -lcurl
+endif
+
+
 # TARGETS
 # -------
-
 clean-library:
 	$(Q)$(RM) $(LIB_PATH)
+
 clean-test:
 	$(Q)$(RM) $(TEST_PATH)
 
 clean: clean-library clean-test
 
-$(objs): deps/qajson4c/src/qajson4c/qajson4c.h
-
 minimod: $(LIB_PATH)
+
 library: minimod
 
 $(TEST_PATH): $(test_objs) $(LIB_PATH)
@@ -260,7 +320,7 @@ endif
 test: $(TEST_PATH)
 	$(Q)$(TEST_PATH)
 
-$(LIB_PATH): $(objs)
+$(LIB_PATH): $(lib_objs)
 ifdef Q
 	@echo Linking $@
 endif
@@ -280,7 +340,6 @@ ifeq ($(os),freebsd)
 	$(Q)strip --strip-debug $@
 endif
 
-
 deps/qajson4c/src/qajson4c/qajson4c.h: Makefile
 ifdef Q
 	@echo Updating dependency: DeHecht/qajson4c @ $(QAJSON4C_VERSION)
@@ -290,43 +349,6 @@ endif
 	$(Q)git -C deps/qajson4c checkout $(QAJSON4C_VERSION) --quiet
 	$(Q)$(call TOUCH,$@)
 
-
-# SPECIAL FILE HANDLING
-# ---------------------
-$(OUTPUT_DIR)/src/%.o: CPPFLAGS += -Iinclude -Ideps/miniz -Ideps
-$(OUTPUT_DIR)/tests/%.o: CPPFLAGS += -Iinclude
-$(OUTPUT_DIR)/deps/miniz/miniz.o: CPPFLAGS += -DMINIZ_USE_UNALIGNED_LOADS_AND_STORES=0
-ifneq ($(os),linux)
-$(OUTPUT_DIR)/src/minimod.o: NOWARNINGS += -Wno-error-documentation
-endif
-
-ifeq ($(os),windows)
-$(OUTPUT_DIR)/src/%.o: NOWARNINGS += -Wno-error-reserved-id-macro
-$(OUTPUT_DIR)/src/%.o: NOWARNINGS += -Wno-error-nonportable-system-include-path
-$(OUTPUT_DIR)/deps/miniz/miniz.o: CPPFLAGS += -D_LARGEFILE64_SOURCE=1
-endif
-
-ifeq ($(os),macos)
-$(OUTPUT_DIR)/src/netw-libcurl.o: NOWARNINGS += -Wno-disabled-macro-expansion
-# padding in miniz
-$(OUTPUT_DIR)/src/minimod.o: NOWARNINGS += -Wno-error-padded
-endif
-
-ifeq ($(os),freebsd)
-$(OUTPUT_DIR)/src/netw-libcurl.o: CPPFLAGS += -I/usr/local/include
-$(OUTPUT_DIR)/src/netw-libcurl.o: NOWARNINGS += -Wno-disabled-macro-expansion
-$(OUTPUT_DIR)/src/netw-libcurl.o: NOWARNINGS += -Wno-error-reserved-id-macro
-$(OUTPUT_DIR)/src/minimod.o: NOWARNINGS += -Wno-error-padded
-endif
-
-ifeq ($(os),linux)
-$(OUTPUT_DIR)/deps/miniz/miniz.o: CPPFLAGS += -D_LARGEFILE64_SOURCE=1
-endif
-
-# clang implied
-ifneq ($(os),linux)
-$(OUTPUT_DIR)/deps/%.o: NOWARNINGS += -Wno-everything
-endif
 
 # PATTERNS
 # --------
@@ -343,6 +365,7 @@ ifdef Q
 endif
 	$(Q)$(ensure_dir)
 	$(Q)$(CC) $(CPPFLAGS) $(OBJCFLAGS) $(TARGET_ARCH) -c $(OUTPUT_OPTION) $<
+
 
 # MISC TARGETS
 # ------------
