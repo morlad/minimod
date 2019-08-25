@@ -32,9 +32,18 @@ enum fsu_pathtype
 };
 
 
-/* Function: fsu_ftype()
+/** Callback: fsu_enum_dir_callback()
+ */
+typedef void (*fsu_enum_dir_callback)(
+  char const *root,
+  char const *name,
+  bool is_dir,
+  void *in_userdata);
+
+
+/* Function: fsu_ptype()
  *
- * Check if a path directes at a directory, file, nothing or something else.
+ * Check if a path points at a directory, file, nothing or something else.
  */
 enum fsu_pathtype
 fsu_ptype(char const *path);
@@ -99,15 +108,6 @@ fsu_mvfile(char const *from, char const *to, bool in_replace);
  */
 bool
 fsu_rmfile(char const *path);
-
-
-/** Callback: fsu_enum_dir_callback()
- */
-typedef void (*fsu_enum_dir_callback)(
-  char const *root,
-  char const *name,
-  bool is_dir,
-  void *in_userdata);
 
 
 /* Function: fsu_enum_dir()

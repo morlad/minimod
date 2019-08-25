@@ -10,13 +10,6 @@
 #include <unistd.h>
 
 
-bool
-fsu_rmfile(char const *in_path)
-{
-	return (unlink(in_path) == 0);
-}
-
-
 enum fsu_pathtype
 fsu_ptype(char const *in_path)
 {
@@ -26,8 +19,7 @@ fsu_ptype(char const *in_path)
 	{
 		return FSU_PATHTYPE_NONE;
 	}
-
-	if (S_ISDIR(sbuffer.st_mode))
+	else if (S_ISDIR(sbuffer.st_mode))
 	{
 		return FSU_PATHTYPE_DIR;
 	}
@@ -39,6 +31,27 @@ fsu_ptype(char const *in_path)
 	{
 		return FSU_PATHTYPE_OTHER;
 	}
+}
+
+
+int64_t
+fsu_fsize(char const *in_path)
+{
+	struct stat st;
+	bool ok = (0 == stat(in_path, &st) && S_ISREG(st.st_mode));
+	return ok ? st.st_size : -1;
+}
+
+
+FILE *
+fsu_fopen(char const *path, char const *mode)
+{
+	// create directory if mode contains 'w'
+	if (strchr(mode, 'w'))
+	{
+		fsu_mkdir(path);
+	}
+	return fopen(path, mode);
 }
 
 
@@ -115,51 +128,6 @@ fsu_rmdir_recursive(char const *in_path)
 }
 
 
-bool
-fsu_enum_dir(
-  char const *in_dir,
-  fsu_enum_dir_callback in_callback,
-  void *in_userdata)
-{
-	DIR *dir = opendir(in_dir);
-	assert(dir);
-
-	struct dirent *entry;
-	while ((entry = readdir(dir)))
-	{
-		printf("[util] %s\n", entry->d_name);
-		if (entry->d_name[0] == '.')
-		{
-			continue;
-		}
-		if (entry->d_type == DT_DIR)
-		{
-			in_callback(in_dir, entry->d_name, true, in_userdata);
-		}
-		else
-		{
-			in_callback(in_dir, entry->d_name, false, in_userdata);
-		}
-	}
-
-	closedir(dir);
-
-	return true;
-}
-
-
-FILE *
-fsu_fopen(char const *path, char const *mode)
-{
-	// create directory if mode contains 'w'
-	if (strchr(mode, 'w'))
-	{
-		fsu_mkdir(path);
-	}
-	return fopen(path, mode);
-}
-
-
 static bool
 fsu_cpfile(char const *in_srcpath, char const *in_dstpath, bool in_replace)
 {
@@ -233,12 +201,43 @@ fsu_mvfile(char const *in_srcpath, char const *in_dstpath, bool in_replace)
 }
 
 
-int64_t
-fsu_fsize(char const *in_path)
+bool
+fsu_rmfile(char const *in_path)
 {
-	struct stat st;
-	bool ok = (0 == stat(in_path, &st) && S_ISREG(st.st_mode));
-	return ok ? st.st_size : -1;
+	return (unlink(in_path) == 0);
+}
+
+
+bool
+fsu_enum_dir(
+  char const *in_dir,
+  fsu_enum_dir_callback in_callback,
+  void *in_userdata)
+{
+	DIR *dir = opendir(in_dir);
+	assert(dir);
+
+	struct dirent *entry;
+	while ((entry = readdir(dir)))
+	{
+		printf("[util] %s\n", entry->d_name);
+		if (entry->d_name[0] == '.')
+		{
+			continue;
+		}
+		if (entry->d_type == DT_DIR)
+		{
+			in_callback(in_dir, entry->d_name, true, in_userdata);
+		}
+		else
+		{
+			in_callback(in_dir, entry->d_name, false, in_userdata);
+		}
+	}
+
+	closedir(dir);
+
+	return true;
 }
 
 
