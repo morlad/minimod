@@ -1,5 +1,6 @@
 // vi: noexpandtab tabstop=4 softtabstop=4 shiftwidth=0
 #include "minimod/minimod.h"
+
 #include "miniz/miniz.h"
 #include "netw.h"
 #include "qajson4c/src/qajson4c/qajson4c.h"
@@ -18,9 +19,9 @@
 #define UNUSED(X) __attribute__((unused)) X
 #endif
 
-/**********/
-/* CONFIG */
-/**********/
+
+// CONFIG
+// ------
 #define DEFAULT_ROOT "_minimod"
 
 
@@ -99,74 +100,37 @@ get_tokenpath(void)
 	return l_mmi.cache_tokenpath;
 }
 
-//	how to handle callbacks?
-//
-//	way 1: call once for each list-item + terminator
-//		should also include some kind of initiator, telling number of
-//		items to pre-alloc in client app.
-//		also: what happens when get_games() is called twice?
-//		there is no way to differentiate from where the call came from,
-//		but it is the same as with #2. only a different granularity
-//	way 2: call once with pregenerated list
-//		Is nice for the calling code, but requires the library to
-//		allocate and transform all of the data. But this is what is
-//		needed mostly, because otherwise a filter could be used, reducing
-//		not only the size, but also the transfer.
-//
-//		#2: - No function call overhead
-//			- No initiator + terminator
-//			- Calling code can quickly iterate over data
-//		#1: - Calling code does not have to convert all data.
-//			- But an early out is quite rare, otherwise a filter could
-//			  have been used to further limit the response.
-//		So I'll go with #2, but try to keep as much data in a single
-//		chunk as possible, with a sane layout, so client could just
-//		reuse the layout, copy and pasting everything instead of having
-//		to duplicate everything.
-//		In other words: strings or references use indices/offsets to point
-//		into another set of memory, so when copying all those chunks
-//		no fix-up for pointers is necessary.
-//		But there is the necessity to dynamically resize those buffers.
-//		Resulting in memory allocations.
+
+static bool
+read_token(void)
+{
+	int64_t fsize = fsu_fsize(get_tokenpath());
+	if (fsize <= 0)
+	{
+		return false;
+	}
+
+	FILE *f = fsu_fopen(get_tokenpath(), "rb");
+	l_mmi.token = malloc((size_t)(fsize + 1));
+	l_mmi.token[fsize] = '\0';
+	fread(l_mmi.token, (size_t)fsize, 1, f);
+	fclose(f);
+
+	asprintf(&l_mmi.token_bearer, "Bearer %s", l_mmi.token);
+
+	return true;
+}
 
 
 static void
-handle_get_games(void *in_udata, void const *in_data, size_t in_len, int error)
+populate_game(struct minimod_game *game, QAJ4C_Value const *node)
 {
-	struct task *task = in_udata;
-	if (error != 200)
-	{
-		task->callback.fptr.get_games(task->callback.userdata, 0, NULL);
-		return;
-	}
+	assert(game);
+	assert(QAJ4C_is_object(node));
 
-	size_t nbuffer = QAJ4C_calculate_max_buffer_size_n(in_data, in_len);
-	void *buffer = malloc(nbuffer);
-
-	QAJ4C_Value const *document = NULL;
-	QAJ4C_parse_opt(in_data, in_len, 0, buffer, nbuffer, &document);
-	assert(QAJ4C_is_object(document));
-
-	QAJ4C_Value const *data = QAJ4C_object_get(document, "data");
-	assert(QAJ4C_is_array(data));
-
-	size_t ngames = QAJ4C_array_size(data);
-	struct minimod_game *games = malloc(sizeof *games * ngames);
-
-	for (size_t i = 0; i < QAJ4C_array_size(data); ++i)
-	{
-		QAJ4C_Value const *item = QAJ4C_array_get(data, i);
-		assert(QAJ4C_is_object(item));
-
-		games[i].id = QAJ4C_get_uint(QAJ4C_object_get(item, "id"));
-		games[i].name = QAJ4C_get_string(QAJ4C_object_get(item, "name"));
-		games[i].more = item;
-	}
-
-	task->callback.fptr.get_games(task->callback.userdata, ngames, games);
-
-	free(games);
-	free(buffer);
+	game->id = QAJ4C_get_uint(QAJ4C_object_get(node, "id"));
+	game->name = QAJ4C_get_string(QAJ4C_object_get(node, "name"));
+	game->more = node;
 }
 
 
@@ -174,8 +138,6 @@ static void
 populate_user(struct minimod_user *user, QAJ4C_Value const *node)
 {
 	assert(user);
-
-	assert(node);
 	assert(QAJ4C_is_object(node));
 
 	user->id = QAJ4C_get_uint64(QAJ4C_object_get(node, "id"));
@@ -188,8 +150,6 @@ static void
 populate_stats(struct minimod_stats *stats, QAJ4C_Value const *node)
 {
 	assert(stats);
-
-	assert(node);
 	assert(QAJ4C_is_object(node));
 
 	stats->mod_id = QAJ4C_get_uint64(QAJ4C_object_get(node, "mod_id"));
@@ -210,8 +170,6 @@ static void
 populate_mod(struct minimod_mod *mod, QAJ4C_Value const *node)
 {
 	assert(mod);
-
-	assert(node);
 	assert(QAJ4C_is_object(node));
 
 	mod->id = QAJ4C_get_uint(QAJ4C_object_get(node, "id"));
@@ -238,6 +196,134 @@ populate_mod(struct minimod_mod *mod, QAJ4C_Value const *node)
 	QAJ4C_Value const *stats = QAJ4C_object_get(node, "stats");
 	assert(QAJ4C_is_object(stats));
 	populate_stats(&mod->stats, stats);
+}
+
+
+static void
+populate_modfile(struct minimod_modfile *modfile, QAJ4C_Value const *node)
+{
+	assert(modfile);
+	assert(QAJ4C_is_object(node));
+
+	modfile->id = QAJ4C_get_uint64(QAJ4C_object_get(node, "id"));
+	modfile->filesize = QAJ4C_get_uint64(QAJ4C_object_get(node, "filesize"));
+
+	QAJ4C_Value const *filehash = QAJ4C_object_get(node, "filehash");
+	modfile->md5 = QAJ4C_get_string(QAJ4C_object_get(filehash, "md5"));
+
+	QAJ4C_Value const *download = QAJ4C_object_get(node, "download");
+	modfile->url = QAJ4C_get_string(QAJ4C_object_get(download, "binary_url"));
+
+	modfile->more = node;
+}
+
+
+static void
+populate_event(struct minimod_event *event, QAJ4C_Value const *node)
+{
+	assert(event);
+	assert(QAJ4C_is_object(node));
+
+	event->id = QAJ4C_get_uint64(QAJ4C_object_get(node, "id"));
+
+	// game_id is only part of user-events
+	QAJ4C_Value const *game_id = QAJ4C_object_get(node, "game_id");
+	if (game_id)
+	{
+		event->game_id = QAJ4C_get_uint64(game_id);
+	}
+	else
+	{
+		event->game_id = 0;
+	}
+	event->mod_id = QAJ4C_get_uint64(QAJ4C_object_get(node, "mod_id"));
+	event->user_id = QAJ4C_get_uint64(QAJ4C_object_get(node, "user_id"));
+	event->date_added = QAJ4C_get_uint64(QAJ4C_object_get(node, "date_added"));
+
+	// uses string length in comparisons first to save on strcmp()s
+	event->type = MINIMOD_EVENTTYPE_UNKNOWN;
+	QAJ4C_Value const *event_type = QAJ4C_object_get(node, "event_type");
+	size_t et_len = QAJ4C_get_string_length(event_type);
+	char const *et = QAJ4C_get_string(event_type);
+	if (et_len == 15 && 0 == strcmp(et, "MODFILE_CHANGED"))
+	{
+		event->type = MINIMOD_EVENTTYPE_MODFILE_CHANGED;
+	}
+	else if (et_len == 14 && 0 == strcmp(et, "USER_SUBSCRIBE"))
+	{
+		event->type = MINIMOD_EVENTTYPE_SUBSCRIBE;
+	}
+	else if (et_len == 16 && 0 == strcmp(et, "USER_UNSUBSCRIBE"))
+	{
+		event->type = MINIMOD_EVENTTYPE_UNSUBSCRIBE;
+	}
+	else if (et_len == 13 && 0 == strcmp(et, "MOD_AVAILABLE"))
+	{
+		event->type = MINIMOD_EVENTTYPE_MOD_AVAILABLE;
+	}
+	else if (et_len == 15 && 0 == strcmp(et, "MOD_UNAVAILABLE"))
+	{
+		event->type = MINIMOD_EVENTTYPE_MOD_UNAVAILABLE;
+	}
+	else if (et_len == 10 && 0 == strcmp(et, "MOD_EDITED"))
+	{
+		event->type = MINIMOD_EVENTTYPE_MOD_EDITED;
+	}
+	else if (et_len == 11 && 0 == strcmp(et, "MOD_DELETED"))
+	{
+		event->type = MINIMOD_EVENTTYPE_MOD_DELETED;
+	}
+	else if (et_len == 14 && 0 == strcmp(et, "USER_TEAM_JOIN"))
+	{
+		event->type = MINIMOD_EVENTTYPE_TEAM_JOIN;
+	}
+	else if (et_len == 15 && 0 == strcmp(et, "USER_TEAM_LEAVE"))
+	{
+		event->type = MINIMOD_EVENTTYPE_MOD_DELETED;
+	}
+
+	event->more = node;
+}
+
+
+static void
+handle_get_games(void *in_udata, void const *in_data, size_t in_len, int error)
+{
+	struct task *task = in_udata;
+	if (error != 200)
+	{
+		task->callback.fptr.get_games(task->callback.userdata, 0, NULL);
+		return;
+	}
+
+	size_t nbuffer = QAJ4C_calculate_max_buffer_size_n(in_data, in_len);
+	void *buffer = malloc(nbuffer);
+
+	QAJ4C_Value const *document = NULL;
+	QAJ4C_parse_opt(in_data, in_len, 0, buffer, nbuffer, &document);
+	assert(QAJ4C_is_object(document));
+
+	QAJ4C_Value const *data = QAJ4C_object_get(document, "data");
+	assert(QAJ4C_is_array(data));
+	if (data)
+	{
+		size_t ngames = QAJ4C_array_size(data);
+		struct minimod_game *games = malloc(sizeof *games * ngames);
+
+		for (size_t i = 0; i < QAJ4C_array_size(data); ++i)
+		{
+			QAJ4C_Value const *item = QAJ4C_array_get(data, i);
+			assert(QAJ4C_is_object(item));
+
+			populate_game(&games[i], item);
+		}
+
+		task->callback.fptr.get_games(task->callback.userdata, ngames, games);
+
+		free(games);
+	}
+
+	free(buffer);
 }
 
 
@@ -335,27 +421,6 @@ handle_get_users(void *in_udata, void const *in_data, size_t in_len, int error)
 
 
 static void
-populate_modfile(struct minimod_modfile *modfile, QAJ4C_Value const *node)
-{
-	assert(modfile);
-
-	assert(node);
-	assert(QAJ4C_is_object(node));
-
-	modfile->id = QAJ4C_get_uint64(QAJ4C_object_get(node, "id"));
-	modfile->filesize = QAJ4C_get_uint64(QAJ4C_object_get(node, "filesize"));
-
-	QAJ4C_Value const *filehash = QAJ4C_object_get(node, "filehash");
-	modfile->md5 = QAJ4C_get_string(QAJ4C_object_get(filehash, "md5"));
-
-	QAJ4C_Value const *download = QAJ4C_object_get(node, "download");
-	modfile->url = QAJ4C_get_string(QAJ4C_object_get(download, "binary_url"));
-
-	modfile->more = node;
-}
-
-
-static void
 handle_get_modfiles(
   void *in_udata,
   void const *in_data,
@@ -405,76 +470,6 @@ handle_get_modfiles(
 		task->callback.fptr.get_modfiles(task->callback.userdata, 1, &modfile);
 	}
 	free(buffer);
-}
-
-
-static void
-populate_event(struct minimod_event *event, QAJ4C_Value const *node)
-{
-	assert(event);
-
-	assert(node);
-	assert(QAJ4C_is_object(node));
-
-	event->id = QAJ4C_get_uint64(QAJ4C_object_get(node, "id"));
-
-	// game_id is only part of user-events
-	QAJ4C_Value const *game_id = QAJ4C_object_get(node, "game_id");
-	if (game_id)
-	{
-		event->game_id = QAJ4C_get_uint64(game_id);
-	}
-	else
-	{
-		event->game_id = 0;
-	}
-	event->mod_id = QAJ4C_get_uint64(QAJ4C_object_get(node, "mod_id"));
-	event->user_id = QAJ4C_get_uint64(QAJ4C_object_get(node, "user_id"));
-	event->date_added = QAJ4C_get_uint64(QAJ4C_object_get(node, "date_added"));
-
-	// uses string length in comparisons first to save on strcmp()s
-	event->type = MINIMOD_EVENTTYPE_UNKNOWN;
-	QAJ4C_Value const *event_type = QAJ4C_object_get(node, "event_type");
-	size_t et_len = QAJ4C_get_string_length(event_type);
-	char const *et = QAJ4C_get_string(event_type);
-	if (et_len == 15 && 0 == strcmp(et, "MODFILE_CHANGED"))
-	{
-		event->type = MINIMOD_EVENTTYPE_MODFILE_CHANGED;
-	}
-	else if (et_len == 14 && 0 == strcmp(et, "USER_SUBSCRIBE"))
-	{
-		event->type = MINIMOD_EVENTTYPE_SUBSCRIBE;
-	}
-	else if (et_len == 16 && 0 == strcmp(et, "USER_UNSUBSCRIBE"))
-	{
-		event->type = MINIMOD_EVENTTYPE_UNSUBSCRIBE;
-	}
-	else if (et_len == 13 && 0 == strcmp(et, "MOD_AVAILABLE"))
-	{
-		event->type = MINIMOD_EVENTTYPE_MOD_AVAILABLE;
-	}
-	else if (et_len == 15 && 0 == strcmp(et, "MOD_UNAVAILABLE"))
-	{
-		event->type = MINIMOD_EVENTTYPE_MOD_UNAVAILABLE;
-	}
-	else if (et_len == 10 && 0 == strcmp(et, "MOD_EDITED"))
-	{
-		event->type = MINIMOD_EVENTTYPE_MOD_EDITED;
-	}
-	else if (et_len == 11 && 0 == strcmp(et, "MOD_DELETED"))
-	{
-		event->type = MINIMOD_EVENTTYPE_MOD_DELETED;
-	}
-	else if (et_len == 14 && 0 == strcmp(et, "USER_TEAM_JOIN"))
-	{
-		event->type = MINIMOD_EVENTTYPE_TEAM_JOIN;
-	}
-	else if (et_len == 15 && 0 == strcmp(et, "USER_TEAM_LEAVE"))
-	{
-		event->type = MINIMOD_EVENTTYPE_MOD_DELETED;
-	}
-
-	event->more = node;
 }
 
 
@@ -676,24 +671,59 @@ handle_get_ratings(
 }
 
 
-static bool
-read_token(void)
+static void
+handle_subscription_change(
+  void *in_udata,
+  void const *in_data,
+  size_t in_bytes,
+  int error)
 {
-	int64_t fsize = fsu_fsize(get_tokenpath());
-	if (fsize <= 0)
+	struct task *task = in_udata;
+
+	if (task->meta64 > 0)
 	{
-		return false;
+		if (error == 201)
+		{
+			task->callback.fptr.subscription_change(
+			  task->callback.userdata,
+			  task->meta64,
+			  1);
+		}
+		else
+		{
+			printf(
+			  "[mm] failed to subscribe %i [modid: %" PRIu64 "]\n",
+			  error,
+			  task->meta64);
+			task->callback.fptr.subscription_change(
+			  task->callback.userdata,
+			  task->meta64,
+			  0);
+		}
+	}
+	else
+	{
+		if (error == 204)
+		{
+			task->callback.fptr.subscription_change(
+			  task->callback.userdata,
+			  -task->meta64,
+			  -1);
+		}
+		else
+		{
+			printf(
+			  "[mm] failed to unsubscribe %i [modid: %" PRIu64 "]\n",
+			  error,
+			  -task->meta64);
+			task->callback.fptr.subscription_change(
+			  task->callback.userdata,
+			  -task->meta64,
+			  0);
+		}
 	}
 
-	FILE *f = fsu_fopen(get_tokenpath(), "rb");
-	l_mmi.token = malloc((size_t)(fsize + 1));
-	l_mmi.token[fsize] = '\0';
-	fread(l_mmi.token, (size_t)fsize, 1, f);
-	fclose(f);
-
-	asprintf(&l_mmi.token_bearer, "Bearer %s", l_mmi.token);
-
-	return true;
+	free_task(task);
 }
 
 
@@ -1727,62 +1757,6 @@ minimod_get_subscriptions(
 	}
 
 	free(path);
-}
-
-
-static void
-handle_subscription_change(
-  void *in_udata,
-  void const *in_data,
-  size_t in_bytes,
-  int error)
-{
-	struct task *task = in_udata;
-
-	if (task->meta64 > 0)
-	{
-		if (error == 201)
-		{
-			task->callback.fptr.subscription_change(
-			  task->callback.userdata,
-			  task->meta64,
-			  1);
-		}
-		else
-		{
-			printf(
-			  "[mm] failed to subscribe %i [modid: %" PRIu64 "]\n",
-			  error,
-			  task->meta64);
-			task->callback.fptr.subscription_change(
-			  task->callback.userdata,
-			  task->meta64,
-			  0);
-		}
-	}
-	else
-	{
-		if (error == 204)
-		{
-			task->callback.fptr.subscription_change(
-			  task->callback.userdata,
-			  -task->meta64,
-			  -1);
-		}
-		else
-		{
-			printf(
-			  "[mm] failed to unsubscribe %i [modid: %" PRIu64 "]\n",
-			  error,
-			  -task->meta64);
-			task->callback.fptr.subscription_change(
-			  task->callback.userdata,
-			  -task->meta64,
-			  0);
-		}
-	}
-
-	free_task(task);
 }
 
 
