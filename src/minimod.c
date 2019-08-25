@@ -306,7 +306,6 @@ handle_get_games(void *in_udata, void const *in_data, size_t in_len, int error)
 
 	size_t nbuffer = QAJ4C_calculate_max_buffer_size_n(in_data, in_len);
 	void *buffer = malloc(nbuffer);
-
 	QAJ4C_Value const *document = NULL;
 	QAJ4C_parse_opt(in_data, in_len, 0, buffer, nbuffer, &document);
 	assert(QAJ4C_is_object(document));
@@ -500,7 +499,7 @@ handle_get_events(
 	assert(QAJ4C_is_array(data));
 
 	size_t nevents = QAJ4C_array_size(data);
-	struct minimod_event *events = malloc(sizeof *events * nevents);
+	struct minimod_event *events = calloc(sizeof *events, nevents);
 
 	for (size_t i = 0; i < nevents; ++i)
 	{
@@ -541,7 +540,7 @@ handle_get_dependencies(
 	assert(QAJ4C_is_array(data));
 
 	size_t ndeps = QAJ4C_array_size(data);
-	uint64_t *deps = malloc(sizeof *deps * ndeps);
+	uint64_t *deps = calloc(sizeof *deps, ndeps);
 
 	for (size_t i = 0; i < QAJ4C_array_size(data); ++i)
 	{
@@ -581,10 +580,9 @@ handle_email_exchange(
 		task->callback.fptr.email_exchange(task->callback.userdata, NULL, 0);
 	}
 
-	// extract token
+	// parse data
 	size_t nbuffer = QAJ4C_calculate_max_buffer_size_n(in_data, in_len);
 	void *buffer = malloc(nbuffer);
-
 	QAJ4C_Value const *document = NULL;
 	QAJ4C_parse_opt(in_data, in_len, 0, buffer, nbuffer, &document);
 	assert(QAJ4C_is_object(document));
@@ -643,7 +641,6 @@ handle_get_ratings(
 
 	size_t nbuffer = QAJ4C_calculate_max_buffer_size_n(in_data, in_len);
 	void *buffer = malloc(nbuffer);
-
 	QAJ4C_Value const *document = NULL;
 	QAJ4C_parse_opt(in_data, in_len, 0, buffer, nbuffer, &document);
 	assert(QAJ4C_is_object(document));
