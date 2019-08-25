@@ -105,20 +105,19 @@ static bool
 read_token(void)
 {
 	int64_t fsize = fsu_fsize(get_tokenpath());
-	if (fsize <= 0)
+	if (fsize > 0)
 	{
-		return false;
+		// read file into l_mmi.token (does null-terminate it)
+		FILE *f = fsu_fopen(get_tokenpath(), "rb");
+		assert(f);
+		l_mmi.token = malloc((size_t)(fsize + 1));
+		fread(l_mmi.token, (size_t)fsize, 1, f);
+		l_mmi.token[fsize] = '\0';
+		fclose(f);
+		asprintf(&l_mmi.token_bearer, "Bearer %s", l_mmi.token);
+		return true;
 	}
-
-	FILE *f = fsu_fopen(get_tokenpath(), "rb");
-	l_mmi.token = malloc((size_t)(fsize + 1));
-	l_mmi.token[fsize] = '\0';
-	fread(l_mmi.token, (size_t)fsize, 1, f);
-	fclose(f);
-
-	asprintf(&l_mmi.token_bearer, "Bearer %s", l_mmi.token);
-
-	return true;
+	return false;
 }
 
 
@@ -167,39 +166,6 @@ populate_stats(struct minimod_stats *stats, QAJ4C_Value const *node)
 
 
 static void
-populate_mod(struct minimod_mod *mod, QAJ4C_Value const *node)
-{
-	assert(mod);
-	assert(QAJ4C_is_object(node));
-
-	mod->id = QAJ4C_get_uint(QAJ4C_object_get(node, "id"));
-	mod->name = QAJ4C_get_string(QAJ4C_object_get(node, "name"));
-
-	QAJ4C_Value const *modfile = QAJ4C_object_get(node, "modfile");
-	assert(QAJ4C_is_object(modfile));
-
-	QAJ4C_Value const *modfile_id = QAJ4C_object_get(modfile, "id");
-	if (modfile_id)
-	{
-		QAJ4C_is_uint64(modfile_id);
-		mod->modfile_id = QAJ4C_get_uint64(modfile_id);
-	}
-
-	mod->more = node;
-
-	// submitted_by
-	QAJ4C_Value const *submitted_by = QAJ4C_object_get(node, "submitted_by");
-	assert(QAJ4C_is_object(submitted_by));
-	populate_user(&mod->submitted_by, submitted_by);
-
-	// stats
-	QAJ4C_Value const *stats = QAJ4C_object_get(node, "stats");
-	assert(QAJ4C_is_object(stats));
-	populate_stats(&mod->stats, stats);
-}
-
-
-static void
 populate_modfile(struct minimod_modfile *modfile, QAJ4C_Value const *node)
 {
 	assert(modfile);
@@ -215,6 +181,38 @@ populate_modfile(struct minimod_modfile *modfile, QAJ4C_Value const *node)
 	modfile->url = QAJ4C_get_string(QAJ4C_object_get(download, "binary_url"));
 
 	modfile->more = node;
+}
+
+
+static void
+populate_mod(struct minimod_mod *mod, QAJ4C_Value const *node)
+{
+	assert(mod);
+	assert(QAJ4C_is_object(node));
+
+	mod->id = QAJ4C_get_uint(QAJ4C_object_get(node, "id"));
+	mod->name = QAJ4C_get_string(QAJ4C_object_get(node, "name"));
+	mod->more = node;
+
+	// modfile
+	QAJ4C_Value const *modfile = QAJ4C_object_get(node, "modfile");
+	assert(QAJ4C_is_object(modfile));
+	QAJ4C_Value const *modfile_id = QAJ4C_object_get(modfile, "id");
+	if (modfile_id)
+	{
+		QAJ4C_is_uint64(modfile_id);
+		mod->modfile_id = QAJ4C_get_uint64(modfile_id);
+	}
+
+	// submitted_by
+	QAJ4C_Value const *submitted_by = QAJ4C_object_get(node, "submitted_by");
+	assert(QAJ4C_is_object(submitted_by));
+	populate_user(&mod->submitted_by, submitted_by);
+
+	// stats
+	QAJ4C_Value const *stats = QAJ4C_object_get(node, "stats");
+	assert(QAJ4C_is_object(stats));
+	populate_stats(&mod->stats, stats);
 }
 
 
@@ -287,6 +285,16 @@ populate_event(struct minimod_event *event, QAJ4C_Value const *node)
 
 
 static void
+populate_rating(struct minimod_rating *rating, QAJ4C_Value const *node)
+{
+	rating->game_id = QAJ4C_get_uint(QAJ4C_object_get(node, "game_id"));
+	rating->mod_id = QAJ4C_get_uint(QAJ4C_object_get(node, "mod_id"));
+	rating->date = QAJ4C_get_uint(QAJ4C_object_get(node, "date_added"));
+	rating->rating = QAJ4C_get_int(QAJ4C_object_get(node, "rating"));
+}
+
+
+static void
 handle_get_games(void *in_udata, void const *in_data, size_t in_len, int error)
 {
 	struct task *task = in_udata;
@@ -304,18 +312,16 @@ handle_get_games(void *in_udata, void const *in_data, size_t in_len, int error)
 	assert(QAJ4C_is_object(document));
 
 	QAJ4C_Value const *data = QAJ4C_object_get(document, "data");
-	assert(QAJ4C_is_array(data));
 	if (data)
 	{
+		assert(QAJ4C_is_array(data));
+
 		size_t ngames = QAJ4C_array_size(data);
-		struct minimod_game *games = malloc(sizeof *games * ngames);
+		struct minimod_game *games = calloc(sizeof *games, ngames);
 
 		for (size_t i = 0; i < QAJ4C_array_size(data); ++i)
 		{
-			QAJ4C_Value const *item = QAJ4C_array_get(data, i);
-			assert(QAJ4C_is_object(item));
-
-			populate_game(&games[i], item);
+			populate_game(&games[i], QAJ4C_array_get(data, i));
 		}
 
 		task->callback.fptr.get_games(task->callback.userdata, ngames, games);
@@ -384,7 +390,6 @@ handle_get_users(void *in_udata, void const *in_data, size_t in_len, int error)
 
 	size_t nbuffer = QAJ4C_calculate_max_buffer_size_n(in_data, in_len);
 	void *buffer = malloc(nbuffer);
-
 	QAJ4C_Value const *document = NULL;
 	QAJ4C_parse_opt(in_data, in_len, 0, buffer, nbuffer, &document);
 	assert(QAJ4C_is_object(document));
@@ -396,13 +401,11 @@ handle_get_users(void *in_udata, void const *in_data, size_t in_len, int error)
 		assert(QAJ4C_is_array(data));
 
 		size_t nusers = QAJ4C_array_size(data);
-		struct minimod_user *users = malloc(sizeof *users * nusers);
+		struct minimod_user *users = calloc(sizeof *users, nusers);
 
 		for (size_t i = 0; i < QAJ4C_array_size(data); ++i)
 		{
-			QAJ4C_Value const *item = QAJ4C_array_get(data, i);
-			assert(QAJ4C_is_object(item));
-			populate_user(&users[i], item);
+			populate_user(&users[i], QAJ4C_array_get(data, i));
 		}
 
 		task->callback.fptr.get_users(task->callback.userdata, nusers, users);
@@ -448,8 +451,7 @@ handle_get_modfiles(
 		assert(QAJ4C_is_array(data));
 
 		size_t nmodfiles = QAJ4C_array_size(data);
-		struct minimod_modfile *modfiles =
-		  malloc(sizeof *modfiles * nmodfiles);
+		struct minimod_modfile *modfiles = calloc(sizeof *modfiles, nmodfiles);
 
 		for (size_t i = 0; i < QAJ4C_array_size(data); ++i)
 		{
@@ -549,6 +551,8 @@ handle_get_dependencies(
 	task->callback.fptr.get_dependencies(task->callback.userdata, ndeps, deps);
 
 	free(deps);
+
+	free(buffer);
 }
 
 
@@ -648,17 +652,11 @@ handle_get_ratings(
 	assert(QAJ4C_is_array(data));
 
 	size_t nratings = QAJ4C_array_size(data);
-	struct minimod_rating *ratings = malloc(sizeof *ratings * nratings);
+	struct minimod_rating *ratings = calloc(sizeof *ratings, nratings);
 
 	for (size_t i = 0; i < QAJ4C_array_size(data); ++i)
 	{
-		QAJ4C_Value const *item = QAJ4C_array_get(data, i);
-		assert(QAJ4C_is_object(item));
-
-		ratings[i].game_id = QAJ4C_get_uint(QAJ4C_object_get(item, "game_id"));
-		ratings[i].mod_id = QAJ4C_get_uint(QAJ4C_object_get(item, "mod_id"));
-		ratings[i].date = QAJ4C_get_uint(QAJ4C_object_get(item, "date_added"));
-		ratings[i].rating = QAJ4C_get_int(QAJ4C_object_get(item, "rating"));
+		populate_rating(&ratings[i], QAJ4C_array_get(data, i));
 	}
 
 	task->callback.fptr.get_ratings(
@@ -667,6 +665,7 @@ handle_get_ratings(
 	  ratings);
 
 	free(ratings);
+
 	free(buffer);
 }
 
@@ -744,7 +743,6 @@ minimod_init(
 	// check if API key is given
 	if (!in_api_key)
 	{
-		// TODO more checks possible?
 		return MINIMOD_ERR_KEY;
 	}
 	else
