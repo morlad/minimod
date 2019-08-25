@@ -157,10 +157,7 @@ $(test_objs): include/minimod/minimod.h
 TARGET_ARCH = -m64 -g -march=core2
 
 ifeq ($(os),macos)
-TARGET_ARCH += -arch x86_64 -mmacosx-version-min=$(MIN_MACOS_VERSION) -stdlib=libc++
-
-LDLIBS += -lc++
-
+TARGET_ARCH += -arch x86_64 -mmacosx-version-min=$(MIN_MACOS_VERSION)
 $(LIB_PATH): LDLIBS += -framework Foundation
 ifneq ($(USE_LIBCURL_ON_MACOS),0)
 $(LIB_PATH): LDLIBS += -lcurl
@@ -195,7 +192,7 @@ ifeq ($(os),linux)
 # do not add exoprts from included static libs (i.e. OpenSSL)
 # to this shared library's list of exports.
 LDFLAGS += -Wl,--exclude-libs,ALL
-LDLIBS += -lstdc++ -lpthread
+LDLIBS += -lpthread
 $(LIB_PATH): LDLIBS += -lcurl
 endif
 
