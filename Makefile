@@ -198,7 +198,7 @@ endif
 
 # COMPILER OPTIONS
 # ----------------
-CFLAGS += -std=c11
+CFLAGS += -std=c99
 CFLAGS += $(WARNINGS) $(NOWARNINGS) $(OPT)
 OBJCFLAGS += $(WARNINGS) $(NOWARNINGS) $(OPT)
 
