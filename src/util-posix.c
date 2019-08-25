@@ -44,22 +44,20 @@ fsu_fsize(char const *in_path)
 
 
 FILE *
-fsu_fopen(char const *path, char const *mode)
+fsu_fopen(char const *in_path, char const *in_mode)
 {
-	// create directory if mode contains 'w'
-	if (strchr(mode, 'w'))
+	// create directory if in_mode contains 'w'
+	if (strchr(in_mode, 'w'))
 	{
-		fsu_mkdir(path);
+		fsu_mkdir(in_path);
 	}
-	return fopen(path, mode);
+	return fopen(in_path, in_mode);
 }
 
 
 bool
 fsu_mkdir(char const *in_dir)
 {
-	assert(in_dir);
-
 	// check if directory already exists
 	struct stat sbuffer;
 	if (stat(in_dir, &sbuffer) == 0)
@@ -97,16 +95,16 @@ fsu_rmdir(char const *in_path)
 bool
 fsu_rmdir_recursive(char const *in_path)
 {
-	printf("fsu_rmdir_recursive(%s)\n", in_path);
+	printf("[util] fsu_rmdir_recursive(%s)\n", in_path);
 	DIR *dir = opendir(in_path);
 	struct dirent *entry;
 	while ((entry = readdir(dir)))
 	{
 		if (entry->d_name[0] == '.')
 		{
-			continue;
+			/* do nothing - skip it */
 		}
-		if (entry->d_type == DT_DIR)
+		else if (entry->d_type == DT_DIR)
 		{
 			char *subdir;
 			asprintf(&subdir, "%s/%s", in_path, entry->d_name);
@@ -117,7 +115,7 @@ fsu_rmdir_recursive(char const *in_path)
 		{
 			char *file;
 			asprintf(&file, "%s/%s", in_path, entry->d_name);
-			printf("deleting file %s\n", file);
+			printf("[util] deleting file %s\n", file);
 			unlink(file);
 			free(file);
 		}
@@ -220,12 +218,11 @@ fsu_enum_dir(
 	struct dirent *entry;
 	while ((entry = readdir(dir)))
 	{
-		printf("[util] %s\n", entry->d_name);
 		if (entry->d_name[0] == '.')
 		{
-			continue;
+			/* do nothing - skip it */
 		}
-		if (entry->d_type == DT_DIR)
+		else if (entry->d_type == DT_DIR)
 		{
 			in_callback(in_dir, entry->d_name, true, in_userdata);
 		}
