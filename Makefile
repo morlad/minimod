@@ -29,7 +29,7 @@ OUTPUT_DIR := build
 USE_LIBCURL_ON_MACOS = 0
 
 # macos only:
-MIN_MACOS_VERSION = 10.11
+MIN_MACOS_VERSION = 10.9
 
 # windows only:
 # path to the LLVM installation
