@@ -213,7 +213,10 @@ fsu_enum_dir(
   void *in_userdata)
 {
 	DIR *dir = opendir(in_dir);
-	assert(dir);
+	if (!dir)
+	{
+		return false;
+	}
 
 	struct dirent *entry;
 	while ((entry = readdir(dir)))

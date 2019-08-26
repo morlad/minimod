@@ -334,8 +334,12 @@ fsu_enum_dir(
 	wprintf(L"enum-pa = '%s'\n", pa);
 
 	WIN32_FIND_DATA fdata;
-	HANDLE h;
-	if ((h = FindFirstFile(pa, &fdata)))
+	HANDLE h = FindFirstFile(pa, &fdata);
+	if (!h)
+	{
+		return false;
+	}
+	else
 	{
 		do
 		{
