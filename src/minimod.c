@@ -1420,7 +1420,6 @@ minimod_install(
 {
 	assert(in_game_id > 0);
 	assert(in_mod_id > 0);
-	assert(in_modfile_id > 0);
 
 	// fetch meta-data and proceed from there
 	struct install_request *req = malloc(sizeof *req);
