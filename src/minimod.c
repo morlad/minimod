@@ -601,6 +601,8 @@ handle_email_exchange(
 	  task->callback.userdata,
 	  tok,
 	  tok_bytes);
+
+	read_token();
 }
 
 
@@ -1122,7 +1124,7 @@ minimod_get_dependencies(
 bool
 minimod_is_authenticated(void)
 {
-	return l_mmi.token;
+	return l_mmi.token && l_mmi.token_bearer;
 }
 
 
@@ -1130,8 +1132,12 @@ void
 minimod_deauthenticate(void)
 {
 	fsu_rmfile(get_tokenpath());
+
 	free(l_mmi.token);
+	free(l_mmi.token_bearer);
+
 	l_mmi.token = NULL;
+	l_mmi.token_bearer = NULL;
 }
 
 
