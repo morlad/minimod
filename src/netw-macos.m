@@ -145,6 +145,7 @@ netw_request_generic(
   void *in_userdata)
 {
 	assert(in_uri);
+	printf("[netw] Sending request: %s\n", in_uri);
 
 	NSString *uri = [NSString stringWithUTF8String:in_uri];
 	NSURL *url = [NSURL URLWithString:uri];
