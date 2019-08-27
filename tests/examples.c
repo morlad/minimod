@@ -56,7 +56,8 @@ static void
 get_games_callback(
   void *udata,
   size_t ngames,
-  struct minimod_game const *games)
+  struct minimod_game const *games,
+  struct minimod_pagination const *pagi)
 {
 	for (size_t i = 0; i < ngames; ++i)
 	{

@@ -295,12 +295,21 @@ populate_rating(struct minimod_rating *rating, QAJ4C_Value const *node)
 
 
 static void
+populate_pagination(struct minimod_pagination *pagi, QAJ4C_Value const *node)
+{
+	pagi->offset = QAJ4C_get_uint(QAJ4C_object_get(node, "result_offset"));
+	pagi->limit = QAJ4C_get_uint(QAJ4C_object_get(node, "result_limit"));
+	pagi->total = QAJ4C_get_uint(QAJ4C_object_get(node, "result_total"));
+}
+
+
+static void
 handle_get_games(void *in_udata, void const *in_data, size_t in_len, int error)
 {
 	struct task *task = in_udata;
 	if (error != 200)
 	{
-		task->callback.fptr.get_games(task->callback.userdata, 0, NULL);
+		task->callback.fptr.get_games(task->callback.userdata, 0, NULL, NULL);
 		return;
 	}
 
@@ -323,7 +332,10 @@ handle_get_games(void *in_udata, void const *in_data, size_t in_len, int error)
 			populate_game(&games[i], QAJ4C_array_get(data, i));
 		}
 
-		task->callback.fptr.get_games(task->callback.userdata, ngames, games);
+		struct minimod_pagination pagi;
+		populate_pagination(&pagi, document);
+
+		task->callback.fptr.get_games(task->callback.userdata, ngames, games, &pagi);
 
 		free(games);
 	}

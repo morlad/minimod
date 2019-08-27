@@ -215,6 +215,17 @@ struct minimod_event
 };
 
 
+/*
+ * Struct: minimod_pagination
+ */
+struct minimod_pagination
+{
+	uint64_t offset;
+	uint64_t limit;
+	uint64_t total;
+};
+
+
 /* Topic: [More Is Less]
 
 	minimod-structs only contain a subset of the underlying JSON
@@ -238,7 +249,7 @@ struct minimod_event
 
 	(start code)
 static void
-get_games_callback(void *udata, size_t ngames, struct minimod_game const *games)
+get_games_callback(void *udata, size_t ngames, struct minimod_game const *games, struct minimod_pagination const *pagi)
 {
 	for (size_t i = 0; i < ngames; ++i)
 	{
@@ -261,7 +272,8 @@ get_games_callback(void *udata, size_t ngames, struct minimod_game const *games)
 typedef void (*minimod_get_games_callback)(
   void *userdata,
   size_t ngames,
-  struct minimod_game const *games);
+  struct minimod_game const *games,
+  struct minimod_pagination const *pagi);
 
 
 /*
