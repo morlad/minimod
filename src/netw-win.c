@@ -17,8 +17,37 @@
 struct netw
 {
 	HINTERNET session;
+	int error_rate;
+	int min_delay;
+	int max_delay;
 };
 static struct netw l_netw;
+
+
+static void
+random_delay()
+{
+	if (l_netw.max_delay > 0)
+	{
+		int delay = (l_netw.max_delay > l_netw.min_delay)
+			? l_netw.min_delay + (rand() % (l_netw.max_delay - l_netw.min_delay))
+			: l_netw.min_delay;
+		printf("[netw] adding delay: %i ms\n", delay);
+		Sleep((unsigned)delay);
+	}
+}
+
+
+static bool
+is_random_server_error(void)
+{
+	if (l_netw.error_rate > (rand() % 100))
+	{
+		random_delay();
+		return true;
+	}
+	return false;
+}
 
 
 bool
@@ -233,6 +262,7 @@ task_handler(LPVOID context)
 			}
 		} while (avail_bytes > 0);
 
+		random_delay();
 		task->callback.download(task->udata, task->file, (int)status_code);
 	}
 	else
@@ -264,6 +294,7 @@ task_handler(LPVOID context)
 			}
 		} while (avail_bytes > 0);
 
+		random_delay();
 		task->callback.request(task->udata, buffer, bytes, (int)status_code);
 	}
 
@@ -296,13 +327,20 @@ netw_request(
   void const *body,
   size_t nbody_bytes,
   netw_request_callback in_callback,
-  void *udata)
+  void *in_userdata)
 {
+	if (l_netw.error_rate > 0 && is_random_server_error())
+	{
+		printf("[netw] Failing request: %s\n", in_uri);
+		in_callback(in_userdata, NULL, 0, 500);
+		return true;
+	}
+
 	printf("[netw] request: %s\n", in_uri);
 
 	struct task *task = calloc(sizeof *task, 1);
 	task->callback.request = in_callback;
-	task->udata = udata;
+	task->udata = in_userdata;
 	task->verb = l_verbs[in_verb];
 	if (body && nbody_bytes > 0)
 	{
@@ -365,14 +403,20 @@ netw_download_to(
   size_t in_nbytes,
   FILE *fout,
   netw_download_callback in_callback,
-  void *in_udata)
+  void *in_userdata)
 {
 	assert(fout);
+	if (l_netw.error_rate > 0 && is_random_server_error())
+	{
+		printf("[netw] Failing request: %s\n", in_uri);
+		in_callback(in_userdata, fout, 500);
+		return true;
+	}
 	printf("[netw] download_request: %s\n", in_uri);
 
 	struct task *task = calloc(sizeof *task, 1);
 	task->callback.download = in_callback;
-	task->udata = in_udata;
+	task->udata = in_userdata;
 	task->verb = l_verbs[in_verb];
 	task->file = fout;
 	if (in_body && in_nbytes > 0)
@@ -424,4 +468,22 @@ netw_download_to(
 	}
 
 	return true;
+}
+
+
+void
+netw_set_error_rate(int in_percentage)
+{
+	assert(in_percentage >= 0 && in_percentage <= 100);
+	l_netw.error_rate = in_percentage;
+}
+
+
+void
+netw_set_delay(int in_min, int in_max)
+{
+	assert(in_min >= 0);
+	assert(in_max >= in_min);
+	l_netw.min_delay = in_min;
+	l_netw.max_delay = in_max;
 }
