@@ -33,16 +33,13 @@
 #include <stdint.h>
 #include <stdio.h>
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
 /* Section: API */
 
-/*
- * Enum: netw_verb
+/* Enum: netw_verb
  *
  * Available HTTP 'verbs' for <netw_request()> and <netw_download_to()>
  *
@@ -59,9 +56,7 @@ enum netw_verb
 	NETW_VERB_DELETE,
 };
 
-
-/*
- * Callback: netw_request_callback()
+/* Callback: netw_request_callback()
  *
  * Called when <netw_request()> has finished receiving a response (or failed).
  *
@@ -78,9 +73,7 @@ typedef void (*netw_request_callback)(
   size_t in_bytes,
   int error);
 
-
-/*
- * Callback: netw_download_callback()
+/* Callback: netw_download_callback()
  *
  * Called when <netw_download_to()> has downloaded the data (or failed).
  *
@@ -94,9 +87,7 @@ typedef void (*netw_download_callback)(
   FILE *in_file,
   int in_error);
 
-
-/*
- * Function: netw_init()
+/* Function: netw_init()
  *
  * Initializes internal *netw* data structures.
  * Needs to be called before any other call to *netw*.
@@ -107,18 +98,14 @@ typedef void (*netw_download_callback)(
 bool
 netw_init(void);
 
-
-/*
- * Function: netw_deinit()
+/* Function: netw_deinit()
  *
  * Shuts down *netw* and frees all resources.
  */
 void
 netw_deinit(void);
 
-
-/*
- * Function: netw_request()
+/* Function: netw_request()
  *
  * Sends an HTTP request out into the world (or locally, if you so desire).
  * On completion *in_callback* is called with the results.
@@ -148,9 +135,7 @@ netw_request(
   netw_request_callback in_callback,
   void *in_userdata);
 
-
-/*
- * Function: netw_download_to()
+/* Function: netw_download_to()
  *
  * Same as <netw_request()> but received data is written to FILE* *in_file*
  * instead of in-memory buffer.
@@ -203,8 +188,7 @@ netw_set_error_rate(int in_percentage);
 void
 netw_set_delay(int in_min, int in_max);
 
-/*
- * Function: netw_percent_encode()
+/* Function: netw_percent_encode()
  *
  * Percent-encode *in_len* bytes of the string at *in_input* into a newly
  * malloc()ed string, which is the return value.
@@ -222,9 +206,7 @@ netw_set_delay(int in_min, int in_max);
 char *
 netw_percent_encode(char const *in_input, size_t in_len, size_t *out_len);
 
-
-/*
- * Topic: Headers
+/* Topic: Headers
  *
  * To specify HTTP headers for a request use a _NULL terminated array_ of
  * _NULL terminated strings_, with key and value being one element *each*.
@@ -238,11 +220,9 @@ netw_percent_encode(char const *in_input, size_t in_len, size_t *out_len);
  * (end)
  */
 
-
 /* Section: Examples */
 
-/*
- * Topic: Download homepage of github
+/* Topic: Download homepage of github
  *
  * (start code)
  * #include "netw.h"
