@@ -13,8 +13,10 @@
  * (*in_callback*) and userpointer (*in_userdata*) as arguments.
  */
 
-#include <stdbool.h>
 #include <stddef.h>
+#ifndef __cplusplus
+#include <stdbool.h>
+#endif
 #include <stdint.h>
 #include <sys/types.h>
 

@@ -26,8 +26,10 @@
  * needs to be called.
  */
 
-#include <stdbool.h>
 #include <stddef.h>
+#ifndef __cplusplus
+#include <stdbool.h>
+#endif
 #include <stdint.h>
 #include <stdio.h>
 
