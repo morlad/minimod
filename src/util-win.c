@@ -1,10 +1,10 @@
 // vi: noexpandtab tabstop=4 softtabstop=4 shiftwidth=0
 #include "util.h"
 
+#include <Windows.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include <Windows.h>
 
 
 size_t
@@ -532,4 +532,3 @@ vasprintf(char **strp, const char *fmt, va_list args)
 
 	return vsprintf(*strp, fmt, args);
 }
-

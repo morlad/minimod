@@ -304,8 +304,16 @@ populate_pagination(struct minimod_pagination *pagi, QAJ4C_Value const *node)
 
 
 static void
-handle_get_games(void *in_udata, void const *in_data, size_t in_len, int error)
+handle_get_games(
+  void *in_udata,
+  void const *in_data,
+  size_t in_len,
+  int error,
+  void const *header)
 {
+	printf(
+	  "X-RateLimit-Remaining: %s\n",
+	  netw_get_header(header, "X-RateLimit-Remaining"));
 	struct task *task = in_udata;
 	if (error != 200)
 	{
@@ -345,7 +353,12 @@ handle_get_games(void *in_udata, void const *in_data, size_t in_len, int error)
 
 
 static void
-handle_get_mods(void *in_udata, void const *in_data, size_t in_len, int error)
+handle_get_mods(
+  void *in_udata,
+  void const *in_data,
+  size_t in_len,
+  int error,
+  void const *header)
 {
 	struct task *task = in_udata;
 	if (error != 200)
@@ -390,7 +403,12 @@ handle_get_mods(void *in_udata, void const *in_data, size_t in_len, int error)
 
 
 static void
-handle_get_users(void *in_udata, void const *in_data, size_t in_len, int error)
+handle_get_users(
+  void *in_udata,
+  void const *in_data,
+  size_t in_len,
+  int error,
+  void const *header)
 {
 	struct task *task = in_udata;
 	if (error != 200)
@@ -439,7 +457,8 @@ handle_get_modfiles(
   void *in_udata,
   void const *in_data,
   size_t in_len,
-  int error)
+  int error,
+  void const *header)
 {
 	struct task *task = in_udata;
 	if (error != 200)
@@ -491,7 +510,8 @@ handle_get_events(
   void *in_udata,
   void const *in_data,
   size_t in_len,
-  int error)
+  int error,
+  void const *header)
 {
 	struct task *task = in_udata;
 	if (error != 200)
@@ -531,7 +551,8 @@ handle_get_dependencies(
   void *in_udata,
   void const *in_data,
   size_t in_len,
-  int error)
+  int error,
+  void const *header)
 {
 	struct task *task = in_udata;
 	if (error != 200)
@@ -572,7 +593,8 @@ handle_email_request(
   void *in_udata,
   void const *UNUSED(in_data),
   size_t UNUSED(in_len),
-  int error)
+  int error,
+  void const *header)
 {
 	struct task *task = in_udata;
 	task->callback.fptr.email_request(task->callback.userdata, error == 200);
@@ -584,7 +606,8 @@ handle_email_exchange(
   void *in_udata,
   void const *in_data,
   size_t in_len,
-  int error)
+  int error,
+  void const *header)
 {
 	struct task *task = in_udata;
 	if (error != 200)
@@ -623,7 +646,8 @@ handle_rate(
   void *in_udata,
   void const *UNUSED(in_data),
   size_t UNUSED(in_len),
-  int error)
+  int error,
+  void const *header)
 {
 	struct task *task = in_udata;
 	if (error == 201)
@@ -644,7 +668,8 @@ handle_get_ratings(
   void *in_udata,
   void const *in_data,
   size_t in_len,
-  int error)
+  int error,
+  void const *header)
 {
 	struct task *task = in_udata;
 	if (error != 200)
@@ -686,7 +711,8 @@ handle_subscription_change(
   void *in_udata,
   void const *in_data,
   size_t in_bytes,
-  int error)
+  int error,
+  void const *header)
 {
 	struct task *task = in_udata;
 

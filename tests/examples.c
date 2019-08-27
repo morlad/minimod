@@ -535,13 +535,7 @@ test_11(void)
 
 	printf("Get all mod events for game:\n");
 	int wait = 1;
-	minimod_get_mod_events(
-		NULL,
-		GAME_ID_TEST,
-		0,
-		0,
-		on_mod_events,
-		&wait);
+	minimod_get_mod_events(NULL, GAME_ID_TEST, 0, 0, on_mod_events, &wait);
 
 	while (wait)
 	{
@@ -585,12 +579,7 @@ test_12(void)
 
 	printf("Get all user events:\n");
 	int wait = 1;
-	minimod_get_user_events(
-		NULL,
-		GAME_ID_TEST,
-		0,
-		on_user_events,
-		&wait);
+	minimod_get_user_events(NULL, GAME_ID_TEST, 0, on_user_events, &wait);
 
 	while (wait)
 	{
@@ -626,11 +615,7 @@ test_13(void)
 
 	printf("Get dependencies:\n");
 	int wait = 1;
-	minimod_get_dependencies(
-		GAME_ID_TEST,
-		1720,
-		on_dependencies,
-		&wait);
+	minimod_get_dependencies(GAME_ID_TEST, 1720, on_dependencies, &wait);
 
 	while (wait)
 	{

@@ -91,6 +91,7 @@ is_random_server_error(void)
 
 	random_delay();
 
+	NSHTTPURLResponse *response = (NSHTTPURLResponse *)nstask.response;
 	// downloads have no buffer object
 	if (task->buffer)
 	{
@@ -99,7 +100,8 @@ is_random_server_error(void)
 		  task->userdata,
 		  task->buffer.bytes,
 		  task->buffer.length,
-		  (int)((NSHTTPURLResponse *)nstask.response).statusCode);
+		  (int)response.statusCode,
+		  response.allHeaderFields);
 		task->buffer = nil;
 	}
 	else
@@ -108,7 +110,7 @@ is_random_server_error(void)
 		task->callback.download(
 		  task->userdata,
 		  task->file,
-		  (int)((NSHTTPURLResponse *)nstask.response).statusCode);
+		  (int)response.statusCode);
 	}
 
 	// clean up
@@ -186,7 +188,7 @@ netw_request_generic(
 		}
 		else
 		{
-			in_callback.request(in_userdata, NULL, 0, 500);
+			in_callback.request(in_userdata, NULL, 0, 500, NULL);
 		}
 		return true;
 	}
@@ -249,14 +251,14 @@ netw_request(
   void *in_userdata)
 {
 	return netw_request_generic(
-		in_verb,
-		in_uri,
-		headers,
-		in_body,
-		in_nbytes,
-		NULL,
-		(union netw_callback){ .request = in_callback },
-		in_userdata);
+	  in_verb,
+	  in_uri,
+	  headers,
+	  in_body,
+	  in_nbytes,
+	  NULL,
+	  (union netw_callback){ .request = in_callback },
+	  in_userdata);
 }
 
 
@@ -272,14 +274,24 @@ netw_download_to(
   void *in_userdata)
 {
 	return netw_request_generic(
-		in_verb,
-		in_uri,
-		headers,
-		in_body,
-		in_nbytes,
-		fout,
-		(union netw_callback){ .download = in_callback },
-		in_userdata);
+	  in_verb,
+	  in_uri,
+	  headers,
+	  in_body,
+	  in_nbytes,
+	  fout,
+	  (union netw_callback){ .download = in_callback },
+	  in_userdata);
+}
+
+
+char const *
+netw_get_header(void const *in_header, char const *name)
+{
+	NSDictionary *header = in_header;
+	NSString *key = [NSString stringWithUTF8String:name];
+	NSString *val = header[key];
+	return val ? [val UTF8String] : NULL;
 }
 
 

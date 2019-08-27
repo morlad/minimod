@@ -71,7 +71,8 @@ typedef void (*netw_request_callback)(
   void *in_userdata,
   void const *in_data,
   size_t in_bytes,
-  int error);
+  int error,
+  void const *header);
 
 /* Callback: netw_download_callback()
  *
@@ -164,9 +165,15 @@ netw_download_to(
   netw_download_callback in_callback,
   void *in_userdata);
 
+/* Function: netw_get_header()
+ */
+char const *
+netw_get_header(void const *header, char const *name);
+
 /* Function: netw_set_error_rate()
  *
- * Set percentage of requests resulting in an HTTP status code 500.
+ * Set percentage of requests resulting in an HTTP status code 500
+ * and no data transmitted.
  *
  * Parameters:
  *  in_percentage - between 0-100. 0 Deactivates this feature.
