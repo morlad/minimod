@@ -404,6 +404,12 @@ MINIMOD_LIB void
 minimod_deinit(void);
 
 
+/*
+ * Function: minimod_set_debugtesting()
+ */
+MINIMOD_LIB void
+minimod_set_debugtesting(int error_rate, int min_delay, int max_delay);
+
 /* Topic: ¶ Queries */
 
 /* Topic: [Filtering Sorting Pagination]

@@ -177,6 +177,29 @@ netw_download_to(
   netw_download_callback in_callback,
   void *in_userdata);
 
+/* Function: netw_set_error_rate()
+ *
+ * Set percentage of requests resulting in an HTTP status code 500.
+ *
+ * Parameters:
+ *  in_percentage - between 0-100. 0 Deactivates this feature.
+ */
+void
+netw_set_error_rate(int in_percentage);
+
+/* Function: netw_set_delay(in_min, in_max)
+ *
+ * Set range for random delays before a response is received.
+ * Set both values to 0 to deactive this feature.
+ * Note:
+ *	in_max needs to be >= in_min.
+ *
+ * Parameters:
+ *	in_min - minimum delay in milliseconds.
+ *	in_max - maximum delay in milliseconds.
+ */
+void
+netw_set_delay(int in_min, int in_max);
 
 /*
  * Function: netw_percent_encode()

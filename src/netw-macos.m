@@ -17,6 +17,10 @@ struct netw
 	NSURLSession *session;
 	MyDelegate *delegate;
 	CFMutableDictionaryRef task_dict;
+	int error_rate;
+	int min_delay;
+	int max_delay;
+	char _padding[4];
 };
 static struct netw l_netw;
 
@@ -50,6 +54,32 @@ task_from_dictionary(CFDictionaryRef in_dict, NSURLSessionTask *in_task)
 }
 
 
+static void
+random_delay()
+{
+	if (l_netw.max_delay > 0)
+	{
+		int delay = (l_netw.max_delay > l_netw.min_delay)
+			? l_netw.min_delay + (rand() % (l_netw.max_delay - l_netw.min_delay))
+			: l_netw.min_delay;
+		printf("[netw] adding delay: %i ms\n", delay);
+		usleep((unsigned)delay * 1000);
+	}
+}
+
+
+static bool
+is_random_server_error(void)
+{
+	if (l_netw.error_rate > (rand() % 100))
+	{
+		random_delay();
+		return true;
+	}
+	return false;
+}
+
+
 @implementation MyDelegate
 - (void)URLSession:(NSURLSession *)UNUSED(session)
                   task:(NSURLSessionTask *)nstask
@@ -58,6 +88,8 @@ task_from_dictionary(CFDictionaryRef in_dict, NSURLSessionTask *in_task)
 	assert(nstask.state == NSURLSessionTaskStateCompleted);
 
 	struct task *task = task_from_dictionary(l_netw.task_dict, nstask);
+
+	random_delay();
 
 	// downloads have no buffer object
 	if (task->buffer)
@@ -116,6 +148,7 @@ netw_init(void)
 	l_netw.session = [NSURLSession sessionWithConfiguration:config
 	                                               delegate:l_netw.delegate
 	                                          delegateQueue:nil];
+	sranddev();
 	return true;
 }
 
@@ -144,6 +177,19 @@ netw_request_generic(
   union netw_callback in_callback,
   void *in_userdata)
 {
+	if (l_netw.error_rate > 0 && is_random_server_error())
+	{
+		printf("[netw] Failing request: %s\n", in_uri);
+		if (fout)
+		{
+			in_callback.download(in_userdata, fout, 500);
+		}
+		else
+		{
+			in_callback.request(in_userdata, NULL, 0, 500);
+		}
+		return true;
+	}
 	assert(in_uri);
 	printf("[netw] Sending request: %s\n", in_uri);
 
@@ -234,4 +280,22 @@ netw_download_to(
 		fout,
 		(union netw_callback){ .download = in_callback },
 		in_userdata);
+}
+
+
+void
+netw_set_error_rate(int in_percentage)
+{
+	assert(in_percentage >= 0 && in_percentage <= 100);
+	l_netw.error_rate = in_percentage;
+}
+
+
+void
+netw_set_delay(int in_min, int in_max)
+{
+	assert(in_min >= 0);
+	assert(in_max >= in_min);
+	l_netw.min_delay = in_min;
+	l_netw.max_delay = in_max;
 }

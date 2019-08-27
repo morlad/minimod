@@ -807,6 +807,14 @@ minimod_deinit()
 }
 
 
+MINIMOD_LIB void
+minimod_set_debugtesting(int error_rate, int min_delay, int max_delay)
+{
+	netw_set_error_rate(error_rate);
+	netw_set_delay(min_delay, max_delay);
+}
+
+
 void
 minimod_get_games(
   char const *in_filter,
