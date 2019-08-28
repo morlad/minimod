@@ -19,6 +19,10 @@
 #define UNUSED(X) __attribute__((unused)) X
 #endif
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+#define LOG(FMT, ...) printf("[minimod] " FMT "\n", ##__VA_ARGS__)
+#pragma GCC diagnostic pop
 
 // CONFIG
 // ------
@@ -62,7 +66,8 @@ struct mmi
 	char *token_bearer;
 	enum minimod_environment env;
 	bool unzip;
-	char _padding[3];
+	bool is_apikey_invalid;
+	char _padding[2];
 };
 static struct mmi l_mmi;
 
@@ -311,9 +316,17 @@ handle_get_games(
   int error,
   struct netw_header const *header)
 {
-	printf(
-	  "X-RateLimit-Remaining: %s\n",
-	  netw_get_header(header, "X-RateLimit-Remaining"));
+
+	if (error == 429) // too many requests
+	{
+		LOG("X-RateLimit-RetryAfter: %s seconds", netw_get_header(header, "X-RateLimit-RetryAfter"));
+	}
+	if (error == 401)
+	{
+		LOG("Received HTTP Status 429 -> API Key Invalid");
+		l_mmi.is_apikey_invalid = true;
+	}
+
 	struct task *task = in_udata;
 	if (error != 200)
 	{
