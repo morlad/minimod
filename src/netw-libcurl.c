@@ -9,6 +9,10 @@
 
 #include <curl/curl.h>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+#define LOG(FMT, ...) printf("[netw] " FMT "\n", ##__VA_ARGS__)
+#pragma GCC diagnostic pop
 
 struct netw
 {
@@ -27,7 +31,7 @@ random_delay()
 		int delay = (l_netw.max_delay > l_netw.min_delay)
 			? l_netw.min_delay + (rand() % (l_netw.max_delay - l_netw.min_delay))
 			: l_netw.min_delay;
-		printf("[netw] adding delay: %i ms\n", delay);
+		LOG("adding delay: %i ms", delay);
 		usleep((unsigned)delay * 1000);
 	}
 }
@@ -48,7 +52,7 @@ is_random_server_error(void)
 bool
 netw_init(void)
 {
-	printf("[netw] curl: %s\n", curl_version());
+	LOG("curl: %s", curl_version());
 
 	curl_global_init(CURL_GLOBAL_ALL);
 
@@ -106,18 +110,18 @@ task_handler(void *in_context)
 
 	long status_code;
 	curl_easy_getinfo(task->curl, CURLINFO_RESPONSE_CODE, &status_code);
-	printf("[netw] status_code: %li\n", status_code);
+	LOG("status_code: %li", status_code);
 
 
 	random_delay();
 	if (task->file)
 	{
-		printf("[netw] probably written to FILE\n");
+		LOG("probably written to FILE");
 		task->callback.download(task->udata, task->file, (int)status_code);
 	}
 	else
 	{
-		printf("[netw] received bytes: %zu\n", task->bytes);
+		LOG("received bytes: %zu", task->bytes);
 		task->callback
 		  .request(task->udata, task->buffer, task->bytes, (int)status_code);
 	}
@@ -163,7 +167,7 @@ netw_request(
 {
 	if (l_netw.error_rate > 0 && is_random_server_error())
 	{
-		printf("[netw] Failing request: %s\n", in_uri);
+		LOG("Failing request: %s", in_uri);
 		in_callback(in_userdata, NULL, 0, 500);
 		return true;
 	}
@@ -231,7 +235,7 @@ netw_download_to(
 	assert(fout);
 	if (l_netw.error_rate > 0 && is_random_server_error())
 	{
-		printf("[netw] Failing request: %s\n", in_uri);
+		LOG("Failing request: %s", in_uri);
 		in_callback(in_userdata, fout, 500);
 		return true;
 	}

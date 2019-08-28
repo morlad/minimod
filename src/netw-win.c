@@ -7,12 +7,16 @@
 #include <stdio.h>
 #include <winhttp.h>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+#define LOG(FMT, ...) printf("[netw] " FMT "\n", ##__VA_ARGS__)
+#pragma GCC diagnostic pop
+#define LOG_ERR(X) LOG(X " failed %lu", GetLastError())
+
 // size of download -> file buffer
 #define BUFFERSIZE 4096
 #define USER_AGENT L"minimod/0.1"
 
-#define PRINTERR(X) \
-	printf("[netw] " X " failed %lu (%lx)\n", GetLastError(), GetLastError())
 
 struct netw
 {
@@ -32,7 +36,7 @@ random_delay()
 		int delay = (l_netw.max_delay > l_netw.min_delay)
 			? l_netw.min_delay + (rand() % (l_netw.max_delay - l_netw.min_delay))
 			: l_netw.min_delay;
-		printf("[netw] adding delay: %i ms\n", delay);
+		LOG("adding delay: %i ms", delay);
 		Sleep((unsigned)delay);
 	}
 }
@@ -68,7 +72,7 @@ netw_init(void)
 
 	if (!l_netw.session)
 	{
-		PRINTERR("HttpOpen");
+		LOG_ERR("HttpOpen");
 		return false;
 	}
 
@@ -175,7 +179,7 @@ task_handler(LPVOID context)
 	  WinHttpConnect(l_netw.session, task->host, task->port, 0);
 	if (!hconnection)
 	{
-		PRINTERR("HttpConnect");
+		LOG_ERR("HttpConnect");
 		return false;
 	}
 
@@ -189,11 +193,11 @@ task_handler(LPVOID context)
 	  WINHTTP_FLAG_SECURE);
 	if (!hrequest)
 	{
-		PRINTERR("HttpOpenRequest");
+		LOG_ERR("HttpOpenRequest");
 		return false;
 	}
 
-	printf("[netw] Sending request (payload: %zuB)...\n", task->payload_bytes);
+	LOG("Sending request (payload: %zuB)...", task->payload_bytes);
 	BOOL ok = WinHttpSendRequest(
 	  hrequest,
 	  task->header,
@@ -204,19 +208,19 @@ task_handler(LPVOID context)
 	  1);
 	if (!ok)
 	{
-		PRINTERR("HttpSendRequest");
+		LOG_ERR("HttpSendRequest");
 		return false;
 	}
 
-	printf("[netw] Waiting for response...\n");
+	LOG("Waiting for response...");
 	ok = WinHttpReceiveResponse(hrequest, NULL);
 	if (!ok)
 	{
-		PRINTERR("HttpReceiveResponse");
+		LOG_ERR("HttpReceiveResponse");
 		return false;
 	}
 
-	printf("[netw] Query headers...\n");
+	LOG("Query headers...");
 	DWORD status_code;
 	DWORD sc_bytes = sizeof status_code;
 	ok = WinHttpQueryHeaders(
@@ -228,12 +232,12 @@ task_handler(LPVOID context)
 	  WINHTTP_NO_HEADER_INDEX);
 	if (!ok)
 	{
-		PRINTERR("HttpQueryHeaders");
+		LOG_ERR("HttpQueryHeaders");
 		return false;
 	}
-	printf("[netw] status code of response: %lu\n", status_code);
+	LOG("status code of response: %lu", status_code);
 
-	printf("[netw] Read content...\n");
+	LOG("Read content...");
 	uint8_t *buffer = NULL;
 	if (task->file)
 	{
@@ -244,7 +248,7 @@ task_handler(LPVOID context)
 			ok = WinHttpQueryDataAvailable(hrequest, &avail_bytes);
 			if (!ok)
 			{
-				PRINTERR("HttpQueryDataAvailable");
+				LOG_ERR("HttpQueryDataAvailable");
 				return false;
 			}
 			if (avail_bytes > 0)
@@ -252,8 +256,8 @@ task_handler(LPVOID context)
 				DWORD m = avail_bytes <= BUFFERSIZE ? avail_bytes : BUFFERSIZE;
 				DWORD actual_bytes_read = 0;
 				WinHttpReadData(hrequest, buffer, m, &actual_bytes_read);
-				printf(
-				  "[netw] Read %lu from %lu bytes\n",
+				LOG(
+				  "Read %lu from %lu bytes",
 				  actual_bytes_read,
 				  avail_bytes);
 				size_t nitems =
@@ -274,7 +278,7 @@ task_handler(LPVOID context)
 			ok = WinHttpQueryDataAvailable(hrequest, &avail_bytes);
 			if (!ok)
 			{
-				PRINTERR("HttpQueryDataAvailable");
+				LOG_ERR("HttpQueryDataAvailable");
 				return false;
 			}
 			if (avail_bytes > 0)
@@ -287,10 +291,7 @@ task_handler(LPVOID context)
 				  avail_bytes,
 				  &actual_bytes);
 				bytes += actual_bytes;
-				printf(
-				  "[netw] Read %lu from %lu bytes\n",
-				  actual_bytes,
-				  avail_bytes);
+				LOG("Read %lu from %lu bytes", actual_bytes, avail_bytes);
 			}
 		} while (avail_bytes > 0);
 
@@ -331,12 +332,12 @@ netw_request(
 {
 	if (l_netw.error_rate > 0 && is_random_server_error())
 	{
-		printf("[netw] Failing request: %s\n", in_uri);
+		LOG("Failing request: %s", in_uri);
 		in_callback(in_userdata, NULL, 0, 500);
 		return true;
 	}
 
-	printf("[netw] request: %s\n", in_uri);
+	LOG("request: %s", in_uri);
 
 	struct task *task = calloc(sizeof *task, 1);
 	task->callback.request = in_callback;
@@ -387,7 +388,7 @@ netw_request(
 	}
 	else
 	{
-		printf("[netw] failed to create thread\n");
+		LOG("failed to create thread");
 	}
 
 	return true;
@@ -408,11 +409,11 @@ netw_download_to(
 	assert(fout);
 	if (l_netw.error_rate > 0 && is_random_server_error())
 	{
-		printf("[netw] Failing request: %s\n", in_uri);
+		LOG("Failing request: %s", in_uri);
 		in_callback(in_userdata, fout, 500);
 		return true;
 	}
-	printf("[netw] download_request: %s\n", in_uri);
+	LOG("download_request: %s", in_uri);
 
 	struct task *task = calloc(sizeof *task, 1);
 	task->callback.download = in_callback;
@@ -464,7 +465,7 @@ netw_download_to(
 	}
 	else
 	{
-		printf("[netw] failed to create thread\n");
+		LOG("failed to create thread");
 	}
 
 	return true;

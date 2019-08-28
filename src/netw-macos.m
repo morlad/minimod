@@ -4,6 +4,10 @@
 
 #define UNUSED(X) __attribute__((unused)) X
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+#define LOG(FMT, ...) printf("[netw] " FMT "\n", ##__VA_ARGS__)
+#pragma GCC diagnostic pop
 
 @interface MyDelegate : NSObject <
                           NSURLSessionDelegate,
@@ -62,7 +66,7 @@ random_delay()
 		int delay = (l_netw.max_delay > l_netw.min_delay)
 			? l_netw.min_delay + (rand() % (l_netw.max_delay - l_netw.min_delay))
 			: l_netw.min_delay;
-		printf("[netw] adding delay: %i ms\n", delay);
+		LOG("adding delay: %i ms", delay);
 		usleep((unsigned)delay * 1000);
 	}
 }
@@ -182,7 +186,7 @@ netw_request_generic(
 {
 	if (l_netw.error_rate > 0 && is_random_server_error())
 	{
-		printf("[netw] Failing request: %s\n", in_uri);
+		LOG("Failing request: %s", in_uri);
 		if (fout)
 		{
 			in_callback.download(in_userdata, fout, 500, NULL);
@@ -194,7 +198,7 @@ netw_request_generic(
 		return true;
 	}
 	assert(in_uri);
-	printf("[netw] Sending request: %s\n", in_uri);
+	LOG("Sending request: %s", in_uri);
 
 	NSString *uri = [NSString stringWithUTF8String:in_uri];
 	NSURL *url = [NSURL URLWithString:uri];
