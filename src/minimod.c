@@ -665,12 +665,12 @@ handle_rate(
 	struct task *task = in_udata;
 	if (error == 201)
 	{
-		printf("[mm] Rating applied successful\n");
+		LOG("Rating applied successful");
 		task->callback.fptr.rate(task->callback.userdata, true);
 	}
 	else
 	{
-		printf("[mm] Raiting not applied: %i\n", error);
+		LOG("Raiting not applied: %i", error);
 		task->callback.fptr.rate(task->callback.userdata, false);
 	}
 }
@@ -970,7 +970,7 @@ minimod_email_request(
 	int nbytes =
 	  asprintf(&payload, "api_key=%s&email=%s", l_mmi.api_key, email);
 	free(email);
-	printf("[mm] payload: %s (%i)\n", payload, nbytes);
+	LOG("payload: %s (%i)", payload, nbytes);
 
 	assert(nbytes > 0);
 
@@ -1017,7 +1017,7 @@ minimod_email_exchange(
 	  "api_key=%s&security_code=%s",
 	  l_mmi.api_key,
 	  in_code);
-	printf("[mm] payload: %s (%i)\n", payload, nbytes);
+	LOG("payload: %s (%i)", payload, nbytes);
 
 	assert(nbytes > 0);
 
@@ -1120,7 +1120,7 @@ minimod_get_user_events(
 		NULL
 		// clang-format on
 	};
-	printf("[mm] request: %s\n", path);
+	LOG("request: %s", path);
 
 	struct task *task = alloc_task();
 	task->callback.fptr.get_events = in_callback;
@@ -1236,7 +1236,7 @@ minimod_get_modfiles(
 		  l_mmi.api_key,
 		  in_filter ? in_filter : "");
 	}
-	printf("[mm] request: %s\n", path);
+	LOG("request: %s", path);
 
 	char const *const headers[] = {
 		// clang-format off
@@ -1313,7 +1313,7 @@ minimod_get_mod_events(
 		NULL
 		// clang-format on
 	};
-	printf("[mm] request: %s\n", path);
+	LOG("request: %s", path);
 
 	struct task *task = alloc_task();
 	task->callback.fptr.get_events = in_callback;
@@ -1352,12 +1352,12 @@ on_install_download(void *in_udata, FILE *in_file, int error, struct netw_header
 
 	if (error != 200)
 	{
-		printf("[mm] mod NOT downloaded\n");
+		LOG("mod NOT downloaded");
 		req->callback(req->userdata, NULL);
 		return;
 	}
 
-	printf("[mm] mod downloaded\n");
+	LOG("mod downloaded");
 
 	// extract zip?
 	if (l_mmi.unzip)
@@ -1615,7 +1615,7 @@ root_enumerator(
 
 	if (is_dir)
 	{
-		printf("[mm] found dir: %s - %s\n", root, name);
+		LOG("found dir: %s - %s", root, name);
 		size_t l = strlen(name);
 		bool is_game_id = is_str_numeric(name, l);
 		if (is_game_id)
@@ -1645,13 +1645,13 @@ minimod_enum_installed_mods(
 	if (in_game_id)
 	{
 		asprintf(&path, "%s/mods/%" PRIu64 "/", l_mmi.root_path, in_game_id);
-		printf("[mm] path-wid: %s\n", path);
+		LOG("path-wid: %s", path);
 		fsu_enum_dir(path, game_enumerator, &edata);
 	}
 	else
 	{
 		asprintf(&path, "%s/mods/", l_mmi.root_path);
-		printf("[mm] path-noid: %s\n", path);
+		LOG("path-noid: %s", path);
 		fsu_enum_dir(path, root_enumerator, &edata);
 	}
 	free(path);
