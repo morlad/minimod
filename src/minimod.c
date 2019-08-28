@@ -749,8 +749,8 @@ handle_subscription_change(
 		}
 		else
 		{
-			printf(
-			  "[mm] failed to subscribe %i [modid: %" PRIu64 "]\n",
+			LOG(
+			  "failed to subscribe %i [modid: %" PRIu64 "]",
 			  error,
 			  task->meta64);
 			task->callback.fptr.subscription_change(
@@ -770,8 +770,8 @@ handle_subscription_change(
 		}
 		else
 		{
-			printf(
-			  "[mm] failed to unsubscribe %i [modid: %" PRIu64 "]\n",
+			LOG(
+			  "failed to unsubscribe %i [modid: %" PRIu64 "]",
 			  error,
 			  -task->meta64);
 			task->callback.fptr.subscription_change(
@@ -1376,16 +1376,16 @@ on_install_download(void *in_udata, FILE *in_file, int error, struct netw_header
 		int seek_err = fseek(in_file, 0, SEEK_SET);
 		if (seek_err != 0)
 		{
-			printf("Seek failed %i\n", errno);
+			LOG("Seek failed %i", errno);
 		}
 		// unzip it
 		mz_zip_archive zip = { 0 };
 		if (!mz_zip_reader_init_cfile(&zip, in_file, (mz_uint64)s, 0))
 		{
-			printf("zip error: %i\n", zip.m_last_error);
+			LOG("zip error: %i", zip.m_last_error);
 		}
 		mz_uint nfiles = mz_zip_reader_get_num_files(&zip);
-		printf("#files in zip: %u\n", nfiles);
+		LOG("#files in zip: %u", nfiles);
 		for (mz_uint i = 0; i < nfiles; ++i)
 		{
 			mz_zip_archive_file_stat stat;
@@ -1400,7 +1400,7 @@ on_install_download(void *in_udata, FILE *in_file, int error, struct netw_header
 				  req->game_id,
 				  req->mod_id,
 				  stat.m_filename);
-				printf("  + extracting %s\n", path);
+				LOG("  + extracting %s", path);
 				FILE *f = fsu_fopen(path, "wb");
 				mz_zip_reader_extract_to_cfile(&zip, i, f, 0);
 				free(path);
@@ -1593,9 +1593,9 @@ game_enumerator(
 	size_t l = strlen(name);
 	if (l > 5 && 0 == strcmp(name + l - 5, ".json") && is_str_numeric(name, l - 5))
 	{
-		printf("found mod: %s %s\n", root, name);
+		LOG("found mod: %s %s", root, name);
 		uint64_t mod_id = strtoul(name, NULL, 10);
-		printf("mod_id: %" PRIu64 "\n", mod_id);
+		LOG("mod_id: %" PRIu64, mod_id);
 		char *path = NULL;
 		asprintf(&path, "%s%" PRIu64 ".zip", root, mod_id);
 		if (fsu_ptype(path) == FSU_PATHTYPE_FILE)
