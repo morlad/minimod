@@ -6,7 +6,6 @@
 #include "qajson4c/src/qajson4c/qajson4c.h"
 #include "util.h"
 
-#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <inttypes.h>
@@ -23,6 +22,16 @@
 #pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 #define LOG(FMT, ...) printf("[minimod] " FMT "\n", ##__VA_ARGS__)
 #pragma GCC diagnostic pop
+
+#define ASSERT(in_condition) \
+  do { \
+    if (__builtin_expect(!(in_condition),0)) \
+    { \
+      LOG("[assertion] %s:%i: '%s'",__FILE__,__LINE__,#in_condition); \
+      __asm__ volatile("int $0x03"); \
+      __builtin_unreachable();       \
+    } \
+  } while (__LINE__ == -1)
 
 // CONFIG
 // ------
@@ -95,7 +104,7 @@ free_task(struct task *task)
 static char *
 get_tokenpath(void)
 {
-	assert(l_mmi.root_path);
+	ASSERT(l_mmi.root_path);
 
 	if (!l_mmi.cache_tokenpath)
 	{
@@ -114,7 +123,7 @@ read_token(void)
 	{
 		// read file into l_mmi.token (does null-terminate it)
 		FILE *f = fsu_fopen(get_tokenpath(), "rb");
-		assert(f);
+		ASSERT(f);
 		l_mmi.token = malloc((size_t)(fsize + 1));
 		fread(l_mmi.token, (size_t)fsize, 1, f);
 		l_mmi.token[fsize] = '\0';
@@ -129,8 +138,8 @@ read_token(void)
 static void
 populate_game(struct minimod_game *game, QAJ4C_Value const *node)
 {
-	assert(game);
-	assert(QAJ4C_is_object(node));
+	ASSERT(game);
+	ASSERT(QAJ4C_is_object(node));
 
 	game->id = QAJ4C_get_uint(QAJ4C_object_get(node, "id"));
 	game->name = QAJ4C_get_string(QAJ4C_object_get(node, "name"));
@@ -141,8 +150,8 @@ populate_game(struct minimod_game *game, QAJ4C_Value const *node)
 static void
 populate_user(struct minimod_user *user, QAJ4C_Value const *node)
 {
-	assert(user);
-	assert(QAJ4C_is_object(node));
+	ASSERT(user);
+	ASSERT(QAJ4C_is_object(node));
 
 	user->id = QAJ4C_get_uint64(QAJ4C_object_get(node, "id"));
 	user->username = QAJ4C_get_string(QAJ4C_object_get(node, "username"));
@@ -153,8 +162,8 @@ populate_user(struct minimod_user *user, QAJ4C_Value const *node)
 static void
 populate_stats(struct minimod_stats *stats, QAJ4C_Value const *node)
 {
-	assert(stats);
-	assert(QAJ4C_is_object(node));
+	ASSERT(stats);
+	ASSERT(QAJ4C_is_object(node));
 
 	stats->mod_id = QAJ4C_get_uint64(QAJ4C_object_get(node, "mod_id"));
 	stats->ndownloads =
@@ -173,8 +182,8 @@ populate_stats(struct minimod_stats *stats, QAJ4C_Value const *node)
 static void
 populate_modfile(struct minimod_modfile *modfile, QAJ4C_Value const *node)
 {
-	assert(modfile);
-	assert(QAJ4C_is_object(node));
+	ASSERT(modfile);
+	ASSERT(QAJ4C_is_object(node));
 
 	modfile->id = QAJ4C_get_uint64(QAJ4C_object_get(node, "id"));
 	modfile->filesize = QAJ4C_get_uint64(QAJ4C_object_get(node, "filesize"));
@@ -192,8 +201,8 @@ populate_modfile(struct minimod_modfile *modfile, QAJ4C_Value const *node)
 static void
 populate_mod(struct minimod_mod *mod, QAJ4C_Value const *node)
 {
-	assert(mod);
-	assert(QAJ4C_is_object(node));
+	ASSERT(mod);
+	ASSERT(QAJ4C_is_object(node));
 
 	mod->id = QAJ4C_get_uint(QAJ4C_object_get(node, "id"));
 	mod->name = QAJ4C_get_string(QAJ4C_object_get(node, "name"));
@@ -201,7 +210,7 @@ populate_mod(struct minimod_mod *mod, QAJ4C_Value const *node)
 
 	// modfile
 	QAJ4C_Value const *modfile = QAJ4C_object_get(node, "modfile");
-	assert(QAJ4C_is_object(modfile));
+	ASSERT(QAJ4C_is_object(modfile));
 	QAJ4C_Value const *modfile_id = QAJ4C_object_get(modfile, "id");
 	if (modfile_id)
 	{
@@ -211,12 +220,12 @@ populate_mod(struct minimod_mod *mod, QAJ4C_Value const *node)
 
 	// submitted_by
 	QAJ4C_Value const *submitted_by = QAJ4C_object_get(node, "submitted_by");
-	assert(QAJ4C_is_object(submitted_by));
+	ASSERT(QAJ4C_is_object(submitted_by));
 	populate_user(&mod->submitted_by, submitted_by);
 
 	// stats
 	QAJ4C_Value const *stats = QAJ4C_object_get(node, "stats");
-	assert(QAJ4C_is_object(stats));
+	ASSERT(QAJ4C_is_object(stats));
 	populate_stats(&mod->stats, stats);
 }
 
@@ -224,8 +233,8 @@ populate_mod(struct minimod_mod *mod, QAJ4C_Value const *node)
 static void
 populate_event(struct minimod_event *event, QAJ4C_Value const *node)
 {
-	assert(event);
-	assert(QAJ4C_is_object(node));
+	ASSERT(event);
+	ASSERT(QAJ4C_is_object(node));
 
 	event->id = QAJ4C_get_uint64(QAJ4C_object_get(node, "id"));
 
@@ -338,12 +347,12 @@ handle_get_games(
 	void *buffer = malloc(nbuffer);
 	QAJ4C_Value const *document = NULL;
 	QAJ4C_parse_opt(in_data, in_len, 0, buffer, nbuffer, &document);
-	assert(QAJ4C_is_object(document));
+	ASSERT(QAJ4C_is_object(document));
 
 	QAJ4C_Value const *data = QAJ4C_object_get(document, "data");
 	if (data)
 	{
-		assert(QAJ4C_is_array(data));
+		ASSERT(QAJ4C_is_array(data));
 
 		size_t ngames = QAJ4C_array_size(data);
 		struct minimod_game *games = calloc(sizeof *games, ngames);
@@ -385,13 +394,13 @@ handle_get_mods(
 	size_t nbuffer = QAJ4C_calculate_max_buffer_size_n(in_data, in_len);
 	void *buffer = malloc(nbuffer);
 	QAJ4C_parse_opt(in_data, in_len, 0, buffer, nbuffer, &document);
-	assert(QAJ4C_is_object(document));
+	ASSERT(QAJ4C_is_object(document));
 
 	// single item or array of items?
 	QAJ4C_Value const *data = QAJ4C_object_get(document, "data");
 	if (data)
 	{
-		assert(QAJ4C_is_array(data));
+		ASSERT(QAJ4C_is_array(data));
 
 		size_t nmods = QAJ4C_array_size(data);
 		struct minimod_mod *mods = calloc(sizeof *mods, nmods);
@@ -434,13 +443,13 @@ handle_get_users(
 	void *buffer = malloc(nbuffer);
 	QAJ4C_Value const *document = NULL;
 	QAJ4C_parse_opt(in_data, in_len, 0, buffer, nbuffer, &document);
-	assert(QAJ4C_is_object(document));
+	ASSERT(QAJ4C_is_object(document));
 
 	// check for 'data' to see if it is a 'single' or 'multi' data object
 	QAJ4C_Value const *data = QAJ4C_object_get(document, "data");
 	if (data)
 	{
-		assert(QAJ4C_is_array(data));
+		ASSERT(QAJ4C_is_array(data));
 
 		size_t nusers = QAJ4C_array_size(data);
 		struct minimod_user *users = calloc(sizeof *users, nusers);
@@ -485,13 +494,13 @@ handle_get_modfiles(
 	size_t nbuffer = QAJ4C_calculate_max_buffer_size_n(in_data, in_len);
 	void *buffer = malloc(nbuffer);
 	QAJ4C_parse_opt(in_data, in_len, 0, buffer, nbuffer, &document);
-	assert(QAJ4C_is_object(document));
+	ASSERT(QAJ4C_is_object(document));
 
 	// single item or array of items?
 	QAJ4C_Value const *data = QAJ4C_object_get(document, "data");
 	if (data)
 	{
-		assert(QAJ4C_is_array(data));
+		ASSERT(QAJ4C_is_array(data));
 
 		size_t nmodfiles = QAJ4C_array_size(data);
 		struct minimod_modfile *modfiles = calloc(sizeof *modfiles, nmodfiles);
@@ -538,10 +547,10 @@ handle_get_events(
 	size_t nbuffer = QAJ4C_calculate_max_buffer_size_n(in_data, in_len);
 	void *buffer = malloc(nbuffer);
 	QAJ4C_parse_opt(in_data, in_len, 0, buffer, nbuffer, &document);
-	assert(QAJ4C_is_object(document));
+	ASSERT(QAJ4C_is_object(document));
 
 	QAJ4C_Value const *data = QAJ4C_object_get(document, "data");
-	assert(QAJ4C_is_array(data));
+	ASSERT(QAJ4C_is_array(data));
 
 	size_t nevents = QAJ4C_array_size(data);
 	struct minimod_event *events = calloc(sizeof *events, nevents);
@@ -579,11 +588,11 @@ handle_get_dependencies(
 	size_t nbuffer = QAJ4C_calculate_max_buffer_size_n(in_data, in_len);
 	void *buffer = malloc(nbuffer);
 	QAJ4C_parse_opt(in_data, in_len, 0, buffer, nbuffer, &document);
-	assert(QAJ4C_is_object(document));
+	ASSERT(QAJ4C_is_object(document));
 
 	// single item or array of items?
 	QAJ4C_Value const *data = QAJ4C_object_get(document, "data");
-	assert(QAJ4C_is_array(data));
+	ASSERT(QAJ4C_is_array(data));
 
 	size_t ndeps = QAJ4C_array_size(data);
 	uint64_t *deps = calloc(sizeof *deps, ndeps);
@@ -633,10 +642,10 @@ handle_email_exchange(
 	void *buffer = malloc(nbuffer);
 	QAJ4C_Value const *document = NULL;
 	QAJ4C_parse_opt(in_data, in_len, 0, buffer, nbuffer, &document);
-	assert(QAJ4C_is_object(document));
+	ASSERT(QAJ4C_is_object(document));
 
 	QAJ4C_Value const *token = QAJ4C_object_get(document, "access_token");
-	assert(QAJ4C_is_string(token));
+	ASSERT(QAJ4C_is_string(token));
 
 	char const *tok = QAJ4C_get_string(token);
 	size_t tok_bytes = QAJ4C_get_string_length(token);
@@ -695,10 +704,10 @@ handle_get_ratings(
 	void *buffer = malloc(nbuffer);
 	QAJ4C_Value const *document = NULL;
 	QAJ4C_parse_opt(in_data, in_len, 0, buffer, nbuffer, &document);
-	assert(QAJ4C_is_object(document));
+	ASSERT(QAJ4C_is_object(document));
 
 	QAJ4C_Value const *data = QAJ4C_object_get(document, "data");
-	assert(QAJ4C_is_array(data));
+	ASSERT(QAJ4C_is_array(data));
 
 	size_t nratings = QAJ4C_array_size(data);
 	struct minimod_rating *ratings = calloc(sizeof *ratings, nratings);
@@ -821,7 +830,7 @@ minimod_init(
 	l_mmi.root_path = strdup(in_root_path ? in_root_path : DEFAULT_ROOT);
 	// make sure the path does not end with '/'
 	size_t len = strlen(l_mmi.root_path);
-	assert(len > 0);
+	ASSERT(len > 0);
 	if (l_mmi.root_path[len - 1] == '/')
 	{
 		l_mmi.root_path[len - 1] = '\0';
@@ -912,7 +921,7 @@ minimod_get_mods(
   minimod_get_mods_callback in_callback,
   void *in_userdata)
 {
-	assert(in_game_id > 0);
+	ASSERT(in_game_id > 0);
 	char *path;
 	asprintf(
 	  &path,
@@ -972,7 +981,7 @@ minimod_email_request(
 	free(email);
 	LOG("payload: %s (%i)", payload, nbytes);
 
-	assert(nbytes > 0);
+	ASSERT(nbytes > 0);
 
 	struct task *task = alloc_task();
 	task->callback.fptr.email_request = in_callback;
@@ -1019,7 +1028,7 @@ minimod_email_exchange(
 	  in_code);
 	LOG("payload: %s (%i)", payload, nbytes);
 
-	assert(nbytes > 0);
+	ASSERT(nbytes > 0);
 
 	struct task *task = alloc_task();
 	task->callback.fptr.email_exchange = in_callback;
@@ -1150,8 +1159,8 @@ minimod_get_dependencies(
   minimod_get_dependencies_callback in_callback,
   void *in_userdata)
 {
-	assert(in_game_id > 0);
-	assert(in_mod_id > 0);
+	ASSERT(in_game_id > 0);
+	ASSERT(in_mod_id > 0);
 
 	char *path;
 	asprintf(
@@ -1209,8 +1218,8 @@ minimod_get_modfiles(
   minimod_get_modfiles_callback in_callback,
   void *in_userdata)
 {
-	assert(in_game_id > 0);
-	assert(in_mod_id > 0);
+	ASSERT(in_game_id > 0);
+	ASSERT(in_mod_id > 0);
 	char *path;
 	if (in_modfile_id)
 	{
@@ -1273,7 +1282,7 @@ minimod_get_mod_events(
   minimod_get_events_callback in_callback,
   void *in_userdata)
 {
-	assert(in_game_id > 0);
+	ASSERT(in_game_id > 0);
 
 	char *cutoff = NULL;
 	if (in_date_cutoff)
@@ -1363,7 +1372,7 @@ on_install_download(void *in_udata, FILE *in_file, int error, struct netw_header
 	if (l_mmi.unzip)
 	{
 		long s = ftell(in_file);
-		assert(s >= 0);
+		ASSERT(s >= 0);
 		int seek_err = fseek(in_file, 0, SEEK_SET);
 		if (seek_err != 0)
 		{
@@ -1426,7 +1435,7 @@ on_download_modfile(
   size_t nmodfiles,
   struct minimod_modfile const *modfiles)
 {
-	assert(nmodfiles == 1);
+	ASSERT(nmodfiles == 1);
 
 	struct install_request *req = udata;
 
@@ -1453,7 +1462,7 @@ on_download_modfile(
 	  req->game_id,
 	  req->mod_id);
 	FILE *fout = fsu_fopen(req->zip_path, "w+b");
-	assert(fout);
+	ASSERT(fout);
 
 	req->file = fout;
 
@@ -1477,8 +1486,8 @@ minimod_install(
   minimod_install_callback in_callback,
   void *in_userdata)
 {
-	assert(in_game_id > 0);
-	assert(in_mod_id > 0);
+	ASSERT(in_game_id > 0);
+	ASSERT(in_mod_id > 0);
 
 	// fetch meta-data and proceed from there
 	struct install_request *req = malloc(sizeof *req);
@@ -1701,9 +1710,9 @@ minimod_rate(
   minimod_rate_callback in_callback,
   void *in_userdata)
 {
-	assert(in_game_id > 0);
-	assert(in_rating != 0);
-	assert(minimod_is_authenticated());
+	ASSERT(in_game_id > 0);
+	ASSERT(in_rating != 0);
+	ASSERT(minimod_is_authenticated());
 
 	char *path = NULL;
 	asprintf(
@@ -1749,7 +1758,7 @@ minimod_get_ratings(
   minimod_get_ratings_callback in_callback,
   void *in_udata)
 {
-	assert(minimod_is_authenticated());
+	ASSERT(minimod_is_authenticated());
 
 	char *path = NULL;
 	asprintf(&path, "%s/me/ratings?%s", endpoints[l_mmi.env], in_filter);
@@ -1787,7 +1796,7 @@ minimod_get_subscriptions(
   minimod_get_mods_callback in_callback,
   void *in_udata)
 {
-	assert(minimod_is_authenticated());
+	ASSERT(minimod_is_authenticated());
 
 	char *path = NULL;
 	asprintf(&path, "%s/me/subscribed?%s", endpoints[l_mmi.env], in_filter);
@@ -1826,8 +1835,8 @@ minimod_subscribe(
   minimod_subscription_change_callback in_callback,
   void *in_userdata)
 {
-	assert(in_game_id > 0);
-	assert(in_mod_id > 0);
+	ASSERT(in_game_id > 0);
+	ASSERT(in_mod_id > 0);
 	if (!minimod_is_authenticated())
 	{
 		return false;
@@ -1877,8 +1886,8 @@ minimod_unsubscribe(
   minimod_subscription_change_callback in_callback,
   void *in_userdata)
 {
-	assert(in_game_id > 0);
-	assert(in_mod_id > 0);
+	ASSERT(in_game_id > 0);
+	ASSERT(in_mod_id > 0);
 	if (!minimod_is_authenticated())
 	{
 		return false;
@@ -1924,7 +1933,7 @@ minimod_unsubscribe(
 char const *
 minimod_get_more_string(void const *more, char const *name)
 {
-	assert(QAJ4C_is_object(more));
+	ASSERT(QAJ4C_is_object(more));
 	QAJ4C_Value const *obj = QAJ4C_object_get(more, name);
 	return QAJ4C_is_string(obj) ? QAJ4C_get_string(obj) : NULL;
 }
@@ -1933,7 +1942,7 @@ minimod_get_more_string(void const *more, char const *name)
 int64_t
 minimod_get_more_int(void const *more, char const *name)
 {
-	assert(QAJ4C_is_object(more));
+	ASSERT(QAJ4C_is_object(more));
 	QAJ4C_Value const *obj = QAJ4C_object_get(more, name);
 	return QAJ4C_is_int64(obj) ? QAJ4C_get_int64(obj) : 0;
 }
@@ -1942,7 +1951,7 @@ minimod_get_more_int(void const *more, char const *name)
 double
 minimod_get_more_float(void const *more, char const *name)
 {
-	assert(QAJ4C_is_object(more));
+	ASSERT(QAJ4C_is_object(more));
 	QAJ4C_Value const *obj = QAJ4C_object_get(more, name);
 	return QAJ4C_is_double(obj) ? QAJ4C_get_double(obj) : 0;
 }
@@ -1951,7 +1960,7 @@ minimod_get_more_float(void const *more, char const *name)
 bool
 minimod_get_more_bool(void const *more, char const *name)
 {
-	assert(QAJ4C_is_object(more));
+	ASSERT(QAJ4C_is_object(more));
 	QAJ4C_Value const *obj = QAJ4C_object_get(more, name);
 	return QAJ4C_is_bool(obj) ? QAJ4C_get_bool(obj) : 0;
 }
