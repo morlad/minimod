@@ -309,7 +309,7 @@ handle_get_games(
   void const *in_data,
   size_t in_len,
   int error,
-  void const *header)
+  struct netw_header const *header)
 {
 	printf(
 	  "X-RateLimit-Remaining: %s\n",
@@ -358,7 +358,7 @@ handle_get_mods(
   void const *in_data,
   size_t in_len,
   int error,
-  void const *header)
+  struct netw_header const *header)
 {
 	struct task *task = in_udata;
 	if (error != 200)
@@ -408,7 +408,7 @@ handle_get_users(
   void const *in_data,
   size_t in_len,
   int error,
-  void const *header)
+  struct netw_header const *header)
 {
 	struct task *task = in_udata;
 	if (error != 200)
@@ -458,7 +458,7 @@ handle_get_modfiles(
   void const *in_data,
   size_t in_len,
   int error,
-  void const *header)
+  struct netw_header const *header)
 {
 	struct task *task = in_udata;
 	if (error != 200)
@@ -511,7 +511,7 @@ handle_get_events(
   void const *in_data,
   size_t in_len,
   int error,
-  void const *header)
+  struct netw_header const *header)
 {
 	struct task *task = in_udata;
 	if (error != 200)
@@ -552,7 +552,7 @@ handle_get_dependencies(
   void const *in_data,
   size_t in_len,
   int error,
-  void const *header)
+  struct netw_header const *header)
 {
 	struct task *task = in_udata;
 	if (error != 200)
@@ -594,7 +594,7 @@ handle_email_request(
   void const *UNUSED(in_data),
   size_t UNUSED(in_len),
   int error,
-  void const *header)
+  struct netw_header const *header)
 {
 	struct task *task = in_udata;
 	task->callback.fptr.email_request(task->callback.userdata, error == 200);
@@ -607,7 +607,7 @@ handle_email_exchange(
   void const *in_data,
   size_t in_len,
   int error,
-  void const *header)
+  struct netw_header const *header)
 {
 	struct task *task = in_udata;
 	if (error != 200)
@@ -647,7 +647,7 @@ handle_rate(
   void const *UNUSED(in_data),
   size_t UNUSED(in_len),
   int error,
-  void const *header)
+  struct netw_header const *header)
 {
 	struct task *task = in_udata;
 	if (error == 201)
@@ -669,7 +669,7 @@ handle_get_ratings(
   void const *in_data,
   size_t in_len,
   int error,
-  void const *header)
+  struct netw_header const *header)
 {
 	struct task *task = in_udata;
 	if (error != 200)
@@ -712,7 +712,7 @@ handle_subscription_change(
   void const *in_data,
   size_t in_bytes,
   int error,
-  void const *header)
+  struct netw_header const *header)
 {
 	struct task *task = in_udata;
 
@@ -1333,7 +1333,7 @@ struct install_request
 
 
 static void
-on_install_download(void *in_udata, FILE *in_file, int error)
+on_install_download(void *in_udata, FILE *in_file, int error, struct netw_header const* in_header)
 {
 	struct install_request *req = in_udata;
 

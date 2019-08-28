@@ -101,7 +101,7 @@ is_random_server_error(void)
 		  task->buffer.bytes,
 		  task->buffer.length,
 		  (int)response.statusCode,
-		  response.allHeaderFields);
+		  (struct netw_header const *)response.allHeaderFields);
 		task->buffer = nil;
 	}
 	else
@@ -110,7 +110,8 @@ is_random_server_error(void)
 		task->callback.download(
 		  task->userdata,
 		  task->file,
-		  (int)response.statusCode);
+		  (int)response.statusCode,
+		  (struct netw_header const *)response.allHeaderFields);
 	}
 
 	// clean up
@@ -184,7 +185,7 @@ netw_request_generic(
 		printf("[netw] Failing request: %s\n", in_uri);
 		if (fout)
 		{
-			in_callback.download(in_userdata, fout, 500);
+			in_callback.download(in_userdata, fout, 500, NULL);
 		}
 		else
 		{
@@ -286,9 +287,9 @@ netw_download_to(
 
 
 char const *
-netw_get_header(void const *in_header, char const *name)
+netw_get_header(struct netw_header const *in_header, char const *name)
 {
-	NSDictionary *header = in_header;
+	NSDictionary *header = (NSDictionary *)in_header;
 	NSString *key = [NSString stringWithUTF8String:name];
 	NSString *val = header[key];
 	return val ? [val UTF8String] : NULL;

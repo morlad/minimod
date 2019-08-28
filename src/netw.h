@@ -56,6 +56,8 @@ enum netw_verb
 	NETW_VERB_DELETE,
 };
 
+struct netw_header;
+
 /* Callback: netw_request_callback()
  *
  * Called when <netw_request()> has finished receiving a response (or failed).
@@ -66,13 +68,14 @@ enum netw_verb
  *		If you want to keep this data around for longer you need to copy it.
  *	in_bytes - number of bytes in *in_data*
  *	in_error - HTTP status code of the response
+ *	in_header - To be used in conjunction with <netw_get_header()>
  */
 typedef void (*netw_request_callback)(
   void *in_userdata,
   void const *in_data,
   size_t in_bytes,
   int error,
-  void const *header);
+  struct netw_header const *in_header);
 
 /* Callback: netw_download_callback()
  *
@@ -82,11 +85,13 @@ typedef void (*netw_request_callback)(
  *	in_userdata - *in_userdata* from <netw_download_to()>
  *	in_file - the very FILE* specified in <netw_download_to()>
  *	in_error - HTTP status code of the response
+ *	in_header - To be used in conjunction with <netw_get_header()>
  */
 typedef void (*netw_download_callback)(
   void *in_userdata,
   FILE *in_file,
-  int in_error);
+  int in_error,
+  struct netw_header const *in_header);
 
 /* Function: netw_init()
  *
@@ -168,7 +173,7 @@ netw_download_to(
 /* Function: netw_get_header()
  */
 char const *
-netw_get_header(void const *header, char const *name);
+netw_get_header(struct netw_header const *header, char const *name);
 
 /* Function: netw_set_error_rate()
  *
