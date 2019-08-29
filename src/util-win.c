@@ -10,15 +10,17 @@
 #define LOG(FMT, ...) printf("[util] " FMT "\n", ##__VA_ARGS__)
 #pragma GCC diagnostic pop
 
-#define ASSERT(in_condition) \
-  do { \
-    if (__builtin_expect(!(in_condition),0)) \
-    { \
-      LOG("[assertion] %s:%i: '%s'",__FILE__,__LINE__,#in_condition); \
-      __asm__ volatile("int $0x03"); \
-      __builtin_unreachable();       \
-    } \
-  } while (__LINE__ == -1)
+#define ASSERT(in_condition)                                                 \
+	do                                                                       \
+	{                                                                        \
+		if (__builtin_expect(!(in_condition), 0))                            \
+		{                                                                    \
+			LOG(                                                             \
+			  "[assertion] %s:%i: '%s'", __FILE__, __LINE__, #in_condition); \
+			__asm__ volatile("int $0x03");                                   \
+			__builtin_unreachable();                                         \
+		}                                                                    \
+	} while (__LINE__ == -1)
 
 size_t
 sys_utf8_from_wchar(wchar_t const *in, char *out, size_t bytes)

@@ -24,15 +24,17 @@
 
 #define LOG(FMT, ...) printf("[minimod] " FMT "\n", ##__VA_ARGS__)
 
-#define ASSERT(in_condition) \
-  do { \
-    if (__builtin_expect(!(in_condition),0)) \
-    { \
-      LOG("[assertion] %s:%i: '%s'",__FILE__,__LINE__,#in_condition); \
-      __asm__ volatile("int $0x03"); \
-      __builtin_unreachable();       \
-    } \
-  } while (__LINE__ == -1)
+#define ASSERT(in_condition)                                                 \
+	do                                                                       \
+	{                                                                        \
+		if (__builtin_expect(!(in_condition), 0))                            \
+		{                                                                    \
+			LOG(                                                             \
+			  "[assertion] %s:%i: '%s'", __FILE__, __LINE__, #in_condition); \
+			__asm__ volatile("int $0x03");                                   \
+			__builtin_unreachable();                                         \
+		}                                                                    \
+	} while (__LINE__ == -1)
 
 #pragma GCC diagnostic pop
 

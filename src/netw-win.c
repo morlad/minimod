@@ -256,10 +256,7 @@ task_handler(LPVOID context)
 				DWORD m = avail_bytes <= BUFFERSIZE ? avail_bytes : BUFFERSIZE;
 				DWORD actual_bytes_read = 0;
 				WinHttpReadData(hrequest, buffer, m, &actual_bytes_read);
-				LOG(
-				  "Read %lu from %lu bytes",
-				  actual_bytes_read,
-				  avail_bytes);
+				LOG("Read %lu from %lu bytes", actual_bytes_read, avail_bytes);
 				size_t nitems =
 				  fwrite(buffer, actual_bytes_read, 1, task->file);
 				assert(nitems == 1);
