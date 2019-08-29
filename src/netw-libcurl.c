@@ -1,6 +1,7 @@
 // vi: noexpandtab tabstop=4 softtabstop=4 shiftwidth=0
 #include "netw.h"
 
+#include <ctype.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,15 +15,17 @@
 
 #define LOG(FMT, ...) printf("[netw] " FMT "\n", ##__VA_ARGS__)
 
-#define ASSERT(in_condition) \
-  do { \
-    if (__builtin_expect(!(in_condition),0)) \
-    { \
-      LOG("[assertion] %s:%i: '%s'",__FILE__,__LINE__,#in_condition); \
-      __asm__ volatile("int $0x03"); \
-      __builtin_unreachable();       \
-    } \
-  } while (__LINE__ == -1)
+#define ASSERT(in_condition)                                                 \
+	do                                                                       \
+	{                                                                        \
+		if (__builtin_expect(!(in_condition), 0))                            \
+		{                                                                    \
+			LOG(                                                             \
+			  "[assertion] %s:%i: '%s'", __FILE__, __LINE__, #in_condition); \
+			__asm__ volatile("int $0x03");                                   \
+			__builtin_unreachable();                                         \
+		}                                                                    \
+	} while (__LINE__ == -1)
 
 #pragma GCC diagnostic pop
 
@@ -107,6 +110,77 @@ on_curl_write_memory(char *ptr, size_t size, size_t nmemb, void *userdata)
 }
 
 
+struct netw_header
+{
+	char **keys;
+	char **values;
+	size_t nkeys;
+	size_t nreserved;
+};
+
+
+static void *
+memdup(void const *in, size_t in_bytes)
+{
+	void *ptr = malloc(in_bytes);
+	memcpy(ptr, in, in_bytes);
+	return ptr;
+}
+
+
+static size_t
+hdr_callback(char *buffer, size_t size, size_t nitems, void *userdata)
+{
+	struct netw_header *hdr = userdata;
+
+	// resize buffer if necessary
+	if (hdr->nkeys == hdr->nreserved)
+	{
+		hdr->nreserved = hdr->nreserved ? 2 * hdr->nreserved : 16;
+		hdr->keys = realloc(hdr->keys, sizeof *hdr->keys * hdr->nreserved);
+		hdr->keys[hdr->nkeys] = NULL;
+		hdr->values =
+		  realloc(hdr->values, sizeof *hdr->values * hdr->nreserved);
+	}
+
+	// check if line contains a colon
+	char *colon = memchr(buffer, ':', size * nitems);
+	if (colon)
+	{
+		hdr->keys[hdr->nkeys] = memdup(buffer, size * nitems);
+		hdr->keys[hdr->nkeys][colon - buffer] = '\0';
+
+		hdr->values[hdr->nkeys] = hdr->keys[hdr->nkeys] + (colon - buffer) + 1;
+		// trim leading whitespace
+		while (isspace(*hdr->values[hdr->nkeys]))
+		{
+			hdr->values[hdr->nkeys] += 1;
+		}
+		// trim trailing whitespace
+		char *ptr = hdr->keys[hdr->nkeys] + size * nitems - 1;
+		while (isspace(*ptr))
+		{
+			*ptr = '\0';
+			ptr -= 1;
+		}
+
+		hdr->nkeys += 1;
+	}
+
+	return size * nitems;
+}
+
+
+static void
+free_netw_header(struct netw_header *hdr)
+{
+	for (size_t i = 0; i < hdr->nkeys; ++i)
+	{
+		free(hdr->keys[i]);
+	}
+}
+
+
 static void *
 task_handler(void *in_context)
 {
@@ -115,6 +189,10 @@ task_handler(void *in_context)
 	curl_easy_setopt(task->curl, CURLOPT_VERBOSE, 0);
 
 	curl_easy_setopt(task->curl, CURLOPT_FOLLOWLOCATION, 1);
+
+	struct netw_header hdr = { 0 };
+	curl_easy_setopt(task->curl, CURLOPT_HEADERDATA, &hdr);
+	curl_easy_setopt(task->curl, CURLOPT_HEADERFUNCTION, hdr_callback);
 
 	curl_easy_perform(task->curl);
 
@@ -129,15 +207,21 @@ task_handler(void *in_context)
 	if (task->file)
 	{
 		LOG("probably written to FILE");
-		task->callback.download(task->udata, task->file, (int)status_code);
+		task->callback
+			.download(task->udata, task->file, (int)status_code, &hdr);
 	}
 	else
 	{
 		LOG("received bytes: %zu", task->bytes);
-		task->callback
-		  .request(task->udata, task->buffer, task->bytes, (int)status_code);
+		task->callback.request(
+		  task->udata,
+		  task->buffer,
+		  task->bytes,
+		  (int)status_code,
+		  &hdr);
 	}
 
+	free_netw_header(&hdr);
 	// TODO free all header lines
 	curl_easy_cleanup(task->curl);
 	free(task->buffer);
@@ -180,7 +264,7 @@ netw_request(
 	if (l_netw.error_rate > 0 && is_random_server_error())
 	{
 		LOG("Failing request: %s", in_uri);
-		in_callback(in_userdata, NULL, 0, 500);
+		in_callback(in_userdata, NULL, 0, 500, NULL);
 		return true;
 	}
 
@@ -248,7 +332,7 @@ netw_download_to(
 	if (l_netw.error_rate > 0 && is_random_server_error())
 	{
 		LOG("Failing request: %s", in_uri);
-		in_callback(in_userdata, fout, 500);
+		in_callback(in_userdata, fout, 500, NULL);
 		return true;
 	}
 
@@ -317,4 +401,18 @@ netw_set_delay(int in_min, int in_max)
 	ASSERT(in_max >= in_min);
 	l_netw.min_delay = in_min;
 	l_netw.max_delay = in_max;
+}
+
+
+char const *
+netw_get_header(struct netw_header const *in_hdr, char const *in_key)
+{
+	for (size_t i = 0; i < in_hdr->nkeys; ++i)
+	{
+		if (strcasecmp(in_key, in_hdr->keys[i]) == 0)
+		{
+			return in_hdr->values[i];
+		}
+	}
+	return NULL;
 }
