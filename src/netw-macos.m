@@ -6,7 +6,22 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+#pragma GCC diagnostic ignored "-Wunused-macros"
+
 #define LOG(FMT, ...) printf("[netw] " FMT "\n", ##__VA_ARGS__)
+
+#define ASSERT(in_condition)                                                 \
+	do                                                                       \
+	{                                                                        \
+		if (__builtin_expect(!(in_condition), 0))                            \
+		{                                                                    \
+			LOG(                                                             \
+			  "[assertion] %s:%i: '%s'", __FILE__, __LINE__, #in_condition); \
+			__asm__ volatile("int $0x03");                                   \
+			__builtin_unreachable();                                         \
+		}                                                                    \
+	} while (__LINE__ == -1)
+
 #pragma GCC diagnostic pop
 
 @interface MyDelegate : NSObject <
@@ -89,7 +104,7 @@ is_random_server_error(void)
                   task:(NSURLSessionTask *)nstask
   didCompleteWithError:(NSError *)error
 {
-	assert(nstask.state == NSURLSessionTaskStateCompleted);
+	ASSERT(nstask.state == NSURLSessionTaskStateCompleted);
 
 	struct task *task = task_from_dictionary(l_netw.task_dict, nstask);
 
@@ -99,7 +114,7 @@ is_random_server_error(void)
 	// downloads have no buffer object
 	if (task->buffer)
 	{
-		assert(!task->file);
+		ASSERT(!task->file);
 		task->callback.request(
 		  task->userdata,
 		  task->buffer.bytes,
@@ -110,7 +125,7 @@ is_random_server_error(void)
 	}
 	else
 	{
-		assert(task->file);
+		ASSERT(task->file);
 		task->callback.download(
 		  task->userdata,
 		  task->file,
@@ -131,12 +146,12 @@ is_random_server_error(void)
 	struct task *task = task_from_dictionary(l_netw.task_dict, nstask);
 	if (task->file)
 	{
-		assert(!task->buffer);
+		ASSERT(!task->buffer);
 		fwrite(in_data.bytes, in_data.length, 1, task->file);
 	}
 	else
 	{
-		assert(task->buffer);
+		ASSERT(task->buffer);
 		[task->buffer appendData:in_data];
 	}
 }
@@ -197,7 +212,7 @@ netw_request_generic(
 		}
 		return true;
 	}
-	assert(in_uri);
+	ASSERT(in_uri);
 	LOG("Sending request: %s", in_uri);
 
 	NSString *uri = [NSString stringWithUTF8String:in_uri];
@@ -303,7 +318,7 @@ netw_get_header(struct netw_header const *in_header, char const *name)
 void
 netw_set_error_rate(int in_percentage)
 {
-	assert(in_percentage >= 0 && in_percentage <= 100);
+	ASSERT(in_percentage >= 0 && in_percentage <= 100);
 	l_netw.error_rate = in_percentage;
 }
 
@@ -311,8 +326,8 @@ netw_set_error_rate(int in_percentage)
 void
 netw_set_delay(int in_min, int in_max)
 {
-	assert(in_min >= 0);
-	assert(in_max >= in_min);
+	ASSERT(in_min >= 0);
+	ASSERT(in_max >= in_min);
 	l_netw.min_delay = in_min;
 	l_netw.max_delay = in_max;
 }
