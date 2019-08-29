@@ -20,8 +20,9 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+#pragma GCC diagnostic ignored "-Wunused-macros"
+
 #define LOG(FMT, ...) printf("[minimod] " FMT "\n", ##__VA_ARGS__)
-#pragma GCC diagnostic pop
 
 #define ASSERT(in_condition) \
   do { \
@@ -32,6 +33,8 @@
       __builtin_unreachable();       \
     } \
   } while (__LINE__ == -1)
+
+#pragma GCC diagnostic pop
 
 // CONFIG
 // ------

@@ -1,7 +1,6 @@
 // vi: noexpandtab tabstop=4 softtabstop=4 shiftwidth=0
 #include "util.h"
 
-#include <assert.h>
 #include <dirent.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -9,6 +8,23 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+#pragma GCC diagnostic ignored "-Wunused-macros"
+
+#define LOG(FMT, ...) printf("[util] " FMT "\n", ##__VA_ARGS__)
+
+#define ASSERT(in_condition) \
+  do { \
+    if (__builtin_expect(!(in_condition),0)) \
+    { \
+      LOG("[assertion] %s:%i: '%s'",__FILE__,__LINE__,#in_condition); \
+      __asm__ volatile("int $0x03"); \
+      __builtin_unreachable();       \
+    } \
+  } while (__LINE__ == -1)
+
+#pragma GCC diagnostic pop
 
 enum fsu_pathtype
 fsu_ptype(char const *in_path)

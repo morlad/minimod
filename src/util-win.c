@@ -2,18 +2,31 @@
 #include "util.h"
 
 #include <Windows.h>
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+#define LOG(FMT, ...) printf("[util] " FMT "\n", ##__VA_ARGS__)
+#pragma GCC diagnostic pop
+
+#define ASSERT(in_condition) \
+  do { \
+    if (__builtin_expect(!(in_condition),0)) \
+    { \
+      LOG("[assertion] %s:%i: '%s'",__FILE__,__LINE__,#in_condition); \
+      __asm__ volatile("int $0x03"); \
+      __builtin_unreachable();       \
+    } \
+  } while (__LINE__ == -1)
 
 size_t
 sys_utf8_from_wchar(wchar_t const *in, char *out, size_t bytes)
 {
-	assert(in);
-	assert(bytes == 0 || out);
+	ASSERT(in);
+	ASSERT(bytes == 0 || out);
 	//  CAST bytes: size_t -> int = assert range
-	assert(bytes <= INT_MAX);
+	ASSERT(bytes <= INT_MAX);
 	//  CAST retval: int -> size_t = WCTMB always returns >= 0 (error == 0)
 	return (size_t)WideCharToMultiByte(
 	  CP_UTF8,
@@ -31,7 +44,7 @@ size_t
 sys_wchar_from_utf8(char const *in, wchar_t *out, size_t chars)
 {
 	// CAST chars: size_t -> int = assert range
-	assert(chars <= INT_MAX);
+	ASSERT(chars <= INT_MAX);
 	// CAST retval: int -> size_t = MBTWC always returns >= 0 (error == 0)
 	return (size_t)MultiByteToWideChar(
 	  CP_UTF8,
@@ -47,7 +60,7 @@ bool
 fsu_rmfile(char const *in_path)
 {
 	size_t nchars = sys_wchar_from_utf8(in_path, NULL, 0);
-	assert(nchars > 0);
+	ASSERT(nchars > 0);
 	wchar_t *utf16 = malloc(nchars * sizeof *utf16);
 	sys_wchar_from_utf8(in_path, utf16, nchars);
 	bool result = (DeleteFileW(utf16) == TRUE);
@@ -61,7 +74,7 @@ fsu_ptype(char const *in_path)
 {
 	// convert utf8 to utf16/wide char
 	size_t nchars = sys_wchar_from_utf8(in_path, NULL, 0);
-	assert(nchars > 0);
+	ASSERT(nchars > 0);
 	wchar_t *utf16 = malloc(nchars * sizeof *utf16);
 	sys_wchar_from_utf8(in_path, utf16, nchars);
 
@@ -162,7 +175,7 @@ bool
 fsu_mkdir(char const *in_path)
 {
 	size_t nchars = sys_wchar_from_utf8(in_path, NULL, 0);
-	assert(nchars > 0);
+	ASSERT(nchars > 0);
 	wchar_t *utf16 = malloc(nchars * sizeof *utf16);
 	sys_wchar_from_utf8(in_path, utf16, nchars);
 	bool result = fsu_recursive_mkdir(utf16);
@@ -176,7 +189,7 @@ fsu_rmdir(char const *in_path)
 {
 	// convert to utf16
 	size_t nchars = sys_wchar_from_utf8(in_path, NULL, 0);
-	assert(nchars > 0);
+	ASSERT(nchars > 0);
 	wchar_t *utf16 = malloc(nchars * sizeof *utf16);
 	sys_wchar_from_utf8(in_path, utf16, nchars);
 
@@ -265,7 +278,7 @@ fsu_rmdir_recursive(char const *in_path)
 {
 	// convert to utf16
 	size_t nchars = sys_wchar_from_utf8(in_path, NULL, 0);
-	assert(nchars > 0);
+	ASSERT(nchars > 0);
 	wchar_t *utf16 = malloc(nchars * sizeof *utf16);
 	sys_wchar_from_utf8(in_path, utf16, nchars);
 
@@ -283,7 +296,7 @@ fsu_rmdir_recursive(char const *in_path)
 {
 	// convert to utf16
 	size_t nchars = sys_wchar_from_utf8(in_path, NULL, 0);
-	assert(nchars > 0);
+	ASSERT(nchars > 0);
 	// string to SHFileOperation needs to be double-NUL terminated.
 	wchar_t *utf16 = calloc(1, sizeof *utf16 * (nchars + 1));
 	wchar_t *utf16 = malloc(nchars * sizeof *utf16);
@@ -312,7 +325,7 @@ fsu_enum_dir(
 {
 	// convert to utf16
 	size_t nchars = sys_wchar_from_utf8(in_dir, NULL, 0);
-	assert(nchars > 0);
+	ASSERT(nchars > 0);
 	wchar_t *utf16 = malloc(nchars * sizeof *utf16);
 	sys_wchar_from_utf8(in_dir, utf16, nchars);
 
@@ -345,7 +358,7 @@ fsu_enum_dir(
 		{
 			// convert fdata.cFileName
 			size_t nbytes = sys_utf8_from_wchar(fdata.cFileName, NULL, 0);
-			assert(nbytes > 0);
+			ASSERT(nbytes > 0);
 			char *utf8 = malloc(nbytes);
 			sys_utf8_from_wchar(fdata.cFileName, utf8, nbytes);
 
@@ -373,11 +386,11 @@ fsu_enum_dir(
 FILE *
 fsu_fopen(char const *in_path, char const *in_mode)
 {
-	assert(in_mode);
+	ASSERT(in_mode);
 
 	// convert to utf16
 	size_t nchars = sys_wchar_from_utf8(in_path, NULL, 0);
-	assert(nchars > 0);
+	ASSERT(nchars > 0);
 	wchar_t *utf16 = malloc(nchars * sizeof *utf16);
 	sys_wchar_from_utf8(in_path, utf16, nchars);
 
@@ -419,13 +432,13 @@ fsu_mvfile(char const *in_srcpath, char const *in_dstpath, bool in_replace)
 
 	// convert in_srcpath to utf16
 	size_t nchars = sys_wchar_from_utf8(in_srcpath, NULL, 0);
-	assert(nchars > 0);
+	ASSERT(nchars > 0);
 	wchar_t *srcpath = malloc(nchars * sizeof *srcpath);
 	sys_wchar_from_utf8(in_srcpath, srcpath, nchars);
 
 	// convert in_dstpath to utf16
 	nchars = sys_wchar_from_utf8(in_dstpath, NULL, 0);
-	assert(nchars > 0);
+	ASSERT(nchars > 0);
 	wchar_t *dstpath = malloc(nchars * sizeof *dstpath);
 	sys_wchar_from_utf8(in_dstpath, dstpath, nchars);
 
@@ -461,7 +474,7 @@ fsu_fsize(char const *in_path)
 {
 	// convert to utf16
 	size_t nchars = sys_wchar_from_utf8(in_path, NULL, 0);
-	assert(nchars);
+	ASSERT(nchars);
 	wchar_t *utf16 = malloc(nchars * sizeof *utf16);
 	sys_wchar_from_utf8(in_path, utf16, nchars);
 

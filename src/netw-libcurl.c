@@ -1,7 +1,6 @@
 // vi: noexpandtab tabstop=4 softtabstop=4 shiftwidth=0
 #include "netw.h"
 
-#include <assert.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,7 +10,20 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+#pragma GCC diagnostic ignored "-Wunused-macros"
+
 #define LOG(FMT, ...) printf("[netw] " FMT "\n", ##__VA_ARGS__)
+
+#define ASSERT(in_condition) \
+  do { \
+    if (__builtin_expect(!(in_condition),0)) \
+    { \
+      LOG("[assertion] %s:%i: '%s'",__FILE__,__LINE__,#in_condition); \
+      __asm__ volatile("int $0x03"); \
+      __builtin_unreachable();       \
+    } \
+  } while (__LINE__ == -1)
+
 #pragma GCC diagnostic pop
 
 struct netw
@@ -232,7 +244,7 @@ netw_download_to(
   netw_download_callback in_callback,
   void *in_userdata)
 {
-	assert(fout);
+	ASSERT(fout);
 	if (l_netw.error_rate > 0 && is_random_server_error())
 	{
 		LOG("Failing request: %s", in_uri);
@@ -293,7 +305,7 @@ netw_download_to(
 void
 netw_set_error_rate(int in_percentage)
 {
-	assert(in_percentage >= 0 && in_percentage <= 100);
+	ASSERT(in_percentage >= 0 && in_percentage <= 100);
 	l_netw.error_rate = in_percentage;
 }
 
@@ -301,8 +313,8 @@ netw_set_error_rate(int in_percentage)
 void
 netw_set_delay(int in_min, int in_max)
 {
-	assert(in_min >= 0);
-	assert(in_max >= in_min);
+	ASSERT(in_min >= 0);
+	ASSERT(in_max >= in_min);
 	l_netw.min_delay = in_min;
 	l_netw.max_delay = in_max;
 }
