@@ -285,6 +285,7 @@ test_5(void)
 	  MINIMOD_CURRENT_ABI);
 
 	int wait = 1;
+	printf("= Get Me\n");
 	minimod_get_me(on_get_users, &wait);
 
 	while (wait)
@@ -327,6 +328,7 @@ test_6(void)
 	  MINIMOD_CURRENT_ABI);
 
 	int wait = 1;
+	printf("= Get Modfiles\n");
 	minimod_get_modfiles(NULL, GAME_ID_TEST, 1720, 0, on_get_modfiles, &wait);
 
 	while (wait)
@@ -435,6 +437,7 @@ on_rated(void *in_udata, bool in_success)
 static void
 test_9(void)
 {
+	printf("= Rating\n");
 	minimod_init(
 	  MINIMOD_ENVIRONMENT_TEST,
 	  API_KEY_TEST,
@@ -483,6 +486,7 @@ on_subscriptions(void *udata, size_t nmods, struct minimod_mod const *mods)
 static void
 test_10(void)
 {
+	printf("= Get Subscriptions\n");
 	minimod_init(
 	  MINIMOD_ENVIRONMENT_TEST,
 	  API_KEY_TEST,
