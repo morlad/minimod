@@ -277,20 +277,21 @@ netw_request(
 
 	task->curl = curl_easy_init();
 
+    curl_off_t nbody_bytes = (curl_off_t)in_nbytes;
 	switch (in_verb)
 	{
 	case NETW_VERB_GET:
 		curl_easy_setopt(task->curl, CURLOPT_HTTPGET, 1);
 		break;
 	case NETW_VERB_POST:
-		curl_easy_setopt(task->curl, CURLOPT_POST, 1);
-		curl_off_t nbody_bytes = (curl_off_t)in_nbytes;
 		curl_easy_setopt(task->curl, CURLOPT_POSTFIELDSIZE_LARGE, nbody_bytes);
 		curl_easy_setopt(task->curl, CURLOPT_COPYPOSTFIELDS, in_body);
+		curl_easy_setopt(task->curl, CURLOPT_POST, 1);
 		break;
 	case NETW_VERB_PUT:
+		curl_easy_setopt(task->curl, CURLOPT_POSTFIELDSIZE_LARGE, nbody_bytes);
+		curl_easy_setopt(task->curl, CURLOPT_COPYPOSTFIELDS, in_body);
 		curl_easy_setopt(task->curl, CURLOPT_UPLOAD, 1);
-		// TODO data?
 		break;
 	case NETW_VERB_DELETE:
 		curl_easy_setopt(task->curl, CURLOPT_CUSTOMREQUEST, "DELETE");
@@ -347,20 +348,21 @@ netw_download_to(
 
 	task->curl = curl_easy_init();
 
+    curl_off_t nbody_bytes = (curl_off_t)in_nbytes;
 	switch (in_verb)
 	{
 	case NETW_VERB_GET:
 		curl_easy_setopt(task->curl, CURLOPT_HTTPGET, 1);
 		break;
 	case NETW_VERB_POST:
-		curl_easy_setopt(task->curl, CURLOPT_POST, 1);
-		curl_off_t nbody_bytes = (curl_off_t)in_nbytes;
 		curl_easy_setopt(task->curl, CURLOPT_POSTFIELDSIZE_LARGE, nbody_bytes);
 		curl_easy_setopt(task->curl, CURLOPT_COPYPOSTFIELDS, in_body);
+		curl_easy_setopt(task->curl, CURLOPT_POST, 1);
 		break;
 	case NETW_VERB_PUT:
+		curl_easy_setopt(task->curl, CURLOPT_POSTFIELDSIZE_LARGE, nbody_bytes);
+		curl_easy_setopt(task->curl, CURLOPT_COPYPOSTFIELDS, in_body);
 		curl_easy_setopt(task->curl, CURLOPT_UPLOAD, 1);
-		// TODO data?
 		break;
 	case NETW_VERB_DELETE:
 		curl_easy_setopt(task->curl, CURLOPT_CUSTOMREQUEST, "DELETE");
