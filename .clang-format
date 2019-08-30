@@ -31,6 +31,9 @@ AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
 ReflowComments: false
+BreakBeforeBinaryOperators: None
+BreakBeforeTernaryOperators: true
+AlignOperands: false
 
 # function decl/def/call
 BinPackParameters: false

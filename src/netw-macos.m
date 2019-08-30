@@ -79,8 +79,8 @@ random_delay()
 	if (l_netw.max_delay > 0)
 	{
 		int delay = (l_netw.max_delay > l_netw.min_delay)
-			? l_netw.min_delay + (rand() % (l_netw.max_delay - l_netw.min_delay))
-			: l_netw.min_delay;
+		  ? l_netw.min_delay + (rand() % (l_netw.max_delay - l_netw.min_delay))
+		  : l_netw.min_delay;
 		LOG("adding delay: %i ms", delay);
 		usleep((unsigned)delay * 1000);
 	}
