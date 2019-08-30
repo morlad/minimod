@@ -1270,10 +1270,11 @@ minimod_get_dependencies(
 	char *path;
 	asprintf(
 	  &path,
-	  "%s/games/%" PRIu64 "/mods/%" PRIu64 "/dependencies",
+	  "%s/games/%" PRIu64 "/mods/%" PRIu64 "/dependencies?api_key=%s",
 	  endpoints[l_mmi.env],
 	  in_game_id,
-	  in_mod_id);
+	  in_mod_id,
+	  l_mmi.api_key);
 
 	struct task *task = alloc_task();
 	task->callback.fptr.get_dependencies = in_callback;
