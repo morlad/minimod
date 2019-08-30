@@ -260,6 +260,8 @@ free_netw_header(struct netw_header *hdr)
 }
 
 
+// TODO correct clean-ups on failure and calling respective callbacks
+// to unblock calling code
 static DWORD
 task_handler(LPVOID context)
 {
