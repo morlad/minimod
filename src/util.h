@@ -147,14 +147,20 @@ sys_seconds(void);
 
 #ifndef UTIL_HAS_THREADS_H
 typedef pthread_mutex_t mtx_t;
-enum mtx_types {
+enum mtx_types
+{
 	mtx_plain = 0,
 };
-int mtx_init(mtx_t *mutex, int type);
-int mtx_lock(mtx_t *mutex);
-int mtx_trylock(mtx_t *mutex);
-int mtx_unlock(mtx_t *mutex);
-void mtx_destroy(mtx_t *mutex);
+int
+mtx_init(mtx_t *mutex, int type);
+int
+mtx_lock(mtx_t *mutex);
+int
+mtx_trylock(mtx_t *mutex);
+int
+mtx_unlock(mtx_t *mutex);
+void
+mtx_destroy(mtx_t *mutex);
 #endif
 
 #ifdef _WIN32

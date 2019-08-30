@@ -390,11 +390,15 @@ populate_pagination(struct minimod_pagination *pagi, QAJ4C_Value const *node)
 
 
 static void
-handle_generic_errors(int error, struct netw_header const *header, bool is_token_auth)
+handle_generic_errors(
+  int error,
+  struct netw_header const *header,
+  bool is_token_auth)
 {
 	if (error == 429) // too many requests
 	{
-		char const *retry_after = netw_get_header(header, "X-RateLimit-RetryAfter");
+		char const *retry_after =
+		  netw_get_header(header, "X-RateLimit-RetryAfter");
 		long retry_after_l = strtol(retry_after, NULL, 10);
 		LOG("X-RateLimit-RetryAfter: %li seconds", retry_after_l);
 		l_mmi.rate_limited_until = sys_seconds() + retry_after_l;
@@ -1450,7 +1454,11 @@ minimod_get_mod_events(
 
 
 static void
-on_install_download(void *in_udata, FILE *in_file, int error, struct netw_header const* in_header)
+on_install_download(
+  void *in_udata,
+  FILE *in_file,
+  int error,
+  struct netw_header const *in_header)
 {
 	struct install_request *req = in_udata;
 	// Downloads are not authenticated, thusly there is no need to handle

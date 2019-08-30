@@ -277,7 +277,7 @@ netw_request(
 
 	task->curl = curl_easy_init();
 
-    curl_off_t nbody_bytes = (curl_off_t)in_nbytes;
+	curl_off_t nbody_bytes = (curl_off_t)in_nbytes;
 	switch (in_verb)
 	{
 	case NETW_VERB_GET:
@@ -348,7 +348,7 @@ netw_download_to(
 
 	task->curl = curl_easy_init();
 
-    curl_off_t nbody_bytes = (curl_off_t)in_nbytes;
+	curl_off_t nbody_bytes = (curl_off_t)in_nbytes;
 	switch (in_verb)
 	{
 	case NETW_VERB_GET:
