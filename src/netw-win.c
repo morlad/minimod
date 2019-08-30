@@ -435,11 +435,11 @@ task_handler(LPVOID context)
 	}
 
 	// free local data
-	free_netw_header(&hdr);
-	free(buffer);
-
 	WinHttpCloseHandle(hrequest);
 	WinHttpCloseHandle(hconnection);
+
+	free_netw_header(&hdr);
+	free(buffer);
 
 	// free task data
 	free(task->host);
