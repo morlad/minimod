@@ -266,6 +266,13 @@ sys_sleep(uint32_t ms)
 }
 
 
+time_t
+sys_seconds(void)
+{
+	return time(NULL);
+}
+
+
 #ifndef UTIL_HAS_THREADS_H
 int
 mtx_init(mtx_t *mutex, int type)

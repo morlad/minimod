@@ -140,6 +140,11 @@ fsu_enum_dir(
 void
 sys_sleep(uint32_t ms);
 
+
+time_t
+sys_seconds(void);
+
+
 #ifndef UTIL_HAS_THREADS_H
 typedef pthread_mutex_t mtx_t;
 enum mtx_types {
