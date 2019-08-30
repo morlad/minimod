@@ -243,7 +243,7 @@ endif
 
 # basically clang
 ifneq ($(os),linux)
-$(OUTPUT_DIR)/src/minimod.o: NOWARNINGS += -Wno-error-documentation
+$(OUTPUT_DIR)/src/minimod.o: NOWARNINGS += -Wno-documentation
 $(OUTPUT_DIR)/deps/%.o: NOWARNINGS += -Wno-everything
 endif
 
