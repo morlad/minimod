@@ -72,18 +72,33 @@ is_random_server_error(void)
 bool
 netw_init(void)
 {
-	l_netw.session = WinHttpOpen(
-	  USER_AGENT,
-
-	  // TODO if windows < 8.1
-	  WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
-	  // TODO if windows >= 8.1
-	  // WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
-
-	  WINHTTP_NO_PROXY_NAME,
-	  WINHTTP_NO_PROXY_BYPASS,
-
-	  0);
+	// Windows 8.1 and above supports WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY
+	// to use the system's proxy settings.
+	// But since Windows 7 should still be supported
+	// WINHTTP_ACCESS_TYPE_DEFAULT_PROXY is the only valid choice and
+	// proxy settings need to be applied manually.
+	WINHTTP_CURRENT_USER_IE_PROXY_CONFIG proxy_cfg = { 0 };
+	if (WinHttpGetIEProxyConfigForCurrentUser(&proxy_cfg))
+	{
+		l_netw.session = WinHttpOpen(
+		  USER_AGENT,
+		  WINHTTP_ACCESS_TYPE_NAMED_PROXY,
+		  proxy_cfg.lpszProxy,
+		  proxy_cfg.lpszProxyBypass,
+		  0);
+		GlobalFree(proxy_cfg.lpszProxy);
+		GlobalFree(proxy_cfg.lpszProxyBypass);
+		GlobalFree(proxy_cfg.lpszAutoConfigUrl);
+	}
+	else
+	{
+		l_netw.session = WinHttpOpen(
+		  USER_AGENT,
+		  WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
+		  WINHTTP_NO_PROXY_NAME,
+		  WINHTTP_NO_PROXY_BYPASS,
+		  0);
+	}
 
 	if (!l_netw.session)
 	{
