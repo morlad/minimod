@@ -10,7 +10,9 @@
 #include <curl/curl.h>
 
 #pragma GCC diagnostic push
+#ifdef __clang
 #pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+#endif
 #pragma GCC diagnostic ignored "-Wunused-macros"
 
 #define LOG(FMT, ...) printf("[netw] " FMT "\n", ##__VA_ARGS__)

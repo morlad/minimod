@@ -19,7 +19,9 @@
 #endif
 
 #pragma GCC diagnostic push
+#ifdef __clang
 #pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+#endif
 #pragma GCC diagnostic ignored "-Wunused-macros"
 
 #define LOG(FMT, ...) printf("[minimod] " FMT "\n", ##__VA_ARGS__)

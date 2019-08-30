@@ -9,7 +9,9 @@
 #include <unistd.h>
 
 #pragma GCC diagnostic push
+#ifdef __clang
 #pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+#endif
 #pragma GCC diagnostic ignored "-Wunused-macros"
 
 #define LOG(FMT, ...) printf("[util] " FMT "\n", ##__VA_ARGS__)
