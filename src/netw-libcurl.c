@@ -224,7 +224,6 @@ task_handler(void *in_context)
 	}
 
 	free_netw_header(&hdr);
-	// TODO free all header lines
 	curl_easy_cleanup(task->curl);
 	free(task->buffer);
 	free(task);
@@ -248,6 +247,7 @@ build_header_list(char const *const headers[])
 		memcpy(line + len_field + 2, headers[i + 1], len_value + 1);
 
 		list = curl_slist_append(list, line);
+		free(line);
 	}
 	return list;
 }
