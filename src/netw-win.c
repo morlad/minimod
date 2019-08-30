@@ -4,6 +4,7 @@
 
 #include <Windows.h>
 #include <stdio.h>
+#include <string.h>
 #include <winhttp.h>
 
 #pragma GCC diagnostic push
@@ -184,6 +185,81 @@ struct task
 };
 
 
+struct netw_header
+{
+	char **keys;
+	char **values;
+	size_t nkeys;
+	size_t nreserved;
+};
+
+
+static void
+netw_header_from_raw_header(struct netw_header *hdr, char *buffer)
+{
+	char *ptr = buffer;
+	while (*ptr)
+	{
+		// resize buffer if necessary
+		if (hdr->nkeys == hdr->nreserved)
+		{
+			hdr->nreserved = hdr->nreserved ? 2 * hdr->nreserved : 16;
+			hdr->keys = realloc(hdr->keys, sizeof *hdr->keys * hdr->nreserved);
+			hdr->keys[hdr->nkeys] = NULL;
+			hdr->values =
+			  realloc(hdr->values, sizeof *hdr->values * hdr->nreserved);
+		}
+
+		// check if line contains a colon
+		char *end_of_line = strchr(ptr, '\r');
+		ASSERT(end_of_line);
+		char *colon = memchr(ptr, ':', (size_t)(end_of_line - ptr));
+		if (colon)
+		{
+			hdr->keys[hdr->nkeys] = ptr;
+
+			// find end of header-line, store it and advance ptr to next line
+			char *ptr_end = end_of_line;
+
+			*colon = '\0';
+
+			hdr->values[hdr->nkeys] = colon + 1;
+			// trim leading whitespace
+			while (isspace(*hdr->values[hdr->nkeys]))
+			{
+				hdr->values[hdr->nkeys] += 1;
+			}
+			// trim trailing whitespace
+			while (isspace(*ptr_end))
+			{
+				*ptr_end = '\0';
+				ptr_end -= 1;
+			}
+
+			LOG(
+			  "hdr: '%s' -> '%s'",
+			  hdr->keys[hdr->nkeys],
+			  hdr->values[hdr->nkeys]);
+			hdr->nkeys += 1;
+
+			ptr = end_of_line + 2;
+		}
+		else
+		{
+			ptr = end_of_line + 2;
+		}
+	}
+}
+
+
+static void
+free_netw_header(struct netw_header *hdr)
+{
+	free(hdr->keys);
+	free(hdr->values);
+}
+
+
 static DWORD
 task_handler(LPVOID context)
 {
@@ -251,6 +327,37 @@ task_handler(LPVOID context)
 	}
 	LOG("status code of response: %lu", status_code);
 
+	// read headers
+	DWORD header_bytes;
+	ok = WinHttpQueryHeaders(
+	  hrequest,
+	  WINHTTP_QUERY_RAW_HEADERS_CRLF,
+	  WINHTTP_HEADER_NAME_BY_INDEX,
+	  WINHTTP_NO_OUTPUT_BUFFER,
+	  &header_bytes,
+	  WINHTTP_NO_HEADER_INDEX);
+	ASSERT(ok == FALSE);
+	LOG("header-bytes: %lu", header_bytes);
+
+	LPWSTR header_buffer = malloc(header_bytes);
+	ok = WinHttpQueryHeaders(
+	  hrequest,
+	  WINHTTP_QUERY_RAW_HEADERS_CRLF,
+	  WINHTTP_HEADER_NAME_BY_INDEX,
+	  header_buffer,
+	  &header_bytes,
+	  WINHTTP_NO_HEADER_INDEX);
+	ASSERT(ok == TRUE);
+
+	// convert wchar to utf8
+	size_t utf8_len = sys_utf8_from_wchar(header_buffer, NULL, 0);
+	char *header_utf8 = malloc(sizeof utf8_len);
+	sys_utf8_from_wchar(header_buffer, header_utf8, utf8_len);
+	free(header_buffer);
+
+	struct netw_header hdr = { 0 };
+	netw_header_from_raw_header(&hdr, header_utf8);
+
 	LOG("Read content...");
 	uint8_t *buffer = NULL;
 	if (task->file)
@@ -278,7 +385,8 @@ task_handler(LPVOID context)
 		} while (avail_bytes > 0);
 
 		random_delay();
-		task->callback.download(task->udata, task->file, (int)status_code);
+		task->callback
+		  .download(task->udata, task->file, (int)status_code, &hdr);
 	}
 	else
 	{
@@ -307,10 +415,12 @@ task_handler(LPVOID context)
 		} while (avail_bytes > 0);
 
 		random_delay();
-		task->callback.request(task->udata, buffer, bytes, (int)status_code);
+		task->callback
+		  .request(task->udata, buffer, bytes, (int)status_code, &hdr);
 	}
 
 	// free local data
+	free_netw_header(&hdr);
 	free(buffer);
 	WinHttpCloseHandle(hrequest);
 	WinHttpCloseHandle(hconnection);
@@ -344,7 +454,7 @@ netw_request(
 	if (l_netw.error_rate > 0 && is_random_server_error())
 	{
 		LOG("Failing request: %s", in_uri);
-		in_callback(in_userdata, NULL, 0, 500);
+		in_callback(in_userdata, NULL, 0, 500, NULL);
 		return true;
 	}
 
@@ -421,7 +531,7 @@ netw_download_to(
 	if (l_netw.error_rate > 0 && is_random_server_error())
 	{
 		LOG("Failing request: %s", in_uri);
-		in_callback(in_userdata, fout, 500);
+		in_callback(in_userdata, fout, 500, NULL);
 		return true;
 	}
 	LOG("download_request: %s", in_uri);
@@ -498,4 +608,18 @@ netw_set_delay(int in_min, int in_max)
 	ASSERT(in_max >= in_min);
 	l_netw.min_delay = in_min;
 	l_netw.max_delay = in_max;
+}
+
+
+char const *
+netw_get_header(struct netw_header const *in_hdr, char const *in_key)
+{
+	for (size_t i = 0; i < in_hdr->nkeys; ++i)
+	{
+		if (_stricmp(in_key, in_hdr->keys[i]) == 0)
+		{
+			return in_hdr->values[i];
+		}
+	}
+	return NULL;
 }

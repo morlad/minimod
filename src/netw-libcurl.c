@@ -178,6 +178,8 @@ free_netw_header(struct netw_header *hdr)
 	{
 		free(hdr->keys[i]);
 	}
+	free(hdr->keys);
+	free(hdr->values);
 }
 
 
