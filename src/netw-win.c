@@ -366,7 +366,7 @@ task_handler(LPVOID context)
 
 	// convert wchar to utf8
 	size_t utf8_len = sys_utf8_from_wchar(header_buffer, NULL, 0);
-	char *header_utf8 = malloc(sizeof utf8_len);
+	char *header_utf8 = malloc(utf8_len);
 	sys_utf8_from_wchar(header_buffer, header_utf8, utf8_len);
 	free(header_buffer);
 
