@@ -20,6 +20,7 @@
 #include <threads.h>
 #else
 #ifdef _WIN32
+#include <Windows.h>
 #else
 #include <pthread.h>
 #endif
@@ -146,21 +147,30 @@ sys_seconds(void);
 
 
 #ifndef UTIL_HAS_THREADS_H
+
+#ifdef _WIN32
+typedef CRITICAL_SECTION mtx_t;
+#else
 typedef pthread_mutex_t mtx_t;
+#endif
+
 enum mtx_types
 {
 	mtx_plain = 0,
 };
+
 int
 mtx_init(mtx_t *mutex, int type);
+
 int
 mtx_lock(mtx_t *mutex);
-int
-mtx_trylock(mtx_t *mutex);
+
 int
 mtx_unlock(mtx_t *mutex);
+
 void
 mtx_destroy(mtx_t *mutex);
+
 #endif
 
 #ifdef _WIN32

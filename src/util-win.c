@@ -547,3 +547,37 @@ vasprintf(char **strp, const char *fmt, va_list args)
 
 	return vsprintf(*strp, fmt, args);
 }
+
+
+
+#ifndef UTIL_HAS_THREADS_H
+int
+mtx_init(mtx_t *mutex, int type)
+{
+	InitializeCriticalSection(mutex);
+	return 0;
+}
+
+
+void
+mtx_destroy(mtx_t *mutex)
+{
+	DeleteCriticalSection(mutex);
+}
+
+
+int
+mtx_lock(mtx_t *mutex)
+{
+	EnterCriticalSection(mutex);
+	return 0;
+}
+
+
+int
+mtx_unlock(mtx_t *mutex)
+{
+	LeaveCriticalSection(mutex);
+	return 0;
+}
+#endif

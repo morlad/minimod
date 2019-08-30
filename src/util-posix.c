@@ -299,13 +299,6 @@ mtx_lock(mtx_t *mutex)
 
 
 int
-mtx_trylock(mtx_t *mutex)
-{
-	return pthread_mutex_trylock(mutex);
-}
-
-
-int
 mtx_unlock(mtx_t *mutex)
 {
 	return pthread_mutex_unlock(mutex);
