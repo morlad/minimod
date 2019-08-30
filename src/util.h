@@ -10,9 +10,20 @@
  * Some utility functions used by minimod and netw.
  */
 
+#ifndef __cplusplus
 #include <stdbool.h>
+#endif
 #include <stdint.h>
 #include <stdio.h> // FILE
+#if __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_THREADS__)
+#define UTIL_HAS_THREADS_H
+#include <threads.h>
+#else
+#ifdef _WIN32
+#else
+#include <pthread.h>
+#endif
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -129,6 +140,17 @@ fsu_enum_dir(
 void
 sys_sleep(uint32_t ms);
 
+#ifndef UTIL_HAS_THREADS_H
+typedef pthread_mutex_t mtx_t;
+enum mtx_types {
+	mtx_plain = 0,
+};
+int mtx_init(mtx_t *mutex, int type);
+int mtx_lock(mtx_t *mutex);
+int mtx_trylock(mtx_t *mutex);
+int mtx_unlock(mtx_t *mutex);
+void mtx_destroy(mtx_t *mutex);
+#endif
 
 #ifdef _WIN32
 

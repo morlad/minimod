@@ -264,3 +264,41 @@ sys_sleep(uint32_t ms)
 {
 	usleep(ms * 1000);
 }
+
+
+#ifndef UTIL_HAS_THREADS_H
+int
+mtx_init(mtx_t *mutex, int type)
+{
+	pthread_mutex_init(mutex, NULL);
+	return 0;
+}
+
+
+void
+mtx_destroy(mtx_t *mutex)
+{
+	pthread_mutex_destroy(mutex);
+}
+
+
+int
+mtx_lock(mtx_t *mutex)
+{
+	return pthread_mutex_lock(mutex);
+}
+
+
+int
+mtx_trylock(mtx_t *mutex)
+{
+	return pthread_mutex_trylock(mutex);
+}
+
+
+int
+mtx_unlock(mtx_t *mutex)
+{
+	return pthread_mutex_unlock(mutex);
+}
+#endif
