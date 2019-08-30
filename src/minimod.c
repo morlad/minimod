@@ -19,7 +19,7 @@
 #endif
 
 #pragma GCC diagnostic push
-#ifdef __clang
+#ifdef __clang__
 #pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 #endif
 #pragma GCC diagnostic ignored "-Wunused-macros"
