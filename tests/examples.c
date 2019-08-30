@@ -265,12 +265,12 @@ test_4(void)
 static void
 on_get_users(void *in_udata, size_t nusers, struct minimod_user const *users)
 {
-	*((int *)in_udata) = 0;
 	printf("Users: %zu\n", nusers);
 	for (size_t i = 0; i < nusers; ++i)
 	{
 		printf("- %s {%" PRIu64 "}\n", users[i].username, users[i].id);
 	}
+	*((int *)in_udata) = 0;
 }
 
 
