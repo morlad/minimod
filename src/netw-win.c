@@ -275,8 +275,6 @@ free_netw_header(struct netw_header *hdr)
 }
 
 
-// TODO correct clean-ups on failure and calling respective callbacks
-// to unblock calling code
 static DWORD
 task_handler(LPVOID context)
 {
@@ -287,7 +285,7 @@ task_handler(LPVOID context)
 	if (!hconnection)
 	{
 		LOG_ERR("HttpConnect");
-		return false;
+		goto err_early;
 	}
 
 	HINTERNET hrequest = WinHttpOpenRequest(
@@ -301,7 +299,7 @@ task_handler(LPVOID context)
 	if (!hrequest)
 	{
 		LOG_ERR("HttpOpenRequest");
-		return false;
+		goto err_w_connection;
 	}
 
 	LOG("Sending request (payload: %zuB)...", task->payload_bytes);
@@ -316,7 +314,7 @@ task_handler(LPVOID context)
 	if (!ok)
 	{
 		LOG_ERR("HttpSendRequest");
-		return false;
+		goto err_w_request;
 	}
 
 	LOG("Waiting for response...");
@@ -324,7 +322,7 @@ task_handler(LPVOID context)
 	if (!ok)
 	{
 		LOG_ERR("HttpReceiveResponse");
-		return false;
+		goto err_w_request;
 	}
 
 	LOG("Query headers...");
@@ -340,7 +338,7 @@ task_handler(LPVOID context)
 	if (!ok)
 	{
 		LOG_ERR("HttpQueryHeaders");
-		return false;
+		goto err_w_request;
 	}
 	LOG("status code of response: %lu", status_code);
 
@@ -387,7 +385,7 @@ task_handler(LPVOID context)
 			if (!ok)
 			{
 				LOG_ERR("HttpQueryDataAvailable");
-				return false;
+				goto err_w_request;
 			}
 			if (avail_bytes > 0)
 			{
@@ -415,7 +413,7 @@ task_handler(LPVOID context)
 			if (!ok)
 			{
 				LOG_ERR("HttpQueryDataAvailable");
-				return false;
+				goto err_w_request;
 			}
 			if (avail_bytes > 0)
 			{
@@ -439,6 +437,7 @@ task_handler(LPVOID context)
 	// free local data
 	free_netw_header(&hdr);
 	free(buffer);
+
 	WinHttpCloseHandle(hrequest);
 	WinHttpCloseHandle(hconnection);
 
@@ -451,7 +450,34 @@ task_handler(LPVOID context)
 	// free actual task
 	free(task);
 
-	return true;
+	return 0;
+
+err_w_request:
+	WinHttpCloseHandle(hrequest);
+
+err_w_connection:
+	WinHttpCloseHandle(hconnection);
+
+err_early:
+	if (task->file)
+	{
+		task->callback.download(task->udata, task->file, -1, NULL);
+	}
+	else
+	{
+		task->callback.request(task->udata, NULL, 0, -1, NULL);
+	}
+
+	// free task data
+	free(task->host);
+	free(task->path);
+	free(task->header);
+	free(task->payload);
+
+	// free actual task
+	free(task);
+
+	return 1;
 }
 
 
