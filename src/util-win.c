@@ -4,6 +4,7 @@
 #include <Windows.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
@@ -548,6 +549,12 @@ vasprintf(char **strp, const char *fmt, va_list args)
 	return vsprintf(*strp, fmt, args);
 }
 
+
+time_t
+sys_seconds(void)
+{
+	return time(NULL);
+}
 
 
 #ifndef UTIL_HAS_THREADS_H
