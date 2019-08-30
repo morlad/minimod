@@ -71,6 +71,18 @@ struct task
 };
 
 
+struct install_request
+{
+	minimod_install_callback callback;
+	void *userdata;
+	uint64_t game_id;
+	uint64_t mod_id;
+	char *zip_path;
+	FILE *file;
+	struct install_request *next;
+};
+
+
 struct mmi
 {
 	char *api_key;
@@ -78,6 +90,8 @@ struct mmi
 	char *cache_tokenpath;
 	char *token;
 	char *token_bearer;
+	struct install_request *install_requests;
+	mtx_t install_requests_mtx;
 	enum minimod_environment env;
 	bool unzip;
 	bool is_apikey_invalid;
@@ -103,6 +117,50 @@ static void
 free_task(struct task *task)
 {
 	free(task);
+}
+
+
+static struct install_request *
+alloc_install_request(void)
+{
+	struct install_request *r = calloc(1, sizeof(struct install_request));
+	mtx_lock(&l_mmi.install_requests_mtx);
+	r->next = l_mmi.install_requests;
+	l_mmi.install_requests = r;
+	mtx_unlock(&l_mmi.install_requests_mtx);
+	return r;
+}
+
+
+static void
+free_install_request(struct install_request *req)
+{
+	mtx_lock(&l_mmi.install_requests_mtx);
+	// check if head is req
+	if (l_mmi.install_requests == req)
+	{
+		l_mmi.install_requests = l_mmi.install_requests->next;
+		free(req->zip_path);
+		free(req);
+	}
+	else
+	{
+		struct install_request *r = l_mmi.install_requests;
+		while (r->next)
+		{
+			if (r->next == req)
+			{
+				// remove from list
+				r->next = r->next->next;
+				// free it
+				free(req->zip_path);
+				free(req);
+				break;
+			}
+			r = r->next;
+		}
+	}
+	mtx_unlock(&l_mmi.install_requests_mtx);
 }
 
 
@@ -851,6 +909,8 @@ minimod_init(
 
 	l_mmi.unzip = in_unzip;
 
+	mtx_init(&l_mmi.install_requests_mtx, mtx_plain);
+
 	read_token();
 
 	return MINIMOD_ERR_OK;
@@ -867,6 +927,8 @@ minimod_deinit()
 	free(l_mmi.api_key);
 	free(l_mmi.token);
 	free(l_mmi.token_bearer);
+
+	mtx_destroy(&l_mmi.install_requests_mtx);
 
 	l_mmi = (struct mmi){ 0 };
 }
@@ -1348,17 +1410,6 @@ minimod_get_mod_events(
 }
 
 
-struct install_request
-{
-	minimod_install_callback callback;
-	void *userdata;
-	uint64_t game_id;
-	uint64_t mod_id;
-	char *zip_path;
-	FILE *file;
-};
-
-
 static void
 on_install_download(void *in_udata, FILE *in_file, int error, struct netw_header const* in_header)
 {
@@ -1368,6 +1419,7 @@ on_install_download(void *in_udata, FILE *in_file, int error, struct netw_header
 	{
 		LOG("mod NOT downloaded");
 		req->callback(req->userdata, NULL);
+		free_install_request(req);
 		return;
 	}
 
@@ -1421,8 +1473,7 @@ on_install_download(void *in_udata, FILE *in_file, int error, struct netw_header
 	req->callback(req->userdata, "-deprecated-");
 
 	fclose(in_file);
-	free(req->zip_path);
-	free(req);
+	free_install_request(req);
 }
 
 
@@ -1495,7 +1546,7 @@ minimod_install(
 	ASSERT(in_mod_id > 0);
 
 	// fetch meta-data and proceed from there
-	struct install_request *req = malloc(sizeof *req);
+	struct install_request *req = alloc_install_request();
 	req->callback = in_callback;
 	req->userdata = in_userdata;
 	req->mod_id = in_mod_id;
@@ -1702,8 +1753,20 @@ minimod_is_installed(uint64_t in_game_id, uint64_t in_mod_id)
 bool
 minimod_is_downloading(uint64_t in_game_id, uint64_t in_mod_id)
 {
-	// TODO
-	return false;
+	bool is_downloading = false;
+	mtx_lock(&l_mmi.install_requests_mtx);
+	struct install_request *r = l_mmi.install_requests;
+	while (r)
+	{
+		if (r->game_id == in_game_id && r->mod_id == in_mod_id)
+		{
+			is_downloading = true;
+			break;
+		}
+		r = r->next;
+	}
+	mtx_unlock(&l_mmi.install_requests_mtx);
+	return is_downloading;
 }
 
 
