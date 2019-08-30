@@ -64,10 +64,18 @@ struct callback
 };
 
 
+enum task_flag
+{
+	TASK_FLAG_AUTH_TOKEN = 1,
+};
+
+
 struct task
 {
 	struct callback callback;
 	uint64_t meta64;
+	int32_t meta32;
+	uint32_t flags;
 };
 
 
@@ -92,6 +100,7 @@ struct mmi
 	char *token_bearer;
 	struct install_request *install_requests;
 	mtx_t install_requests_mtx;
+	time_t rate_limited_until;
 	enum minimod_environment env;
 	bool unzip;
 	bool is_apikey_invalid;
@@ -109,7 +118,7 @@ static char const *endpoints[2] = {
 static struct task *
 alloc_task(void)
 {
-	return malloc(sizeof(struct task));
+	return calloc(1, sizeof(struct task));
 }
 
 
@@ -381,6 +390,32 @@ populate_pagination(struct minimod_pagination *pagi, QAJ4C_Value const *node)
 
 
 static void
+handle_generic_errors(int error, struct netw_header const *header, bool is_token_auth)
+{
+	if (error == 429) // too many requests
+	{
+		char const *retry_after = netw_get_header(header, "X-RateLimit-RetryAfter");
+		long retry_after_l = strtol(retry_after, NULL, 10);
+		LOG("X-RateLimit-RetryAfter: %li seconds", retry_after_l);
+		l_mmi.rate_limited_until = sys_seconds() + retry_after_l;
+	}
+	if (error == 401)
+	{
+		if (is_token_auth)
+		{
+			LOG("Received HTTP Status 401 -> OAUTH2 Token Invalid");
+			minimod_deauthenticate();
+		}
+		else
+		{
+			LOG("Received HTTP Status 401 -> API Key Invalid");
+			l_mmi.is_apikey_invalid = true;
+		}
+	}
+}
+
+
+static void
 handle_get_games(
   void *in_udata,
   void const *in_data,
@@ -388,18 +423,8 @@ handle_get_games(
   int error,
   struct netw_header const *header)
 {
-
-	if (error == 429) // too many requests
-	{
-		LOG("X-RateLimit-RetryAfter: %s seconds", netw_get_header(header, "X-RateLimit-RetryAfter"));
-	}
-	if (error == 401)
-	{
-		LOG("Received HTTP Status 429 -> API Key Invalid");
-		l_mmi.is_apikey_invalid = true;
-	}
-
 	struct task *task = in_udata;
+	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
 	if (error != 200)
 	{
 		task->callback.fptr.get_games(task->callback.userdata, 0, NULL, NULL);
@@ -446,6 +471,7 @@ handle_get_mods(
   struct netw_header const *header)
 {
 	struct task *task = in_udata;
+	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
 	if (error != 200)
 	{
 		task->callback.fptr.get_mods(task->callback.userdata, 0, NULL);
@@ -496,6 +522,7 @@ handle_get_users(
   struct netw_header const *header)
 {
 	struct task *task = in_udata;
+	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
 	if (error != 200)
 	{
 		task->callback.fptr.get_mods(task->callback.userdata, 0, NULL);
@@ -546,6 +573,7 @@ handle_get_modfiles(
   struct netw_header const *header)
 {
 	struct task *task = in_udata;
+	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
 	if (error != 200)
 	{
 		task->callback.fptr.get_modfiles(task->callback.userdata, 0, NULL);
@@ -599,6 +627,7 @@ handle_get_events(
   struct netw_header const *header)
 {
 	struct task *task = in_udata;
+	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
 	if (error != 200)
 	{
 		task->callback.fptr.get_events(task->callback.userdata, 0, NULL);
@@ -640,6 +669,7 @@ handle_get_dependencies(
   struct netw_header const *header)
 {
 	struct task *task = in_udata;
+	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
 	if (error != 200)
 	{
 		task->callback.fptr.get_dependencies(task->callback.userdata, 0, NULL);
@@ -682,6 +712,7 @@ handle_email_request(
   struct netw_header const *header)
 {
 	struct task *task = in_udata;
+	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
 	task->callback.fptr.email_request(task->callback.userdata, error == 200);
 }
 
@@ -695,6 +726,7 @@ handle_email_exchange(
   struct netw_header const *header)
 {
 	struct task *task = in_udata;
+	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
 	if (error != 200)
 	{
 		task->callback.fptr.email_exchange(task->callback.userdata, NULL, 0);
@@ -735,6 +767,8 @@ handle_rate(
   struct netw_header const *header)
 {
 	struct task *task = in_udata;
+	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
+
 	if (error == 201)
 	{
 		LOG("Rating applied successful");
@@ -757,6 +791,7 @@ handle_get_ratings(
   struct netw_header const *header)
 {
 	struct task *task = in_udata;
+	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
 	if (error != 200)
 	{
 		task->callback.fptr.get_ratings(task->callback.userdata, 0, NULL);
@@ -800,6 +835,7 @@ handle_subscription_change(
   struct netw_header const *header)
 {
 	struct task *task = in_udata;
+	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
 
 	if (task->meta64 > 0)
 	{
@@ -1137,6 +1173,7 @@ minimod_get_me(minimod_get_users_callback in_callback, void *in_udata)
 	};
 
 	struct task *task = alloc_task();
+	task->flags |= TASK_FLAG_AUTH_TOKEN;
 	task->callback.fptr.get_users = in_callback;
 	task->callback.userdata = in_udata;
 	if (!netw_request(
@@ -1199,6 +1236,7 @@ minimod_get_user_events(
 	LOG("request: %s", path);
 
 	struct task *task = alloc_task();
+	task->flags |= TASK_FLAG_AUTH_TOKEN;
 	task->callback.fptr.get_events = in_callback;
 	task->callback.userdata = in_userdata;
 	if (!netw_request(
@@ -1414,7 +1452,8 @@ static void
 on_install_download(void *in_udata, FILE *in_file, int error, struct netw_header const* in_header)
 {
 	struct install_request *req = in_udata;
-
+	// Downloads are not authenticated, thusly there is no need to handle
+	// rate-limiting or authorization errors.
 	if (error != 200)
 	{
 		LOG("mod NOT downloaded");
@@ -1802,6 +1841,7 @@ minimod_rate(
 	char const *data = in_rating == 1 ? "rating=1" : "rating=-1";
 
 	struct task *task = alloc_task();
+	task->flags |= TASK_FLAG_AUTH_TOKEN;
 	task->callback.userdata = in_userdata;
 	task->callback.fptr.rate = in_callback;
 	if (!netw_request(
@@ -1840,6 +1880,7 @@ minimod_get_ratings(
 	};
 
 	struct task *task = alloc_task();
+	task->flags |= TASK_FLAG_AUTH_TOKEN;
 	task->callback.userdata = in_udata;
 	task->callback.fptr.get_ratings = in_callback;
 	if (!netw_request(
@@ -1878,6 +1919,7 @@ minimod_get_subscriptions(
 	};
 
 	struct task *task = alloc_task();
+	task->flags |= TASK_FLAG_AUTH_TOKEN;
 	task->callback.userdata = in_udata;
 	task->callback.fptr.get_mods = in_callback;
 	if (!netw_request(
@@ -1928,6 +1970,7 @@ minimod_subscribe(
 	};
 
 	struct task *task = alloc_task();
+	task->flags |= TASK_FLAG_AUTH_TOKEN;
 	task->callback.userdata = in_userdata;
 	task->callback.fptr.subscription_change = in_callback;
 	task->meta64 = in_mod_id;
@@ -1979,6 +2022,7 @@ minimod_unsubscribe(
 	};
 
 	struct task *task = alloc_task();
+	task->flags |= TASK_FLAG_AUTH_TOKEN;
 	task->callback.userdata = in_userdata;
 	task->callback.fptr.subscription_change = in_callback;
 	task->meta64 = -in_mod_id;
