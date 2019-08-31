@@ -8,6 +8,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#define UNUSED(X) __attribute__((unused)) X
+
 #pragma GCC diagnostic push
 #ifdef __clang__
 #pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
@@ -282,7 +284,7 @@ sys_seconds(void)
 
 #ifndef UTIL_HAS_THREADS_H
 int
-mtx_init(mtx_t *mutex, int type)
+mtx_init(mtx_t *mutex, int UNUSED(type))
 {
 	pthread_mutex_init(mutex, NULL);
 	return 0;
