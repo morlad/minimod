@@ -1828,6 +1828,24 @@ minimod_enum_installed_mods(
 }
 
 
+/* Should get_installed_mod() use a callback for unified interfaces?
+ * But it is not asynchronous. Should asynchronicity be emulated?
+ * Or use a different interface that just returns a minimod_mod struct?
+ * If so, who owns the memory? Who frees the data of the mod?
+ * What happens with the underlying QAJ4C object?
+ * Inconvenient to handle; that's for sure.
+ *
+ * So a callback makes much more sense, also for consistency.
+ * But if it is not asynchronous (to save minimod from spawning
+ * threads itself) maybe 'get_installed_mod' is the wrong name.
+ * It also has strong ties with minimod_enum_installed_mods().
+ * So it should not be called 'get' or 'enum'; but what else?
+ *
+ * Combining those two would be nice, however loading the data during
+ * enumeration are lots of allocations and memory, even if they
+ * may not be required; and I'd prefer on the side of no-superflous
+ * allocs and cycles.
+ */
 bool
 minimod_get_installed_mod(
   uint64_t in_game_id,
