@@ -282,7 +282,8 @@ typedef void (*minimod_get_games_callback)(
 typedef void (*minimod_get_mods_callback)(
   void *userdata,
   size_t nmods,
-  struct minimod_mod const *mods);
+  struct minimod_mod const *mods,
+  struct minimod_pagination const *pagi);
 
 
 /*
@@ -291,7 +292,8 @@ typedef void (*minimod_get_mods_callback)(
 typedef void (*minimod_get_modfiles_callback)(
   void *userdata,
   size_t nmodfiles,
-  struct minimod_modfile const *modfiles);
+  struct minimod_modfile const *modfiles,
+  struct minimod_pagination const *pagi);
 
 
 /*
@@ -300,7 +302,8 @@ typedef void (*minimod_get_modfiles_callback)(
 typedef void (*minimod_get_users_callback)(
   void *userdata,
   size_t nusers,
-  struct minimod_user const *users);
+  struct minimod_user const *users,
+  struct minimod_pagination const *pagi);
 
 
 /*
@@ -348,7 +351,8 @@ typedef void (*minimod_enum_installed_mods_callback)(
 typedef void (*minimod_get_events_callback)(
   void *userdata,
   size_t nevents,
-  struct minimod_event const *events);
+  struct minimod_event const *events,
+  struct minimod_pagination const *pagi);
 
 
 /*
@@ -359,7 +363,8 @@ typedef void (*minimod_get_events_callback)(
 typedef void (*minimod_get_dependencies_callback)(
   void *userdata,
   size_t ndependencies,
-  uint64_t const *dependencies);
+  uint64_t const *dependencies,
+  struct minimod_pagination const *pagi);
 
 /*
  * Callback: minimod_rate_callback()
@@ -373,7 +378,8 @@ typedef void (*minimod_rate_callback)(void *userdata, bool success);
 typedef void (*minimod_get_ratings_callback)(
   void *userdata,
   size_t nratings,
-  struct minimod_rating const *ratings);
+  struct minimod_rating const *ratings,
+  struct minimod_pagination const *pagi);
 
 
 /*

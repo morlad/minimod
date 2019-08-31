@@ -99,7 +99,11 @@ test_2(void)
 
 // get all mods
 static void
-get_mods_callback(void *udata, size_t nmods, struct minimod_mod const *mods)
+get_mods_callback(
+  void *udata,
+  size_t nmods,
+  struct minimod_mod const *mods,
+  struct minimod_pagination const *pagi)
 {
 	for (size_t i = 0; i < nmods; ++i)
 	{
@@ -261,7 +265,11 @@ test_4(void)
 // me
 // --
 static void
-on_get_users(void *in_udata, size_t nusers, struct minimod_user const *users)
+on_get_users(
+  void *in_udata,
+  size_t nusers,
+  struct minimod_user const *users,
+  struct minimod_pagination const *pagi)
 {
 	printf("Users: %zu\n", nusers);
 	for (size_t i = 0; i < nusers; ++i)
@@ -301,7 +309,8 @@ static void
 on_get_modfiles(
   void *in_udata,
   size_t nmodfiles,
-  struct minimod_modfile const *modfiles)
+  struct minimod_modfile const *modfiles,
+  struct minimod_pagination const *pagi)
 {
 	for (size_t i = 0; i < nmodfiles; ++i)
 	{
@@ -369,7 +378,8 @@ static void
 on_installed_mod(
   void *in_userdata,
   size_t in_nmods,
-  struct minimod_mod const *mods)
+  struct minimod_mod const *mods,
+  struct minimod_pagination const *pagi)
 {
 	if (in_nmods > 0)
 	{
@@ -428,7 +438,8 @@ static void
 on_get_ratings(
   void *in_udata,
   size_t nratings,
-  struct minimod_rating const *ratings)
+  struct minimod_rating const *ratings,
+  struct minimod_pagination const *pagi)
 {
 	printf("got %zu ratings\n", nratings);
 	*((int *)in_udata) = (int)ratings[0].rating;
@@ -477,7 +488,11 @@ test_9(void)
 
 
 static void
-on_subscriptions(void *udata, size_t nmods, struct minimod_mod const *mods)
+on_subscriptions(
+  void *udata,
+  size_t nmods,
+  struct minimod_mod const *mods,
+  struct minimod_pagination const *pagi)
 {
 	printf("Subscribed mods:\n");
 	for (size_t i = 0; i < nmods; ++i)
@@ -520,7 +535,8 @@ static void
 on_mod_events(
   void *in_userdata,
   size_t nevents,
-  struct minimod_event const *events)
+  struct minimod_event const *events,
+  struct minimod_pagination const *pagi)
 {
 	for (size_t i = 0; i < nevents; ++i)
 	{
@@ -564,7 +580,8 @@ static void
 on_user_events(
   void *in_userdata,
   size_t nevents,
-  struct minimod_event const *events)
+  struct minimod_event const *events,
+  struct minimod_pagination const *pagi)
 {
 	for (size_t i = 0; i < nevents; ++i)
 	{
@@ -605,7 +622,11 @@ test_12(void)
 
 // get_dependencies
 static void
-on_dependencies(void *in_userdata, size_t ndeps, uint64_t const *deps)
+on_dependencies(
+  void *in_userdata,
+  size_t ndeps,
+  uint64_t const *deps,
+  struct minimod_pagination const *pagi)
 {
 	printf("Num dependencies: %zu\n", ndeps);
 	for (size_t i = 0; i < ndeps; ++i)

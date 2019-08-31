@@ -495,7 +495,7 @@ handle_get_mods(
 	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
 	if (error != 200)
 	{
-		task->callback.fptr.get_mods(task->callback.userdata, 0, NULL);
+		task->callback.fptr.get_mods(task->callback.userdata, 0, NULL, NULL);
 		return;
 	}
 
@@ -520,7 +520,10 @@ handle_get_mods(
 			populate_mod(&mods[i], QAJ4C_array_get(data, i));
 		}
 
-		task->callback.fptr.get_mods(task->callback.userdata, nmods, mods);
+		struct minimod_pagination pagi;
+		populate_pagination(&pagi, document);
+
+		task->callback.fptr.get_mods(task->callback.userdata, nmods, mods, &pagi);
 
 		free(mods);
 	}
@@ -528,7 +531,7 @@ handle_get_mods(
 	{
 		struct minimod_mod mod = { 0 };
 		populate_mod(&mod, document);
-		task->callback.fptr.get_mods(task->callback.userdata, 1, &mod);
+		task->callback.fptr.get_mods(task->callback.userdata, 1, &mod, NULL);
 	}
 	free(buffer);
 }
@@ -546,7 +549,7 @@ handle_get_users(
 	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
 	if (error != 200)
 	{
-		task->callback.fptr.get_mods(task->callback.userdata, 0, NULL);
+		task->callback.fptr.get_mods(task->callback.userdata, 0, NULL, NULL);
 		return;
 	}
 
@@ -570,7 +573,10 @@ handle_get_users(
 			populate_user(&users[i], QAJ4C_array_get(data, i));
 		}
 
-		task->callback.fptr.get_users(task->callback.userdata, nusers, users);
+		struct minimod_pagination pagi;
+		populate_pagination(&pagi, document);
+
+		task->callback.fptr.get_users(task->callback.userdata, nusers, users, &pagi);
 
 		free(users);
 	}
@@ -579,7 +585,7 @@ handle_get_users(
 	{
 		struct minimod_user user;
 		populate_user(&user, document);
-		task->callback.fptr.get_users(task->callback.userdata, 1, &user);
+		task->callback.fptr.get_users(task->callback.userdata, 1, &user, NULL);
 	}
 	free(buffer);
 }
@@ -597,7 +603,7 @@ handle_get_modfiles(
 	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
 	if (error != 200)
 	{
-		task->callback.fptr.get_modfiles(task->callback.userdata, 0, NULL);
+		task->callback.fptr.get_modfiles(task->callback.userdata, 0, NULL, NULL);
 		return;
 	}
 
@@ -622,10 +628,14 @@ handle_get_modfiles(
 			populate_modfile(&modfiles[i], QAJ4C_array_get(data, i));
 		}
 
+		struct minimod_pagination pagi;
+		populate_pagination(&pagi, document);
+
 		task->callback.fptr.get_modfiles(
 		  task->callback.userdata,
 		  nmodfiles,
-		  modfiles);
+		  modfiles,
+		  &pagi);
 
 		free(modfiles);
 	}
@@ -633,7 +643,7 @@ handle_get_modfiles(
 	{
 		struct minimod_modfile modfile;
 		populate_modfile(&modfile, document);
-		task->callback.fptr.get_modfiles(task->callback.userdata, 1, &modfile);
+		task->callback.fptr.get_modfiles(task->callback.userdata, 1, &modfile, NULL);
 	}
 	free(buffer);
 }
@@ -651,7 +661,7 @@ handle_get_events(
 	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
 	if (error != 200)
 	{
-		task->callback.fptr.get_events(task->callback.userdata, 0, NULL);
+		task->callback.fptr.get_events(task->callback.userdata, 0, NULL, NULL);
 		return;
 	}
 
@@ -673,7 +683,10 @@ handle_get_events(
 		populate_event(&events[i], QAJ4C_array_get(data, i));
 	}
 
-	task->callback.fptr.get_events(task->callback.userdata, nevents, events);
+	struct minimod_pagination pagi;
+	populate_pagination(&pagi, document);
+
+	task->callback.fptr.get_events(task->callback.userdata, nevents, events, &pagi);
 
 	free(events);
 
@@ -693,7 +706,7 @@ handle_get_dependencies(
 	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
 	if (error != 200)
 	{
-		task->callback.fptr.get_dependencies(task->callback.userdata, 0, NULL);
+		task->callback.fptr.get_dependencies(task->callback.userdata, 0, NULL, NULL);
 		return;
 	}
 
@@ -716,7 +729,10 @@ handle_get_dependencies(
 		deps[i] = QAJ4C_get_uint64(QAJ4C_array_get(data, i));
 	}
 
-	task->callback.fptr.get_dependencies(task->callback.userdata, ndeps, deps);
+	struct minimod_pagination pagi;
+	populate_pagination(&pagi, document);
+
+	task->callback.fptr.get_dependencies(task->callback.userdata, ndeps, deps, &pagi);
 
 	free(deps);
 
@@ -815,7 +831,7 @@ handle_get_ratings(
 	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
 	if (error != 200)
 	{
-		task->callback.fptr.get_ratings(task->callback.userdata, 0, NULL);
+		task->callback.fptr.get_ratings(task->callback.userdata, 0, NULL, NULL);
 		return;
 	}
 
@@ -836,10 +852,14 @@ handle_get_ratings(
 		populate_rating(&ratings[i], QAJ4C_array_get(data, i));
 	}
 
+	struct minimod_pagination pagi;
+	populate_pagination(&pagi, document);
+
 	task->callback.fptr.get_ratings(
 	  task->callback.userdata,
 	  nratings,
-	  ratings);
+	  ratings,
+	  &pagi);
 
 	free(ratings);
 
@@ -1569,7 +1589,8 @@ static void
 on_install_get_mod(
   void *in_userdata,
   size_t in_nmods,
-  struct minimod_mod const *in_mods)
+  struct minimod_mod const *in_mods,
+  struct minimod_pagination const *pagi)
 {
 	ASSERT(in_nmods <= 1);
 	struct install_request *req = in_userdata;
@@ -1600,7 +1621,8 @@ static void
 on_install_get_modfile(
   void *in_userdata,
   size_t nmodfiles,
-  struct minimod_modfile const *modfiles)
+  struct minimod_modfile const *modfiles,
+  struct minimod_pagination const *pagi)
 {
 	ASSERT(nmodfiles == 1);
 	struct install_request *req = in_userdata;
@@ -1885,13 +1907,13 @@ minimod_get_installed_mod(
 		// call callback with data
 		struct minimod_mod mod = { 0 };
 		populate_mod(&mod, document);
-		in_callback(in_userdata, 1, &mod);
+		in_callback(in_userdata, 1, &mod, NULL);
 
 		free(filebuffer);
 	}
 	else
 	{
-		in_callback(in_userdata, 0, NULL);
+		in_callback(in_userdata, 0, NULL, NULL);
 	}
 	fclose(jfile);
 
