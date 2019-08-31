@@ -110,27 +110,42 @@ is_random_server_error(void)
 
 	random_delay();
 
-	NSHTTPURLResponse *response = (NSHTTPURLResponse *)nstask.response;
-	// downloads have no buffer object
-	if (task->buffer)
+	if (!error)
 	{
-		ASSERT(!task->file);
-		task->callback.request(
-		  task->userdata,
-		  task->buffer.bytes,
-		  task->buffer.length,
-		  (int)response.statusCode,
-		  (struct netw_header const *)response.allHeaderFields);
-		task->buffer = nil;
+		NSHTTPURLResponse *response = (NSHTTPURLResponse *)nstask.response;
+		// downloads have no buffer object
+		if (task->buffer)
+		{
+			ASSERT(!task->file);
+			task->callback.request(
+			  task->userdata,
+			  task->buffer.bytes,
+			  task->buffer.length,
+			  (int)response.statusCode,
+			  (struct netw_header const *)response.allHeaderFields);
+			task->buffer = nil;
+		}
+		else
+		{
+			ASSERT(task->file);
+			task->callback.download(
+			  task->userdata,
+			  task->file,
+			  (int)response.statusCode,
+			  (struct netw_header const *)response.allHeaderFields);
+		}
 	}
 	else
 	{
-		ASSERT(task->file);
-		task->callback.download(
-		  task->userdata,
-		  task->file,
-		  (int)response.statusCode,
-		  (struct netw_header const *)response.allHeaderFields);
+		if (task->file)
+		{
+			task->callback.download(task->userdata, task->file, -1, NULL);
+		}
+		else
+		{
+			task->callback.request(task->userdata, NULL, 0, -1, NULL);
+			task->buffer = nil;
+		}
 	}
 
 	// clean up
