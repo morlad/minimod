@@ -385,13 +385,14 @@ test_8(void)
 
 	// make sure the mod is installed
 	bool is_installed = minimod_is_installed(GAME_ID_TEST, 1720);
-	printf("Mod is installed: %s\n", is_installed ? "YES" : "NO");
+	printf("== Mod is installed: %s\n", is_installed ? "YES" : "NO");
 
 	// enum all installed mods
-	printf("Installed mods:\n");
+	printf("== Installed mods:\n");
 	minimod_enum_installed_mods(0, installed_mod_enumerator, NULL);
 
 	// get data for the installed mod
+	printf("== Get installed mods:\n");
 	wait = 1;
 	minimod_get_installed_mod(GAME_ID_TEST, 1720, on_installed_mod, &wait);
 	while (wait)
@@ -400,7 +401,7 @@ test_8(void)
 	}
 
 	// undo stuff and deinstall the mod
-	printf("Uninstalling Mod\n");
+	printf("== Uninstalling Mod\n");
 	minimod_uninstall(GAME_ID_TEST, 1720);
 
 	minimod_deinit();
