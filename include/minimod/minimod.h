@@ -430,6 +430,14 @@ minimod_deinit(void);
 
 /*
  * Function: minimod_set_debugtesting()
+ *
+ * Set max_delay to 0 to disable latency-simulation.
+ * min_delay needs to be <= max_delay.
+ *
+ * Parameters:
+ *	error_rate - [0;100]% specify chance of internal server error
+ *	min_delay - Minimum delay of responses in milliseconds
+ *	max_delay - Maximum delay of responses in milliseconds
  */
 MINIMOD_LIB void
 minimod_set_debugtesting(int error_rate, int min_delay, int max_delay);
