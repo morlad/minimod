@@ -856,7 +856,7 @@ handle_subscription_change(
 	struct task *task = in_udata;
 	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
 
-	if (task->meta64 > 0)
+	if (task->meta32 > 0)
 	{
 		if (error == 201)
 		{
@@ -883,7 +883,7 @@ handle_subscription_change(
 		{
 			task->callback.fptr.subscription_change(
 			  task->callback.userdata,
-			  -task->meta64,
+			  task->meta64,
 			  -1);
 		}
 		else
@@ -891,10 +891,10 @@ handle_subscription_change(
 			LOGE(
 			  "failed to unsubscribe %i [modid: %" PRIu64 "]",
 			  error,
-			  -task->meta64);
+			  task->meta64);
 			task->callback.fptr.subscription_change(
 			  task->callback.userdata,
-			  -task->meta64,
+			  task->meta64,
 			  0);
 		}
 	}
@@ -1998,6 +1998,7 @@ minimod_subscribe(
 	task->callback.userdata = in_userdata;
 	task->callback.fptr.subscription_change = in_callback;
 	task->meta64 = in_mod_id;
+	task->meta32 = 1;
 
 	netw_request(
 	  NETW_VERB_POST,
@@ -2049,7 +2050,8 @@ minimod_unsubscribe(
 	task->flags |= TASK_FLAG_AUTH_TOKEN;
 	task->callback.userdata = in_userdata;
 	task->callback.fptr.subscription_change = in_callback;
-	task->meta64 = -in_mod_id;
+	task->meta64 = in_mod_id;
+	task->meta32 = -1;
 
 	netw_request(
 	  NETW_VERB_DELETE,
