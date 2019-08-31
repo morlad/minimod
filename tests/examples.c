@@ -334,9 +334,17 @@ test_6(void)
 
 
 static void
-on_installed(void *in_udata, char const *in_path)
+on_installed(
+  void *in_udata,
+  bool in_success,
+  uint64_t in_game_id,
+  uint64_t in_mod_id)
 {
-	printf("mod installed to: %s\n", in_path);
+	printf(
+	  "mod %" PRIu64 ":%" PRIu64 " installation %s\n",
+	  in_game_id,
+	  in_mod_id,
+	  in_success ? "successful" : "failed");
 	*((int *)in_udata) = 0;
 }
 

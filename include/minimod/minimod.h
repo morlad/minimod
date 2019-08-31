@@ -321,7 +321,11 @@ typedef void (*minimod_email_exchange_callback)(
 /*
  * Callback: minimod_install_callback()
  */
-typedef void (*minimod_install_callback)(void *userdata, char const *path);
+typedef void (*minimod_install_callback)(
+  void *in_userdata,
+  bool in_success,
+  uint64_t in_game_id,
+  uint64_t in_mod_id);
 
 
 /*

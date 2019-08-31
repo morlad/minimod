@@ -1498,7 +1498,7 @@ on_install_download(
 	if (error != 200)
 	{
 		LOGE("mod NOT downloaded %i", error);
-		req->callback(req->userdata, NULL);
+		req->callback(req->userdata, false, req->game_id, req->mod_id);
 		free_install_request(req);
 		return;
 	}
@@ -1550,7 +1550,7 @@ on_install_download(
 	}
 
 	// callback
-	req->callback(req->userdata, "-deprecated-");
+	req->callback(req->userdata, true, req->game_id, req->mod_id);
 
 	fclose(in_file);
 	free_install_request(req);
