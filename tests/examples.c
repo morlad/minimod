@@ -624,7 +624,7 @@ test_13(void)
 
 
 int
-main(int argc, char const *argv[])
+main(void)
 {
 	printf("[test] Starting\n");
 
