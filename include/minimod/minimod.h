@@ -473,6 +473,7 @@ MINIMOD_LIB void
 minimod_get_mods(
   char const *in_filter,
   uint64_t in_game_id,
+  uint64_t in_mod_id,
   minimod_get_mods_callback in_callback,
   void *in_userdata);
 

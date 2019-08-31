@@ -1040,18 +1040,33 @@ void
 minimod_get_mods(
   char const *in_filter,
   uint64_t in_game_id,
+  uint64_t in_mod_id,
   minimod_get_mods_callback in_callback,
   void *in_userdata)
 {
 	ASSERT(in_game_id > 0);
 	char *path;
-	asprintf(
-	  &path,
-	  "%s/games/%" PRIu64 "/mods?api_key=%s&%s",
-	  endpoints[l_mmi.env],
-	  in_game_id,
-	  l_mmi.api_key,
-	  in_filter ? in_filter : "");
+	if (in_mod_id)
+	{
+		asprintf(
+		  &path,
+		  "%s/games/%" PRIu64 "/mods/%" PRIu64 "?api_key=%s&%s",
+		  endpoints[l_mmi.env],
+		  in_game_id,
+		  in_mod_id,
+		  l_mmi.api_key,
+		  in_filter ? in_filter : "");
+	}
+	else
+	{
+		asprintf(
+		  &path,
+		  "%s/games/%" PRIu64 "/mods?api_key=%s&%s",
+		  endpoints[l_mmi.env],
+		  in_game_id,
+		  l_mmi.api_key,
+		  in_filter ? in_filter : "");
+	}
 
 	char const *const headers[] = {
 		// clang-format off

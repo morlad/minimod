@@ -118,7 +118,7 @@ test_3(uint64_t game_id)
 	minimod_init(MINIMOD_ENVIRONMENT_TEST, API_KEY_TEST, NULL, false, MINIMOD_CURRENT_ABI);
 
 	int nrequests_completed = 0;
-	minimod_get_mods(NULL, GAME_ID_TEST, get_mods_callback, &nrequests_completed);
+	minimod_get_mods(NULL, GAME_ID_TEST, 0, get_mods_callback, &nrequests_completed);
 
 	while (nrequests_completed < 1)
 	{
@@ -138,7 +138,7 @@ test_3(uint64_t game_id)
 	  MINIMOD_CURRENT_ABI);
 
 	nrequests_completed = 0;
-	minimod_get_mods(NULL, game_id, get_mods_callback, &nrequests_completed);
+	minimod_get_mods(NULL, game_id, 0, get_mods_callback, &nrequests_completed);
 
 	while (nrequests_completed < 1)
 	{
