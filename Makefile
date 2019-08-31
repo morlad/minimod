@@ -21,6 +21,7 @@ ENABLE_SANITIZERS = 0
 # path to NaturalDocs for 'docs'-target
 NDOCS = ~/bin/NaturalDocs-1.52/NaturalDocs
 
+ENABLE_LOG = 0
 
 # INTERNAL CONFIG
 # ---------------
@@ -181,6 +182,9 @@ endif
 CFLAGS += -std=c99
 CFLAGS += $(WARNINGS) $(NOWARNINGS) $(OPT)
 OBJCFLAGS += $(WARNINGS) $(NOWARNINGS) $(OPT)
+ifeq ($(ENABLE_LOG),1)
+CPPFLAGS += -DMINIMOD_LOG_ENABLE
+endif
 
 ifeq ($(os),macos)
 CFLAGS += -fvisibility=hidden

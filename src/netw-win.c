@@ -11,14 +11,19 @@
 #pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 #pragma GCC diagnostic ignored "-Wunused-macros"
 
+#ifdef MINIMOD_LOG_ENABLE
 #define LOG(FMT, ...) printf("[netw] " FMT "\n", ##__VA_ARGS__)
+#else
+#define LOG(...)
+#endif
+#define LOGE(FMT, ...) fprintf(stderr, "[netw] " FMT "\n", ##__VA_ARGS__)
 
 #define ASSERT(in_condition)                                                 \
 	do                                                                       \
 	{                                                                        \
 		if (__builtin_expect(!(in_condition), 0))                            \
 		{                                                                    \
-			LOG(                                                             \
+			LOGE(                                                             \
 			  "[assertion] %s:%i: '%s'", __FILE__, __LINE__, #in_condition); \
 			__asm__ volatile("int $0x03");                                   \
 			__builtin_unreachable();                                         \
@@ -27,7 +32,7 @@
 
 #pragma GCC diagnostic pop
 
-#define LOG_ERR(X) LOG(X " failed %lu", GetLastError())
+#define LOG_ERR(X) LOGE(X " failed %lu", GetLastError())
 
 // size of download -> file buffer
 #define BUFFERSIZE 4096
@@ -552,7 +557,7 @@ netw_request(
 	}
 	else
 	{
-		LOG("failed to create thread");
+		LOGE("failed to create thread");
 	}
 
 	return true;
@@ -629,7 +634,7 @@ netw_download_to(
 	}
 	else
 	{
-		LOG("failed to create thread");
+		LOGE("failed to create thread");
 	}
 
 	return true;

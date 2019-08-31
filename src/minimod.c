@@ -24,14 +24,19 @@
 #endif
 #pragma GCC diagnostic ignored "-Wunused-macros"
 
+#ifdef MINIMOD_LOG_ENABLE
 #define LOG(FMT, ...) printf("[minimod] " FMT "\n", ##__VA_ARGS__)
+#else
+#define LOG(...)
+#endif
+#define LOGE(FMT, ...) fprintf(stderr, "[minimod] " FMT "\n", ##__VA_ARGS__)
 
 #define ASSERT(in_condition)                                                 \
 	do                                                                       \
 	{                                                                        \
 		if (__builtin_expect(!(in_condition), 0))                            \
 		{                                                                    \
-			LOG(                                                             \
+			LOGE(                                                             \
 			  "[assertion] %s:%i: '%s'", __FILE__, __LINE__, #in_condition); \
 			__asm__ volatile("int $0x03");                                   \
 			__builtin_unreachable();                                         \
@@ -782,7 +787,7 @@ handle_rate(
 	}
 	else
 	{
-		LOG("Raiting not applied: %i", error);
+		LOGE("Raiting not applied: %i", error);
 		task->callback.fptr.rate(task->callback.userdata, false);
 	}
 }
@@ -854,7 +859,7 @@ handle_subscription_change(
 		}
 		else
 		{
-			LOG(
+			LOGE(
 			  "failed to subscribe %i [modid: %" PRIu64 "]",
 			  error,
 			  task->meta64);
@@ -875,7 +880,7 @@ handle_subscription_change(
 		}
 		else
 		{
-			LOG(
+			LOGE(
 			  "failed to unsubscribe %i [modid: %" PRIu64 "]",
 			  error,
 			  -task->meta64);
@@ -1467,7 +1472,7 @@ on_install_download(
 	// rate-limiting or authorization errors.
 	if (error != 200)
 	{
-		LOG("mod NOT downloaded");
+		LOGE("mod NOT downloaded %i", error);
 		req->callback(req->userdata, NULL);
 		free_install_request(req);
 		return;
@@ -1483,13 +1488,13 @@ on_install_download(
 		int seek_err = fseek(in_file, 0, SEEK_SET);
 		if (seek_err != 0)
 		{
-			LOG("Seek failed %i", errno);
+			LOGE("Seek failed %i", errno);
 		}
 		// unzip it
 		mz_zip_archive zip = { 0 };
 		if (!mz_zip_reader_init_cfile(&zip, in_file, (mz_uint64)s, 0))
 		{
-			LOG("zip error: %i", zip.m_last_error);
+			LOGE("zip error: %i", zip.m_last_error);
 		}
 		mz_uint nfiles = mz_zip_reader_get_num_files(&zip);
 		LOG("#files in zip: %u", nfiles);

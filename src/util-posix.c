@@ -14,14 +14,19 @@
 #endif
 #pragma GCC diagnostic ignored "-Wunused-macros"
 
+#ifdef MINIMOD_LOG_ENABLE
 #define LOG(FMT, ...) printf("[util] " FMT "\n", ##__VA_ARGS__)
+#else
+#define LOG(...)
+#endif
+#define LOGE(FMT, ...) fprintf(stderr, "[util] " FMT "\n", ##__VA_ARGS__)
 
 #define ASSERT(in_condition)                                                 \
 	do                                                                       \
 	{                                                                        \
 		if (__builtin_expect(!(in_condition), 0))                            \
 		{                                                                    \
-			LOG(                                                             \
+			LOGE(                                                             \
 			  "[assertion] %s:%i: '%s'", __FILE__, __LINE__, #in_condition); \
 			__asm__ volatile("int $0x03");                                   \
 			__builtin_unreachable();                                         \
@@ -115,7 +120,7 @@ fsu_rmdir(char const *in_path)
 bool
 fsu_rmdir_recursive(char const *in_path)
 {
-	printf("[util] fsu_rmdir_recursive(%s)\n", in_path);
+	LOG("fsu_rmdir_recursive(%s)", in_path);
 	DIR *dir = opendir(in_path);
 	struct dirent *entry;
 	while ((entry = readdir(dir)))
@@ -135,7 +140,7 @@ fsu_rmdir_recursive(char const *in_path)
 		{
 			char *file;
 			asprintf(&file, "%s/%s", in_path, entry->d_name);
-			printf("[util] deleting file %s\n", file);
+			LOG("deleting file %s", file);
 			unlink(file);
 			free(file);
 		}

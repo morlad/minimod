@@ -8,20 +8,30 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+
+#ifdef MINIMOD_LOG_ENABLE
 #define LOG(FMT, ...) printf("[util] " FMT "\n", ##__VA_ARGS__)
-#pragma GCC diagnostic pop
+#define WLOG(FMT, ...) wprintf("[util] " FMT "\n", ##__VA_ARGS__)
+#else
+#define LOG(...)
+#define WLOG(...)
+#endif
+#define LOGE(FMT, ...) fprintf(stderr, "[util] " FMT "\n", ##__VA_ARGS__)
+#define WLOGE(FMT, ...) wfprintf(stderr, "[util] " FMT "\n", ##__VA_ARGS__)
 
 #define ASSERT(in_condition)                                                 \
 	do                                                                       \
 	{                                                                        \
 		if (__builtin_expect(!(in_condition), 0))                            \
 		{                                                                    \
-			LOG(                                                             \
+			LOGE(                                                             \
 			  "[assertion] %s:%i: '%s'", __FILE__, __LINE__, #in_condition); \
 			__asm__ volatile("int $0x03");                                   \
 			__builtin_unreachable();                                         \
 		}                                                                    \
 	} while (__LINE__ == -1)
+
+#pragma GCC diagnostic pop
 
 size_t
 sys_utf8_from_wchar(wchar_t const *in, char *out, size_t bytes)
@@ -119,12 +129,12 @@ fsu_recursive_mkdir(wchar_t *in_dir)
 			*ptr = '\0';
 			BOOL result = CreateDirectory(in_dir, NULL);
 			DWORD err = GetLastError();
-			printf("CreateDirectory(%ls) %lu\n", in_dir, err);
+			LOG("CreateDirectory(%ls) %lu", in_dir, err);
 			*ptr = old;
 
 			if (result || err == ERROR_ALREADY_EXISTS)
 			{
-				printf("- done\n");
+				LOG("- done");
 				break;
 			}
 		}
@@ -152,15 +162,15 @@ fsu_recursive_mkdir(wchar_t *in_dir)
 			*ptr = '\0';
 			BOOL result = CreateDirectory(in_dir, NULL);
 			DWORD err = GetLastError();
-			printf(">CreateDirectory(%ls) %lu\n", in_dir, err);
+			LOG("CreateDirectory(%ls) %lu", in_dir, err);
 			*ptr = old;
 
 			if (result || err == ERROR_ALREADY_EXISTS)
 			{
-				printf("- done\n");
+				LOG("- done");
 				if (ptr == end)
 				{
-					printf("- final\n");
+					LOG("- final");
 					return true;
 				}
 				++ptr;
@@ -251,7 +261,7 @@ fsu_rmdir_recursive_utf16(wchar_t const *in_path)
 				}
 				else
 				{
-					wprintf(L"deleting file: %s\n", sub);
+					WLOG(L"deleting file: %s", sub);
 					DeleteFile(sub);
 				}
 				free(sub);
@@ -260,10 +270,10 @@ fsu_rmdir_recursive_utf16(wchar_t const *in_path)
 		FindClose(h);
 	}
 
-	wprintf(L"RemoveDirectory(%s)\n", in_path);
+	WLOG(L"RemoveDirectory(%s)", in_path);
 	if (!RemoveDirectory(in_path))
 	{
-		wprintf(L"Failed to remove %s (%u)\n", in_path, GetLastError());
+		WLOGE(L"Failed to remove %s (%u)", in_path, GetLastError());
 	}
 	return true;
 }
@@ -347,7 +357,7 @@ fsu_enum_dir(
 		pa[clen + 0] = '*';
 		pa[clen + 1] = '\0';
 	}
-	wprintf(L"enum-pa = '%s'\n", pa);
+	WLOG(L"enum-pa = '%s'", pa);
 
 	WIN32_FIND_DATA fdata;
 	HANDLE h = FindFirstFile(pa, &fdata);
@@ -448,10 +458,7 @@ fsu_mvfile(char const *in_srcpath, char const *in_dstpath, bool in_replace)
 	BOOL result = MoveFileExW(srcpath, dstpath, flags);
 	if (!result)
 	{
-		printf(
-		  "[util] MoveFileEx#1 failed %lu (%lx)\n",
-		  GetLastError(),
-		  GetLastError());
+		LOGE("MoveFileEx#1 failed %lu", GetLastError());
 	}
 	if (result == FALSE && GetLastError() == ERROR_PATH_NOT_FOUND)
 	{
@@ -459,10 +466,7 @@ fsu_mvfile(char const *in_srcpath, char const *in_dstpath, bool in_replace)
 		result = MoveFileExW(srcpath, dstpath, flags);
 		if (!result)
 		{
-			printf(
-			  "[util] MoveFileEx#2 failed %lu (%lx)\n",
-			  GetLastError(),
-			  GetLastError());
+			LOGE("MoveFileEx#2 failed %lu", GetLastError());
 		}
 	}
 
