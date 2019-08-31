@@ -44,7 +44,7 @@
 	{                                                                        \
 		if (__builtin_expect(!(in_condition), 0))                            \
 		{                                                                    \
-			LOGE(                                                             \
+			LOGE(                                                            \
 			  "[assertion] %s:%i: '%s'", __FILE__, __LINE__, #in_condition); \
 			__asm__ volatile("int $0x03");                                   \
 			__builtin_unreachable();                                         \
@@ -1896,7 +1896,6 @@ minimod_get_installed_mod(
 	fclose(jfile);
 
 
-
 	return true;
 }
 
@@ -1996,7 +1995,11 @@ minimod_get_ratings(
 	ASSERT(minimod_is_authenticated());
 
 	char *path = NULL;
-	asprintf(&path, "%s/me/ratings?%s", endpoints[l_mmi.env], in_filter ? in_filter : "");
+	asprintf(
+	  &path,
+	  "%s/me/ratings?%s",
+	  endpoints[l_mmi.env],
+	  in_filter ? in_filter : "");
 
 	char const *const headers[] = {
 		// clang-format off
@@ -2035,7 +2038,11 @@ minimod_get_subscriptions(
 	ASSERT(minimod_is_authenticated());
 
 	char *path = NULL;
-	asprintf(&path, "%s/me/subscribed?%s", endpoints[l_mmi.env], in_filter ? in_filter : "");
+	asprintf(
+	  &path,
+	  "%s/me/subscribed?%s",
+	  endpoints[l_mmi.env],
+	  in_filter ? in_filter : "");
 
 	char const *const headers[] = {
 		// clang-format off

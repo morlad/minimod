@@ -115,7 +115,12 @@ static void
 test_3(uint64_t game_id)
 {
 	printf("\n= Requesting list of mods for game X on test-mod.io\n");
-	minimod_init(MINIMOD_ENVIRONMENT_TEST, API_KEY_TEST, NULL, false, MINIMOD_CURRENT_ABI);
+	minimod_init(
+	  MINIMOD_ENVIRONMENT_TEST,
+	  API_KEY_TEST,
+	  NULL,
+	  false,
+	  MINIMOD_CURRENT_ABI);
 
 	int nrequests_completed = 0;
 	minimod_get_mods(NULL, GAME_ID_TEST, 0, get_mods_callback, &nrequests_completed);
