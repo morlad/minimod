@@ -159,16 +159,16 @@ test_3(uint64_t game_id)
 static void
 on_email_request(void *in_udata, bool in_success)
 {
-	*((int *)in_udata) = in_success ? 1 : -1;
 	printf("Email request %s.\n", in_success ? "successful" : "failed");
+	*((int *)in_udata) = in_success ? 1 : -1;
 }
 
 
 static void
 on_email_exchange(void *in_udata, char const *in_token, size_t in_bytes)
 {
-	*((int *)in_udata) = in_token ? 1 : -1;
 	printf("Authentication %s.\n", in_token ? "successful" : "failed");
+	*((int *)in_udata) = in_token ? 1 : -1;
 }
 
 
@@ -371,7 +371,10 @@ on_installed_mod(
   size_t in_nmods,
   struct minimod_mod const *mods)
 {
-	printf("- %" PRIu64 " %s\n", mods[0].id, mods[0].name);
+	if (in_nmods > 0)
+	{
+		printf("- %" PRIu64 " %s\n", mods[0].id, mods[0].name);
+	}
 	*((int *)in_userdata) = 0;
 }
 
