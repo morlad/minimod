@@ -13,7 +13,7 @@ USE_LIBCURL_ON_MACOS = 0
 # path to the LLVM installation
 # ! do NOT add trailing \ 
 # ! do NOT quote it
-LLVM_PATH = C:\Program Files\LLVM
+LLVM_PATH ?= C:\Program Files\LLVM
 
 # set to 1 to enable all available sanitizers on this platform, 0 otherwise
 ENABLE_SANITIZERS = 0
