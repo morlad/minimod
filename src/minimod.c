@@ -1,10 +1,18 @@
 // vi: noexpandtab tabstop=4 softtabstop=4 shiftwidth=0
 #include "minimod/minimod.h"
 
-#include "miniz/miniz.h"
 #include "netw.h"
-#include "qajson4c/src/qajson4c/qajson4c.h"
 #include "util.h"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpadded"
+#include "miniz/miniz.h"
+#pragma GCC diagnostic pop
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdocumentation"
+#include "qajson4c/src/qajson4c/qajson4c.h"
+#pragma GCC diagnostic pop
 
 #include <ctype.h>
 #include <errno.h>

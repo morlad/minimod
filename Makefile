@@ -224,8 +224,6 @@ $(OUTPUT_DIR)/deps/miniz/miniz.o: CPPFLAGS += -DMINIZ_USE_UNALIGNED_LOADS_AND_ST
 
 ifeq ($(os),macos)
 $(OUTPUT_DIR)/src/netw-libcurl.o: NOWARNINGS += -Wno-disabled-macro-expansion
-# padding in miniz
-$(OUTPUT_DIR)/src/minimod.o: NOWARNINGS += -Wno-error-padded
 endif
 
 ifeq ($(os),windows)
@@ -247,7 +245,6 @@ endif
 
 # basically clang
 ifneq ($(os),linux)
-$(OUTPUT_DIR)/src/minimod.o: NOWARNINGS += -Wno-documentation
 $(OUTPUT_DIR)/deps/%.o: NOWARNINGS += -Wno-everything
 endif
 
