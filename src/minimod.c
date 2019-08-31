@@ -103,6 +103,8 @@ struct install_request
 	char *zip_path;
 	FILE *file;
 	struct install_request *next;
+	int waiting;
+	char _padding[4];
 };
 
 
@@ -1564,29 +1566,44 @@ json_print_callback(void *ptr, const char *buffer, size_t size)
 
 
 static void
-on_download_modfile(
-  void *udata,
+on_install_get_mod(
+  void *in_userdata,
+  size_t in_nmods,
+  struct minimod_mod const *in_mods)
+{
+	ASSERT(in_nmods <= 1);
+	struct install_request *req = in_userdata;
+
+	if (in_nmods > 0)
+	{
+		// write json file
+		char *jpath;
+		asprintf(
+		  &jpath,
+		  "%s/mods/%" PRIu64 "/%" PRIu64 ".json",
+		  l_mmi.root_path,
+		  req->game_id,
+		  req->mod_id);
+
+		FILE *jout = fsu_fopen(jpath, "wb");
+		QAJ4C_print_buffer_callback(in_mods[0].more, json_print_callback, jout);
+		fclose(jout);
+
+		free(jpath);
+	}
+
+	req->waiting = 0;
+}
+
+
+static void
+on_install_get_modfile(
+  void *in_userdata,
   size_t nmodfiles,
   struct minimod_modfile const *modfiles)
 {
 	ASSERT(nmodfiles == 1);
-
-	struct install_request *req = udata;
-
-	// write json file
-	char *jpath;
-	asprintf(
-	  &jpath,
-	  "%s/mods/%" PRIu64 "/%" PRIu64 ".json",
-	  l_mmi.root_path,
-	  req->game_id,
-	  req->mod_id);
-
-	FILE *jout = fsu_fopen(jpath, "wb");
-	QAJ4C_print_buffer_callback(modfiles[0].more, json_print_callback, jout);
-	fclose(jout);
-
-	free(jpath);
+	struct install_request *req = in_userdata;
 
 	// write actual file
 	asprintf(
@@ -1629,12 +1646,22 @@ minimod_install(
 	req->userdata = in_userdata;
 	req->mod_id = in_mod_id;
 	req->game_id = in_game_id;
+	req->waiting = 1;
+
+	LOG("install: get_mods");
+	minimod_get_mods(NULL, in_game_id, in_mod_id, on_install_get_mod, req);
+	while (req->waiting)
+	{
+		sys_sleep(1);
+	}
+
+	LOG("install: get_modfiles");
 	minimod_get_modfiles(
 	  NULL,
 	  in_game_id,
 	  in_mod_id,
 	  in_modfile_id,
-	  on_download_modfile,
+	  on_install_get_modfile,
 	  req);
 }
 
@@ -1806,10 +1833,53 @@ minimod_get_installed_mod(
   uint64_t in_game_id,
   uint64_t in_mod_id,
   minimod_get_mods_callback in_callback,
-  void *userdata)
+  void *in_userdata)
 {
-	// TODO
-	return false;
+	char *path;
+	asprintf(
+	  &path,
+	  "%s/mods/%" PRIu64 "/%" PRIu64 ".json",
+	  l_mmi.root_path,
+	  in_game_id,
+	  in_mod_id);
+	FILE *jfile = fsu_fopen(path, "rb");
+	free(path);
+	if (!jfile)
+	{
+		return false;
+	}
+
+	// load file data into memory
+	int64_t fsize_raw = fsu_fsize(path);
+	if (fsize_raw > 0)
+	{
+		size_t fsize = (size_t)fsize_raw;
+		char *filebuffer = malloc(fsize);
+		fread(filebuffer, fsize, 1, jfile);
+
+		// load data into QAJ4C
+		size_t nbuffer = QAJ4C_calculate_max_buffer_size_n(filebuffer, fsize);
+		void *buffer = malloc(nbuffer);
+		QAJ4C_Value const *document = NULL;
+		QAJ4C_parse_opt(filebuffer, fsize, 0, buffer, nbuffer, &document);
+		ASSERT(QAJ4C_is_object(document));
+
+		// call callback with data
+		struct minimod_mod mod = { 0 };
+		populate_mod(&mod, document);
+		in_callback(in_userdata, 1, &mod);
+
+		free(filebuffer);
+	}
+	else
+	{
+		in_callback(in_userdata, 0, NULL);
+	}
+	fclose(jfile);
+
+
+
+	return true;
 }
 
 

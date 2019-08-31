@@ -358,6 +358,7 @@ on_installed_mod(
   size_t in_nmods,
   struct minimod_mod const *mods)
 {
+	printf("- %" PRIu64 " %s\n", mods[0].id, mods[0].name);
 	*((int *)in_userdata) = 0;
 }
 
@@ -391,14 +392,12 @@ test_8(void)
 	minimod_enum_installed_mods(0, installed_mod_enumerator, NULL);
 
 	// get data for the installed mod
-#if 0
 	wait = 1;
-	minimod_get_installed_mod(GAME_ID_TEST, 1720, on_installed_mod, wait);
+	minimod_get_installed_mod(GAME_ID_TEST, 1720, on_installed_mod, &wait);
 	while (wait)
 	{
 		sys_sleep(10);
 	}
-#endif
 
 	// undo stuff and deinstall the mod
 	printf("Uninstalling Mod\n");
