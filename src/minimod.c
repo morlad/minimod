@@ -848,8 +848,8 @@ handle_get_ratings(
 static void
 handle_subscription_change(
   void *in_udata,
-  void const *in_data,
-  size_t in_bytes,
+  void const *UNUSED(in_data),
+  size_t UNUSED(in_bytes),
   int error,
   struct netw_header const *header)
 {
@@ -1473,7 +1473,7 @@ on_install_download(
   void *in_udata,
   FILE *in_file,
   int error,
-  struct netw_header const *in_header)
+  struct netw_header const *UNUSED(in_header))
 {
 	struct install_request *req = in_udata;
 	// Downloads are not authenticated, thusly there is no need to handle
