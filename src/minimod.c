@@ -10,7 +10,9 @@
 #pragma GCC diagnostic pop
 
 #pragma GCC diagnostic push
+#ifdef __clang__
 #pragma GCC diagnostic ignored "-Wdocumentation"
+#endif
 #include "qajson4c/src/qajson4c/qajson4c.h"
 #pragma GCC diagnostic pop
 
