@@ -101,6 +101,13 @@ about copying the *dylib* along with your project to use it.
 The Linux and FreeBSD builds of minimod require [libcurl](https://curl.haxx.se/libcurl/) to be available,
 since there is no system library to make HTTPS requests.
 
+#### Source Dependencies
+minimod depends on 2 other MIT licensed libraries when compiling:
+- [miniz](https://github.com/richgel999/miniz) to handle compression and ZIP files.
+	Its amalgamated source is included in this repo.
+- [qajson4c](https://github.com/DeHecht/qajson4c) to parse JSON.
+	Its repository is cloned automatically during the build process.
+
 ### Unzip or Not
 Depending on how an application integrates mods, it is either possible
 to use them directly as ZIP file or they need to be unpacked.
