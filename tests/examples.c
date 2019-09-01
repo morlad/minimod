@@ -108,7 +108,7 @@ get_mods_callback(
 	for (size_t i = 0; i < nmods; ++i)
 	{
 		printf("- %s {%" PRIu64 "}\n", mods[i].name, mods[i].id);
-		printf("  - ? {%" PRIu64 "}\n", mods[i].modfile_id);
+		printf("  - {%" PRIu64 "}\n", mods[i].modfile_id);
 	}
 
 	++(*(int *)udata);
