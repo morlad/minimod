@@ -41,16 +41,19 @@
 #endif
 #define LOGE(FMT, ...) fprintf(stderr, "[minimod] " FMT "\n", ##__VA_ARGS__)
 
-#define ASSERT(in_condition)                                                 \
-	do                                                                       \
-	{                                                                        \
-		if (__builtin_expect(!(in_condition), 0))                            \
-		{                                                                    \
-			LOGE(                                                            \
-			  "[assertion] %s:%i: '%s'", __FILE__, __LINE__, #in_condition); \
-			__asm__ volatile("int $0x03");                                   \
-			__builtin_unreachable();                                         \
-		}                                                                    \
+#define ASSERT(in_condition)                      \
+	do                                            \
+	{                                             \
+		if (__builtin_expect(!(in_condition), 0)) \
+		{                                         \
+			LOGE(                                 \
+			  "[assertion] %s:%i: '%s'",          \
+			  __FILE__,                           \
+			  __LINE__,                           \
+			  #in_condition);                     \
+			__asm__ volatile("int $0x03");        \
+			__builtin_unreachable();              \
+		}                                         \
 	} while (__LINE__ == -1)
 
 #pragma GCC diagnostic pop
@@ -477,7 +480,8 @@ handle_get_games(
 		struct minimod_pagination pagi;
 		populate_pagination(&pagi, document);
 
-		task->callback.fptr.get_games(task->callback.userdata, ngames, games, &pagi);
+		task->callback.fptr
+		  .get_games(task->callback.userdata, ngames, games, &pagi);
 
 		free(games);
 	}
@@ -528,7 +532,8 @@ handle_get_mods(
 		struct minimod_pagination pagi;
 		populate_pagination(&pagi, document);
 
-		task->callback.fptr.get_mods(task->callback.userdata, nmods, mods, &pagi);
+		task->callback.fptr
+		  .get_mods(task->callback.userdata, nmods, mods, &pagi);
 
 		free(mods);
 	}
@@ -583,7 +588,8 @@ handle_get_users(
 		struct minimod_pagination pagi;
 		populate_pagination(&pagi, document);
 
-		task->callback.fptr.get_users(task->callback.userdata, nusers, users, &pagi);
+		task->callback.fptr
+		  .get_users(task->callback.userdata, nusers, users, &pagi);
 
 		free(users);
 	}
@@ -611,7 +617,8 @@ handle_get_modfiles(
 	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
 	if (error != 200)
 	{
-		task->callback.fptr.get_modfiles(task->callback.userdata, 0, NULL, NULL);
+		task->callback.fptr
+		  .get_modfiles(task->callback.userdata, 0, NULL, NULL);
 		free_task(task);
 		return;
 	}
@@ -640,11 +647,8 @@ handle_get_modfiles(
 		struct minimod_pagination pagi;
 		populate_pagination(&pagi, document);
 
-		task->callback.fptr.get_modfiles(
-		  task->callback.userdata,
-		  nmodfiles,
-		  modfiles,
-		  &pagi);
+		task->callback.fptr
+		  .get_modfiles(task->callback.userdata, nmodfiles, modfiles, &pagi);
 
 		free(modfiles);
 	}
@@ -652,7 +656,8 @@ handle_get_modfiles(
 	{
 		struct minimod_modfile modfile;
 		populate_modfile(&modfile, document);
-		task->callback.fptr.get_modfiles(task->callback.userdata, 1, &modfile, NULL);
+		task->callback.fptr
+		  .get_modfiles(task->callback.userdata, 1, &modfile, NULL);
 	}
 	free_task(task);
 	free(buffer);
@@ -697,7 +702,8 @@ handle_get_events(
 	struct minimod_pagination pagi;
 	populate_pagination(&pagi, document);
 
-	task->callback.fptr.get_events(task->callback.userdata, nevents, events, &pagi);
+	task->callback.fptr
+	  .get_events(task->callback.userdata, nevents, events, &pagi);
 
 	free(events);
 
@@ -718,7 +724,8 @@ handle_get_dependencies(
 	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
 	if (error != 200)
 	{
-		task->callback.fptr.get_dependencies(task->callback.userdata, 0, NULL, NULL);
+		task->callback.fptr
+		  .get_dependencies(task->callback.userdata, 0, NULL, NULL);
 		free_task(task);
 		return;
 	}
@@ -745,7 +752,8 @@ handle_get_dependencies(
 	struct minimod_pagination pagi;
 	populate_pagination(&pagi, document);
 
-	task->callback.fptr.get_dependencies(task->callback.userdata, ndeps, deps, &pagi);
+	task->callback.fptr
+	  .get_dependencies(task->callback.userdata, ndeps, deps, &pagi);
 
 	free(deps);
 
@@ -851,7 +859,8 @@ handle_get_ratings(
 	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
 	if (error != 200)
 	{
-		task->callback.fptr.get_ratings(task->callback.userdata, 0, NULL, NULL);
+		task->callback.fptr
+		  .get_ratings(task->callback.userdata, 0, NULL, NULL);
 		free_task(task);
 		return;
 	}
@@ -876,11 +885,8 @@ handle_get_ratings(
 	struct minimod_pagination pagi;
 	populate_pagination(&pagi, document);
 
-	task->callback.fptr.get_ratings(
-	  task->callback.userdata,
-	  nratings,
-	  ratings,
-	  &pagi);
+	task->callback.fptr
+	  .get_ratings(task->callback.userdata, nratings, ratings, &pagi);
 
 	free(ratings);
 
@@ -1629,7 +1635,10 @@ on_install_get_mod(
 		  req->mod_id);
 
 		FILE *jout = fsu_fopen(jpath, "wb");
-		QAJ4C_print_buffer_callback(in_mods[0].more, json_print_callback, jout);
+		QAJ4C_print_buffer_callback(
+		  in_mods[0].more,
+		  json_print_callback,
+		  jout);
 		fclose(jout);
 
 		free(jpath);
@@ -1781,6 +1790,13 @@ is_str_numeric(char const *str, size_t len)
 }
 
 
+static bool
+str_ends_with_json(char const *str, size_t len)
+{
+	return (len > 5) && (strcmp(str + len - 5, ".json") == 0);
+}
+
+
 static void
 game_enumerator(
   char const *root,
@@ -1796,7 +1812,7 @@ game_enumerator(
 	}
 
 	size_t l = strlen(name);
-	if (l > 5 && 0 == strcmp(name + l - 5, ".json") && is_str_numeric(name, l - 5))
+	if (str_ends_with_json(name, l) && is_str_numeric(name, l - 5))
 	{
 		LOG("found mod: %s %s", root, name);
 		uint64_t mod_id = strtoul(name, NULL, 10);
