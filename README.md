@@ -103,7 +103,15 @@ since there is no system library to make HTTPS requests.
 
 ### Unzip or Not
 Depending on how an application integrates mods, it is either possible
-to use them directly as ZIP file or they need to be unpacked to a directory.
+to use them directly as ZIP file or they need to be unpacked.
 minimod supports both by selecting the modus operandi during initialisation
 via `minimod_init()`'s *unzip*-parameter.
 
+### Testing & Debugging
+minimod includes the awkwardly named function `minimod_set_debugtesting()`,
+which instructs minimod to introduce random delays in its responses to
+simulate a bad network connection, i.e. latency.
+
+Further more it can be used to set a rate for simulating internal server
+errors (server responding with HTTP status code 500), to test how the
+client code copes with those.
