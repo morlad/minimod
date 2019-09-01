@@ -1902,15 +1902,18 @@ minimod_get_installed_mod(
 	  l_mmi.root_path,
 	  in_game_id,
 	  in_mod_id);
+
+	int64_t fsize_raw = fsu_fsize(path);
 	FILE *jfile = fsu_fopen(path, "rb");
+
 	free(path);
+
 	if (!jfile)
 	{
 		return false;
 	}
 
 	// load file data into memory
-	int64_t fsize_raw = fsu_fsize(path);
 	if (fsize_raw > 0)
 	{
 		size_t fsize = (size_t)fsize_raw;
