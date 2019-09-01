@@ -380,7 +380,7 @@ cloc-by-file:
 	$(Q)cloc . --by-file --quiet --exclude-dir=deps,build,docs,docs.cfg
 
 format:
-	$(Q)clang-format -i tests/* src/* include/minimod/*
+	$(Q)clang-format -i tests/*.c src/*.c src/*.m src/*.h include/minimod/*.h
 
 docs:
 	$(Q)$(ensure_selfdir)
