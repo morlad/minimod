@@ -298,6 +298,11 @@ mtx_destroy(mtx_t *mutex)
 }
 
 
+#ifdef __clang__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wthread-safety-analysis"
+#endif
+
 int
 mtx_lock(mtx_t *mutex)
 {
@@ -310,4 +315,9 @@ mtx_unlock(mtx_t *mutex)
 {
 	return pthread_mutex_unlock(mutex);
 }
+
+#ifdef __clang__
+#pragma GCC diagnostic pop
+#endif
+
 #endif
