@@ -1,5 +1,6 @@
 // vi: noexpandtab tabstop=4 softtabstop=4 shiftwidth=0
 #include "minimod/minimod.h"
+#undef minimod_init
 
 #include "netw.h"
 #include "util.h"
@@ -123,7 +124,7 @@ struct mmi
 	struct install_request *install_requests;
 	mtx_t install_requests_mtx;
 	time_t rate_limited_until;
-	enum minimod_environment env;
+	int env;
 	bool unzip;
 	bool is_apikey_invalid;
 	char _padding[2];
@@ -955,10 +956,9 @@ handle_subscription_change(
 
 enum minimod_err
 minimod_init(
-  enum minimod_environment in_env,
   char const *in_api_key,
   char const *in_root_path,
-  bool in_unzip,
+  unsigned int in_flags,
   uint32_t in_abi_version)
 {
 	// check version compatibility
@@ -987,12 +987,7 @@ minimod_init(
 		}
 	}
 
-	// validate in_env
-	if (in_env != MINIMOD_ENVIRONMENT_LIVE && in_env != MINIMOD_ENVIRONMENT_TEST)
-	{
-		return MINIMOD_ERR_ENV;
-	}
-	l_mmi.env = in_env;
+	l_mmi.env = (in_flags & MINIMOD_INITFLAG_TESTENV);
 
 	// TODO validate path
 	l_mmi.root_path = strdup(in_root_path ? in_root_path : DEFAULT_ROOT);
@@ -1012,7 +1007,7 @@ minimod_init(
 
 	l_mmi.api_key = in_api_key ? strdup(in_api_key) : NULL;
 
-	l_mmi.unzip = in_unzip;
+	l_mmi.unzip = (in_flags & MINIMOD_INITFLAG_UNZIP);
 
 	mtx_init(&l_mmi.install_requests_mtx, mtx_plain);
 

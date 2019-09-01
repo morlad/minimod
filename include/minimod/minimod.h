@@ -43,17 +43,20 @@ extern "C" {
 /* Section: API */
 
 /*
- * Enum: minimod_environment
+ * Enum: minimod_initflag
  *
- * Available API endpoints.
+ * Some flags to configure how minimod operates. To be used when
+ * calling <minimod_init()>.
  *
- * MINIMOD_ENVIRONMENT_LIVE - Connect to live system
- * MINIMOD_ENVIRONMENT_TEST - Use https://test.mod.io/
+ * MINIMOD_INITFLAG_TESTENV - Connect to mod.io's test server instead of
+ *	the live system. https://test.mod.io
+ * MINIMOD_INITFLAG_UNZIP - When installing mods they will be extracted.
+ *	If the client app cannot handle ZIP files directly, this is what you need.
  */
-enum minimod_environment
+enum minimod_initflag
 {
-	MINIMOD_ENVIRONMENT_LIVE = 0,
-	MINIMOD_ENVIRONMENT_TEST = 1
+	MINIMOD_INITFLAG_TESTENV = 1,
+	MINIMOD_INITFLAG_UNZIP = 2,
 };
 
 
@@ -65,7 +68,6 @@ enum minimod_environment
  * MINIMOD_ERR_OK - No error. Everthing's fine, mostly.
  * MINIMOD_ERR_ABI - ABI not compatible.
  * MINIMOD_ERR_PATH - Unable to access or create root-path.
- * MINIMOD_ERR_ENV - Environment has unexpected value.
  * MINIMOD_ERR_KEY - No or invalid API key.
  * MINIMOD_ERR_NET - Unable to initialize netw.
  */
@@ -74,7 +76,6 @@ enum minimod_err
 	MINIMOD_ERR_OK = 0,
 	MINIMOD_ERR_ABI,
 	MINIMOD_ERR_PATH,
-	MINIMOD_ERR_ENV,
 	MINIMOD_ERR_KEY,
 	MINIMOD_ERR_NET,
 };
@@ -398,13 +399,12 @@ typedef void (*minimod_subscription_change_callback)(
  * functions can be (successfully) called.
  *
  * Parameters:
- *	in_env - Which environment to use. See <minimod_environment>
  *	in_api_key - Your API key. Get one at https://mod.io/apikey/widget
  *		or https://test.mod.io/apikey/widget
  *	in_root_path - Absolute or relative root path where data/mods &c. will
  *		be stored. Needs to be writeable by the user (surprise). If the
  *		directory does not yet exist, it will be created automatically.
- *	in_unzip - should downloaded mods be extracted or left as .zip files?
+ *	in_flags - Combination of <minimod_initflag>.
  *	in_abi_version - Has to be MINIMOD_CURRENT_ABI.
  *		This bit is used to make sure the actual library and the header
  *		you were compiling against are ABI compatible.
@@ -414,10 +414,9 @@ typedef void (*minimod_subscription_change_callback)(
  */
 MINIMOD_LIB enum minimod_err
 minimod_init(
-  enum minimod_environment in_env,
   char const *in_api_key,
   char const *in_root_path,
-  bool in_unzip,
+  unsigned int in_flags,
   uint32_t in_abi_version);
 
 

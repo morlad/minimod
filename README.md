@@ -27,11 +27,10 @@ void get_games_callback(void *udata, size_t ngames, struct minimod_game const *g
 int main(void)
 {
 	minimod_init(
-		MINIMOD_ENVIRONMENT_LIVE, // choose mod.io's live or test environment
 		"823b4a823b08dc09283fe203a", // your API key
 		".modio", // local path for mods + data
-		false, // do not unzip mods when installing; keep them as ZIP file
-		MINIMOD_CURRENT_ABI); // use to detect incompatible ABIs
+		0, // flags like: use test-environment, unzip mods locally, ...
+		MINIMOD_CURRENT_ABI); // used to detect incompatible ABIs
 
 	printf("List of games on mod.io\n");
 
@@ -112,7 +111,7 @@ minimod depends on 2 other MIT licensed libraries when compiling:
 Depending on how an application integrates mods, it is either possible
 to use them directly as ZIP file or they need to be unpacked.
 minimod supports both by selecting the modus operandi during initialisation
-via `minimod_init()`'s *unzip*-parameter.
+by setting `minimod_init()`'s `MINIMOD_INITFLAG_UNZIP` flag
 
 ### Testing & Debugging
 minimod includes the awkwardly named function `minimod_set_debugtesting()`,

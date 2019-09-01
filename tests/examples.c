@@ -39,12 +39,7 @@ static void
 test_1(void)
 {
 	printf("\n= Simple init()/deinit() test\n");
-	minimod_init(
-	  MINIMOD_ENVIRONMENT_TEST,
-	  API_KEY_TEST,
-	  NULL,
-	  false,
-	  MINIMOD_CURRENT_ABI);
+	minimod_init(API_KEY_TEST, NULL, 0, MINIMOD_CURRENT_ABI);
 
 	minimod_deinit();
 }
@@ -78,12 +73,7 @@ static void
 test_2(void)
 {
 	printf("\n= Requesting list of live games on mod.io\n");
-	minimod_init(
-	  MINIMOD_ENVIRONMENT_LIVE,
-	  API_KEY_LIVE,
-	  NULL,
-	  false,
-	  MINIMOD_CURRENT_ABI);
+	minimod_init(API_KEY_LIVE, NULL, 0, MINIMOD_CURRENT_ABI);
 
 	int nrequests_completed = 0;
 	minimod_get_games(NULL, get_games_callback, &nrequests_completed);
@@ -120,10 +110,9 @@ test_3(uint64_t game_id)
 {
 	printf("\n= Requesting list of mods for game X on test-mod.io\n");
 	minimod_init(
-	  MINIMOD_ENVIRONMENT_TEST,
 	  API_KEY_TEST,
 	  NULL,
-	  false,
+	  MINIMOD_INITFLAG_TESTENV,
 	  MINIMOD_CURRENT_ABI);
 
 	int nrequests_completed = 0;
@@ -144,12 +133,7 @@ test_3(uint64_t game_id)
 	printf(
 	  "\n= Requesting list of mods for game {%" PRIu64 "} on live-mod.io\n",
 	  game_id);
-	minimod_init(
-	  MINIMOD_ENVIRONMENT_LIVE,
-	  API_KEY_LIVE,
-	  NULL,
-	  false,
-	  MINIMOD_CURRENT_ABI);
+	minimod_init(API_KEY_LIVE, NULL, 0, MINIMOD_CURRENT_ABI);
 
 	nrequests_completed = 0;
 	minimod_get_mods(
@@ -191,10 +175,9 @@ test_4(void)
 {
 	printf("\n= Email authentication workflow\n");
 	minimod_init(
-	  MINIMOD_ENVIRONMENT_TEST,
 	  API_KEY_TEST,
 	  NULL,
-	  false,
+	  MINIMOD_INITFLAG_TESTENV,
 	  MINIMOD_CURRENT_ABI);
 
 	if (minimod_is_authenticated())
@@ -295,10 +278,9 @@ test_5(void)
 {
 	printf("\n= Get Me\n");
 	minimod_init(
-	  MINIMOD_ENVIRONMENT_TEST,
 	  API_KEY_TEST,
 	  NULL,
-	  false,
+	  MINIMOD_INITFLAG_TESTENV,
 	  MINIMOD_CURRENT_ABI);
 
 	int wait = 1;
@@ -339,10 +321,9 @@ test_6(void)
 {
 	printf("\n= Get Modfiles\n");
 	minimod_init(
-	  MINIMOD_ENVIRONMENT_TEST,
 	  API_KEY_TEST,
 	  NULL,
-	  false,
+	  MINIMOD_INITFLAG_TESTENV,
 	  MINIMOD_CURRENT_ABI);
 
 	int wait = 1;
@@ -404,10 +385,9 @@ test_8(void)
 {
 	printf("\n= Installing Mod\n");
 	minimod_init(
-	  MINIMOD_ENVIRONMENT_TEST,
 	  API_KEY_TEST,
 	  NULL,
-	  true,
+	  MINIMOD_INITFLAG_TESTENV | MINIMOD_INITFLAG_UNZIP,
 	  MINIMOD_CURRENT_ABI);
 
 	// install the mod
@@ -469,10 +449,9 @@ test_9(void)
 {
 	printf("\n= Rating\n");
 	minimod_init(
-	  MINIMOD_ENVIRONMENT_TEST,
 	  API_KEY_TEST,
 	  NULL,
-	  false,
+	  MINIMOD_INITFLAG_TESTENV,
 	  MINIMOD_CURRENT_ABI);
 
 	int rating = -2;
@@ -522,10 +501,9 @@ test_10(void)
 {
 	printf("\n= Get Subscriptions\n");
 	minimod_init(
-	  MINIMOD_ENVIRONMENT_TEST,
 	  API_KEY_TEST,
 	  NULL,
-	  false,
+	  MINIMOD_INITFLAG_TESTENV,
 	  MINIMOD_CURRENT_ABI);
 
 	int wait = 1;
@@ -567,10 +545,9 @@ test_11(void)
 {
 	printf("\n= Get all mod events for game:\n");
 	minimod_init(
-	  MINIMOD_ENVIRONMENT_TEST,
 	  API_KEY_TEST,
 	  NULL,
-	  false,
+	  MINIMOD_INITFLAG_TESTENV,
 	  MINIMOD_CURRENT_ABI);
 
 	int wait = 1;
@@ -612,10 +589,9 @@ test_12(void)
 {
 	printf("\n= Get all user events:\n");
 	minimod_init(
-	  MINIMOD_ENVIRONMENT_TEST,
 	  API_KEY_TEST,
 	  NULL,
-	  false,
+	  MINIMOD_INITFLAG_TESTENV,
 	  MINIMOD_CURRENT_ABI);
 
 	int wait = 1;
@@ -652,10 +628,9 @@ test_13(void)
 {
 	printf("\n= Get dependencies:\n");
 	minimod_init(
-	  MINIMOD_ENVIRONMENT_TEST,
 	  API_KEY_TEST,
 	  NULL,
-	  false,
+	  MINIMOD_INITFLAG_TESTENV,
 	  MINIMOD_CURRENT_ABI);
 
 	int wait = 1;
