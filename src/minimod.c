@@ -449,6 +449,7 @@ handle_get_games(
 	if (error != 200)
 	{
 		task->callback.fptr.get_games(task->callback.userdata, 0, NULL, NULL);
+		free_task(task);
 		return;
 	}
 
@@ -479,6 +480,7 @@ handle_get_games(
 		free(games);
 	}
 
+	free_task(task);
 	free(buffer);
 }
 
@@ -496,6 +498,7 @@ handle_get_mods(
 	if (error != 200)
 	{
 		task->callback.fptr.get_mods(task->callback.userdata, 0, NULL, NULL);
+		free_task(task);
 		return;
 	}
 
@@ -533,6 +536,7 @@ handle_get_mods(
 		populate_mod(&mod, document);
 		task->callback.fptr.get_mods(task->callback.userdata, 1, &mod, NULL);
 	}
+	free_task(task);
 	free(buffer);
 }
 
@@ -550,6 +554,7 @@ handle_get_users(
 	if (error != 200)
 	{
 		task->callback.fptr.get_mods(task->callback.userdata, 0, NULL, NULL);
+		free_task(task);
 		return;
 	}
 
@@ -587,6 +592,7 @@ handle_get_users(
 		populate_user(&user, document);
 		task->callback.fptr.get_users(task->callback.userdata, 1, &user, NULL);
 	}
+	free_task(task);
 	free(buffer);
 }
 
@@ -604,6 +610,7 @@ handle_get_modfiles(
 	if (error != 200)
 	{
 		task->callback.fptr.get_modfiles(task->callback.userdata, 0, NULL, NULL);
+		free_task(task);
 		return;
 	}
 
@@ -645,6 +652,7 @@ handle_get_modfiles(
 		populate_modfile(&modfile, document);
 		task->callback.fptr.get_modfiles(task->callback.userdata, 1, &modfile, NULL);
 	}
+	free_task(task);
 	free(buffer);
 }
 
@@ -662,6 +670,7 @@ handle_get_events(
 	if (error != 200)
 	{
 		task->callback.fptr.get_events(task->callback.userdata, 0, NULL, NULL);
+		free_task(task);
 		return;
 	}
 
@@ -690,6 +699,7 @@ handle_get_events(
 
 	free(events);
 
+	free_task(task);
 	free(buffer);
 }
 
@@ -707,6 +717,7 @@ handle_get_dependencies(
 	if (error != 200)
 	{
 		task->callback.fptr.get_dependencies(task->callback.userdata, 0, NULL, NULL);
+		free_task(task);
 		return;
 	}
 
@@ -736,6 +747,7 @@ handle_get_dependencies(
 
 	free(deps);
 
+	free_task(task);
 	free(buffer);
 }
 
@@ -751,6 +763,7 @@ handle_email_request(
 	struct task *task = in_udata;
 	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
 	task->callback.fptr.email_request(task->callback.userdata, error == 200);
+	free_task(task);
 }
 
 
@@ -767,6 +780,8 @@ handle_email_exchange(
 	if (error != 200)
 	{
 		task->callback.fptr.email_exchange(task->callback.userdata, NULL, 0);
+		free_task(task);
+		return;
 	}
 
 	// parse data
@@ -792,6 +807,8 @@ handle_email_exchange(
 	  tok_bytes);
 
 	read_token();
+
+	free_task(task);
 }
 
 
@@ -816,6 +833,7 @@ handle_rate(
 		LOGE("Raiting not applied: %i", error);
 		task->callback.fptr.rate(task->callback.userdata, false);
 	}
+	free_task(task);
 }
 
 
@@ -832,6 +850,7 @@ handle_get_ratings(
 	if (error != 200)
 	{
 		task->callback.fptr.get_ratings(task->callback.userdata, 0, NULL, NULL);
+		free_task(task);
 		return;
 	}
 
@@ -864,6 +883,7 @@ handle_get_ratings(
 	free(ratings);
 
 	free(buffer);
+	free_task(task);
 }
 
 
@@ -1909,6 +1929,7 @@ minimod_get_installed_mod(
 		populate_mod(&mod, document);
 		in_callback(in_userdata, 1, &mod, NULL);
 
+		free(buffer);
 		free(filebuffer);
 	}
 	else
@@ -1933,7 +1954,9 @@ minimod_is_installed(uint64_t in_game_id, uint64_t in_mod_id)
 	  l_mmi.root_path,
 	  in_game_id,
 	  in_mod_id);
-	return (fsu_ptype(path) == FSU_PATHTYPE_FILE);
+	bool is_installed = (fsu_ptype(path) == FSU_PATHTYPE_FILE);
+	free(path);
+	return is_installed;
 }
 
 
@@ -2132,14 +2155,17 @@ minimod_subscribe(
 	task->meta64 = in_mod_id;
 	task->meta32 = 1;
 
-	netw_request(
-	  NETW_VERB_POST,
-	  path,
-	  headers,
-	  NULL,
-	  0,
-	  handle_subscription_change,
-	  task);
+	if (!netw_request(
+	      NETW_VERB_POST,
+	      path,
+	      headers,
+	      NULL,
+	      0,
+	      handle_subscription_change,
+	      task))
+	{
+		free_task(task);
+	}
 
 	free(path);
 
@@ -2185,14 +2211,17 @@ minimod_unsubscribe(
 	task->meta64 = in_mod_id;
 	task->meta32 = -1;
 
-	netw_request(
-	  NETW_VERB_DELETE,
-	  path,
-	  headers,
-	  NULL,
-	  0,
-	  handle_subscription_change,
-	  task);
+	if (!netw_request(
+	      NETW_VERB_DELETE,
+	      path,
+	      headers,
+	      NULL,
+	      0,
+	      handle_subscription_change,
+	      task))
+	{
+		free_task(task);
+	}
 
 	free(path);
 

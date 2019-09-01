@@ -60,7 +60,7 @@ struct task
 {
 	union netw_callback callback;
 	void *userdata;
-	NSMutableData *buffer;
+	CFMutableDataRef buffer;
 	FILE *file;
 };
 
@@ -124,11 +124,12 @@ is_random_server_error(void)
 			ASSERT(!task->file);
 			task->callback.request(
 			  task->userdata,
-			  task->buffer.bytes,
-			  task->buffer.length,
+			  CFDataGetBytePtr(task->buffer),
+			  (size_t)CFDataGetLength(task->buffer),
 			  (int)response.statusCode,
 			  (struct netw_header const *)response.allHeaderFields);
-			task->buffer = nil;
+			CFRelease(task->buffer);
+			task->buffer = NULL;
 		}
 		else
 		{
@@ -149,7 +150,8 @@ is_random_server_error(void)
 		else
 		{
 			task->callback.request(task->userdata, NULL, 0, -1, NULL);
-			task->buffer = nil;
+			CFRelease(task->buffer);
+			task->buffer = NULL;
 		}
 	}
 
@@ -172,7 +174,7 @@ is_random_server_error(void)
 	else
 	{
 		ASSERT(task->buffer);
-		[task->buffer appendData:in_data];
+		CFDataAppendBytes(task->buffer, in_data.bytes, (CFIndex)in_data.length);
 	}
 }
 @end
@@ -201,6 +203,7 @@ netw_deinit(void)
 	[l_netw.session invalidateAndCancel];
 	l_netw.session = nil;
 	l_netw.delegate = nil;
+	CFRelease(l_netw.task_dict);
 	l_netw.task_dict = nil;
 }
 
@@ -269,7 +272,7 @@ netw_request_generic(
 	task->file = fout;
 	if (!task->file)
 	{
-		task->buffer = [NSMutableData new];
+		task->buffer = CFDataCreateMutable(NULL, 0);
 	}
 
 	CFDictionarySetValue(l_netw.task_dict, nstask, task);
