@@ -17,7 +17,7 @@
 #define WLOG(...)
 #endif
 #define LOGE(FMT, ...) fprintf(stderr, "[util] " FMT "\n", ##__VA_ARGS__)
-#define WLOGE(FMT, ...) wfprintf(stderr, "[util] " FMT "\n", ##__VA_ARGS__)
+#define WLOGE(FMT, ...) fwprintf(stderr, "[util] " FMT "\n", ##__VA_ARGS__)
 
 #define ASSERT(in_condition)                                                 \
 	do                                                                       \
