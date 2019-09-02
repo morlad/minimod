@@ -13,8 +13,11 @@
 // CONFIG
 // ------
 #define API_KEY_LIVE "4cb29b99f25a2f0d1ba30c5a71419e5b"
-#define API_KEY_TEST "f90f25ceed3708627a5b85ee52e4f930"
-#define GAME_ID_TEST 309
+
+#define API_KEY_TEST "64a70c497c922857c435c1578562a118"
+#define GAME_ID_TEST 347
+#define MOD_ID_TEST 1889
+#define MODFILE_ID_TEST 1904
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -334,7 +337,7 @@ test_get_modfiles(void)
 	  MINIMOD_CURRENT_ABI);
 
 	int wait = 1;
-	minimod_get_modfiles(NULL, GAME_ID_TEST, 1720, 0, on_get_modfiles, &wait);
+	minimod_get_modfiles(NULL, GAME_ID_TEST, MOD_ID_TEST, 0, on_get_modfiles, &wait);
 
 	while (wait)
 	{
@@ -402,7 +405,7 @@ test_installation(void)
 
 	// install the mod
 	int wait = 1;
-	minimod_install(GAME_ID_TEST, 1720, 1685, on_installed, &wait);
+	minimod_install(GAME_ID_TEST, MOD_ID_TEST, MODFILE_ID_TEST, on_installed, &wait);
 
 	while (wait)
 	{
@@ -410,7 +413,7 @@ test_installation(void)
 	}
 
 	// make sure the mod is installed
-	bool is_installed = minimod_is_installed(GAME_ID_TEST, 1720);
+	bool is_installed = minimod_is_installed(GAME_ID_TEST, MOD_ID_TEST);
 	printf("== Mod is installed: %s\n", is_installed ? "YES" : "NO");
 
 	// enum all installed mods
@@ -420,7 +423,7 @@ test_installation(void)
 	// get data for the installed mod
 	printf("== Get installed mods:\n");
 	wait = 1;
-	minimod_get_installed_mod(GAME_ID_TEST, 1720, on_installed_mod, &wait);
+	minimod_get_installed_mod(GAME_ID_TEST, MOD_ID_TEST, on_installed_mod, &wait);
 	while (wait)
 	{
 		sys_sleep(10);
@@ -428,7 +431,7 @@ test_installation(void)
 
 	// undo stuff and deinstall the mod
 	printf("== Uninstalling Mod\n");
-	minimod_uninstall(GAME_ID_TEST, 1720);
+	minimod_uninstall(GAME_ID_TEST, MOD_ID_TEST);
 
 	minimod_deinit();
 }
@@ -469,7 +472,7 @@ test_rating(void)
 
 	int rating = -2;
 	minimod_get_ratings(
-	  "game_id=" STR(GAME_ID_TEST) "&mod_id=1720",
+	  "game_id=" STR(GAME_ID_TEST) "&mod_id=" STR(MOD_ID_TEST),
 	  on_get_ratings,
 	  &rating);
 	while (rating == -2)
@@ -479,7 +482,7 @@ test_rating(void)
 	printf("mod-rating is %i\n", rating);
 
 	int wait = 1;
-	minimod_rate(GAME_ID_TEST, 1720, rating == 1 ? -1 : 1, on_rated, &wait);
+	minimod_rate(GAME_ID_TEST, MOD_ID_TEST, rating == 1 ? -1 : 1, on_rated, &wait);
 	while (wait)
 	{
 		sys_sleep(10);
@@ -656,7 +659,7 @@ test_dependencies(void)
 	  MINIMOD_CURRENT_ABI);
 
 	int wait = 1;
-	minimod_get_dependencies(GAME_ID_TEST, 1720, on_dependencies, &wait);
+	minimod_get_dependencies(GAME_ID_TEST, MOD_ID_TEST, on_dependencies, &wait);
 
 	while (wait)
 	{
