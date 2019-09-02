@@ -44,13 +44,13 @@ extern "C" {
 
 /* Enum: minimod_initflag
  *
- * Some flags to configure how minimod operates. To be used when
- * calling <minimod_init()>.
+ * Flags to configure how minimod operates, used with <minimod_init()>.
  *
  * MINIMOD_INITFLAG_TESTENV - Connect to mod.io's test server instead of
  *	the live system. https://test.mod.io
- * MINIMOD_INITFLAG_UNZIP - When installing mods they will be extracted.
- *	If the client app cannot handle ZIP files directly, this is what you need.
+ * MINIMOD_INITFLAG_UNZIP - Mods are downloaded as ZIP files from mod.io.
+ *	If your game cannot handle those directly and needs the files to be
+ *	unpacked, this flag is what you are looking for.
  */
 enum minimod_initflag
 {
@@ -62,7 +62,7 @@ enum minimod_initflag
  *
  * Return values of <minimod_init()>.
  *
- * MINIMOD_ERR_OK - No error. Everthing's fine, mostly.
+ * MINIMOD_ERR_OK - No error. Everything's fine, mostly.
  * MINIMOD_ERR_ABI - ABI not compatible.
  * MINIMOD_ERR_PATH - Unable to access or create root-path.
  * MINIMOD_ERR_KEY - No or invalid API key.
@@ -222,6 +222,10 @@ struct minimod_event
 /* Struct: minimod_pagination
  *
  * https://docs.mod.io/#pagination
+ *
+ * If you wonder why *count* is not included: Every callback function with
+ *  a pagination parameter also has a *size_t nsomething* parameter that
+ *  contains the number of returned entries.
  */
 struct minimod_pagination
 {
@@ -231,45 +235,49 @@ struct minimod_pagination
 };
 
 /* Topic: [More Is Less]
-
-	minimod-structs only contain a subset of the underlying JSON
-	objects.
-
-	However, the structs include a *more* field, which can be used together
-	with the *minimod_get_more*-functions to access more fields.
-	- <minimod_get_more_string()>
-	- <minimod_get_more_int()>
-	- <minimod_get_more_bool()>
-	- <minimod_get_more_float()>
-
-	This way neither memory nor time is spent on extracting/converting
-	fields of the underlying JSON object, which may not even be required
-	by the calling code.
-	But they are still accessible when the need arises.
-	
-	This has *another advantage*: if the underlying API adds new fields
-	there is no need to update minimod, nor wait for minimod to be udpated
-	but the API's new features can be exploited immediately.
-
-	(start code)
-static void
-get_games_callback(void *udata, size_t ngames, struct minimod_game const *games, struct minimod_pagination const *pagi)
-{
-	for (size_t i = 0; i < ngames; ++i)
-	{
-		// use existing fields in struct minimod_game
-		printf("- %s {%" PRIu64 "}\n", games[i].name, games[i].id);
-		// access name_id in the underlying JSON object to generate the game's URL
-		printf("\t+ https://%s.mod.io\n", minimod_get_more_string(games[i].more, "name_id"));
-		// access even more data to show when the game was added to mod.io
-		time_t added = (time_t)minimod_get_more_int(games[i].more, "date_added");
-		printf("\t+ date added: %s\n", ctime(&added));
-	}
-}
-	(end)
-*/
+ *
+ *   minimod-structs only contain a subset of the underlying JSON
+ *   objects.
+ *
+ *   However, the structs include a *more* field, which can be used together
+ *   with the *minimod_get_more*-functions to access more fields.
+ *   - <minimod_get_more_string()>
+ *   - <minimod_get_more_int()>
+ *   - <minimod_get_more_bool()>
+ *   - <minimod_get_more_float()>
+ *
+ *   This way neither memory nor time is spent on extracting/converting
+ *   fields of the underlying JSON object, which may not even be required
+ *   by the calling code.
+ *   But they are still accessible should the need arise.
+ *   
+ *   This has *another advantage*: if the underlying API adds new fields
+ *   there is no need to update minimod, nor wait for minimod to be updated
+ *   but the API's new features can be exploited immediately.
+ *
+ *   Example:
+ *   (start code)
+ * static void
+ * get_games_callback(void *udata, size_t ngames, struct minimod_game const *games, struct minimod_pagination const *pagi)
+ * {
+ * 	for (size_t i = 0; i < ngames; ++i)
+ * 	{
+ * 		// use existing fields in struct minimod_game
+ * 		printf("- %s {%" PRIu64 "}\n", games[i].name, games[i].id);
+ * 		// access name_id in the underlying JSON object to generate the game's URL
+ * 		printf("\t+ https://%s.mod.io\n", minimod_get_more_string(games[i].more, "name_id"));
+ * 		// access even more data to show when the game was added to mod.io
+ * 		time_t added = (time_t)minimod_get_more_int(games[i].more, "date_added");
+ * 		printf("\t+ date added: %s\n", ctime(&added));
+ * 	}
+ * }
+ *   (end)
+ */
 
 /* Callback: minimod_get_games_callback()
+ *
+ * See:
+ *	<minimod_get_games()>
  */
 typedef void (*minimod_get_games_callback)(
   void *userdata,
@@ -278,6 +286,10 @@ typedef void (*minimod_get_games_callback)(
   struct minimod_pagination const *pagi);
 
 /* Callback: minimod_get_mods_callback()
+ *
+ * See:
+ *  <minimod_get_mods()>, <minimod_get_installed_mod()>,
+ *  <minimod_get_subscriptions()>
  */
 typedef void (*minimod_get_mods_callback)(
   void *userdata,
@@ -286,6 +298,9 @@ typedef void (*minimod_get_mods_callback)(
   struct minimod_pagination const *pagi);
 
 /* Callback: minimod_get_modfiles_callback()
+ *
+ * See:
+ *  <minimod_get_modfiles()>
  */
 typedef void (*minimod_get_modfiles_callback)(
   void *userdata,
@@ -294,6 +309,9 @@ typedef void (*minimod_get_modfiles_callback)(
   struct minimod_pagination const *pagi);
 
 /* Callback: minimod_get_users_callback()
+ *
+ * See:
+ *  <minimod_get_me()>
  */
 typedef void (*minimod_get_users_callback)(
   void *userdata,
@@ -302,13 +320,22 @@ typedef void (*minimod_get_users_callback)(
   struct minimod_pagination const *pagi);
 
 /* Callback: minimod_email_request_callback()
+ *
+ * Parameters:
+ *	success - *true* if the request was transmitted successfully
+ *
+ * See:
+ *  <minimod_email_request()>
  */
 typedef void (*minimod_email_request_callback)(void *userdata, bool success);
 
 /* Callback: minimod_email_exchange_callback()
  *
- * If the authorization attempt failed token is NULL and ntoken_bytes is 0.
- * Otherwise token is a pointer to the access-token of ntoken_bytes.
+ * If the authorization attempt failed *token* is NULL and *ntoken_bytes* is 0.
+ * Otherwise *token* is a pointer to the access-token of *ntoken_bytes*.
+ *
+ * See:
+ *  <minimod_email_exchange()>
  */
 typedef void (*minimod_email_exchange_callback)(
   void *userdata,
@@ -316,6 +343,14 @@ typedef void (*minimod_email_exchange_callback)(
   size_t ntoken_bytes);
 
 /* Callback: minimod_install_callback()
+ *
+ * Parameters:
+ *  in_success - true if the installation went according to plan
+ *  in_game_id - game-id of the installed mod
+ *  in_mod_id - mod-id of the installed mod
+ *
+ * See:
+ *  <minimod_install()>
  */
 typedef void (*minimod_install_callback)(
   void *in_userdata,
@@ -326,8 +361,11 @@ typedef void (*minimod_install_callback)(
 /* Callback: minimod_enum_installed_mods_callback()
  *
  * Called once for each currently installed mod.
- * in_path is either the path to the ZIP file or directory where the mod
- * was extracted, if minimod was told to do so (See <minimod_initflag>)
+ * *in_path* is either the path to the ZIP file or directory where the mod
+ * was extracted to, if minimod was told to do so (See <minimod_initflag>).
+ *
+ * See:
+ *  <minimod_enum_installed_mods()>
  */
 typedef void (*minimod_enum_installed_mods_callback)(
   void *in_userdata,
@@ -337,7 +375,8 @@ typedef void (*minimod_enum_installed_mods_callback)(
 
 /* Callback: minimod_get_events_callback()
  *
- * Used in <minimod_get_user_events()> and <minimod_get_mod_events()>
+ * See:
+ *  <minimod_get_user_events()>, <minimod_get_mod_events()>
  */
 typedef void (*minimod_get_events_callback)(
   void *userdata,
@@ -347,7 +386,8 @@ typedef void (*minimod_get_events_callback)(
 
 /* Callback: minimod_get_dependencies_callback()
  *
- * Used in <minimod_get_dependencies()>
+ * See:
+ *  <minimod_get_dependencies()>
  */
 typedef void (*minimod_get_dependencies_callback)(
   void *userdata,
@@ -356,10 +396,16 @@ typedef void (*minimod_get_dependencies_callback)(
   struct minimod_pagination const *pagi);
 
 /* Callback: minimod_rate_callback()
+ *
+ * See:
+ *  <minimod_rate()>
  */
 typedef void (*minimod_rate_callback)(void *userdata, bool success);
 
 /* Callback: minimod_get_ratings_callback()
+ *
+ * See:
+ *	<minimod_get_ratings()>
  */
 typedef void (*minimod_get_ratings_callback)(
   void *userdata,
@@ -368,6 +414,13 @@ typedef void (*minimod_get_ratings_callback)(
   struct minimod_pagination const *pagi);
 
 /* Callback: minimod_subscription_change_callback()
+ *
+ * Parameters:
+ *	mod_id - mod-id of the subscribed/unsubscribed mod.
+ *	change - 1 = subscribed; -1 = unsubscribed; 0 = error.
+ *
+ * See:
+ *  <minimod_subscribe()>, <minimod_unsubscribe()>
  */
 typedef void (*minimod_subscription_change_callback)(
   void *userdata,
@@ -377,21 +430,24 @@ typedef void (*minimod_subscription_change_callback)(
 /* Function: minimod_init()
  *
  * Not surprisingly this needs to be called before any other minimod_*
- * functions can be (successfully) called.
+ * functions can be (successfully) used.
  *
  * Parameters:
  *	in_api_key - Your API key. Get one at https://mod.io/apikey/widget
  *		or https://test.mod.io/apikey/widget
  *	in_root_path - Absolute or relative root path where data/mods &c. will
- *		be stored. Needs to be writeable by the user (surprise). If the
+ *		be stored. Needs to be writeable by the user. If the
  *		directory does not yet exist, it will be created automatically.
- *	in_flags - Combination of <minimod_initflag>.
+ *	in_flags - Combination of <minimod_initflag>s.
  *	in_abi_version - Has to be MINIMOD_CURRENT_ABI.
  *		This bit is used to make sure the actual library and the header
  *		you were compiling against are ABI compatible.
  *
  * Returns:
  *	MINIMOD_ERR_OK on success. See <minimod_err> for possible errors.
+ *
+ * See:
+ *  <minimod_deinit()>
  */
 MINIMOD_LIB enum minimod_err
 minimod_init(
@@ -401,14 +457,20 @@ minimod_init(
   uint32_t in_abi_version);
 
 /* Function: minimod_deinit()
+ *
+ * When you are done with minimod, call this function to free all resources.
  */
 MINIMOD_LIB void
 minimod_deinit(void);
 
 /* Function: minimod_set_debugtesting()
  *
- * Set max_delay to 0 to disable latency-simulation.
- * min_delay needs to be <= max_delay.
+ * Enable random delays in server responses and a chance for failed
+ * requests. This is meant to help battle-hardening the client application
+ * against variable and long response times as well as server failures.
+ *
+ * Set *max_delay* to 0 to disable latency-simulation.
+ * *min_delay* needs to be *<= max_delay*.
  *
  * Parameters:
  *	error_rate - [0;100]% specify chance of internal server error
@@ -421,27 +483,26 @@ minimod_set_debugtesting(int error_rate, int min_delay, int max_delay);
 /* Topic: Queries */
 
 /* Topic: [Filtering Sorting Pagination]
-
-	Many functions have an *in_filter* parameter.
-	This string is sent verbatim (after percent-encoding accordingly)
-	to the mod.io API.
-
-	It is called *in_filter* but it is really meant to be a combination
-	of Filtering (https://docs.mod.io/#filtering),
-	Sorting (https://docs.mod.io/#sorting) and
-	Pagination (https://docs.mod.io/#pagination).
-
-	Example for *in_filter* that returns the 10 highest rated mods
-	with names ending in "Asset Pack":
-	(start code)
-	char const *filter = "name-lk=*Asset Pack&_sort=-rating&_limit=10";
-	(end)
+ *
+ *  Many functions have an *in_filter* parameter.
+ *  This string is sent verbatim (after percent-encoding accordingly)
+ *  to the mod.io API.
+ *
+ *  It is called *in_filter* but it is really meant to be a combination
+ *  of Filtering (https://docs.mod.io/#filtering),
+ *  Sorting (https://docs.mod.io/#sorting) and
+ *  Pagination (https://docs.mod.io/#pagination).
+ *
+ *  Example for *in_filter* that returns the 10 highest rated mods
+ *  with names ending in "Asset Pack":
+ *  (start code)
+ *  char const *filter = "name-lk=*Asset Pack&_sort=-rating&_limit=10";
+ *  (end)
  */
 
 /* Function: minimod_get_games()
  *
- *	Retrieve all available games on the mod.io environment selected
- *	during minimod_init().
+ *	Retrieve all available games on mod.io.
  *
  *	Parameters:
  *		in_filter - Can be NULL, otherwise see <[Filtering Sorting Pagination]>
@@ -454,11 +515,14 @@ minimod_get_games(
 
 /* Function: minimod_get_mods()
  *
- * Retrieve a list of mods for *in_game_id*.
+ * Retrieve a list of mods for *in_game_id*. Or if *in_mod_id* is also set
+ * only information for this specific mod is retrieved.
  *
  *	Parameters:
  *		in_filter - Can be NULL, otherwise see <[Filtering Sorting Pagination]>
  *		in_game_id - ID of the game for which a list of mods shall be retrieved
+ *		in_mod_id - ID for the specific mod to retrieve data about, or 0
+ *			to get all mods for the game.
  */
 MINIMOD_LIB void
 minimod_get_mods(
@@ -500,11 +564,11 @@ minimod_get_modfiles(
  *			all the mods of the specified game to be fetched
  *		in_date_cutoff - Is optional and can be set to 0 and is otherwise
  *			just a shorthand to limit the events to newer ones than the
- *			cutoff date, without requiring to use in_filter just for that
+ *			cutoff date, without requiring to use *in_filter* just for that
  *
  * Example:
  *		This way it is easy to check for an updated version of an already
- *		installed mod. If *on_check_for_updates()* is called with
+ *		installed mod. If the callback *on_check_for_updates()* is called with
  *		*nevents == 0*, then the installed modfile is up to date.
  *
  * (start code)
@@ -527,6 +591,12 @@ minimod_get_mod_events(
   void *in_userdata);
 
 /* Function: minimod_get_dependencies()
+ *
+ * Retrieve all dependencies for the specified mod.
+ *
+ * Parameters:
+ *  in_game_id - id of the game to which the mod belongs
+ *  in_mod_id - id of the mod
  */
 MINIMOD_LIB void
 minimod_get_dependencies(
@@ -539,16 +609,30 @@ minimod_get_dependencies(
 /* Topic: Authentication */
 
 /* Function: minimod_is_authenticated()
+ *
+ * Returns:
+ *  true if an access token is locally available.
+ *  But the token may be expired or invalidated by the server, so this
+ *  is not a guarantee that a call will succeed. If a call fails because
+ *  the token is invalid, minimod automatically removes the token and
+ *  *minimod_is_authenticated()* will return false from there on.
+ *
+ * See:
+ *	<minimod_deauthenticate()>
  */
 MINIMOD_LIB bool
 minimod_is_authenticated(void);
 
 /* Function: minimod_deauthenticate()
+ *
+ * Remove the current access token from the system.
  */
 MINIMOD_LIB void
 minimod_deauthenticate(void);
 
 /* Function: minimod_email_request()
+ *
+ * Request an authentication code to be sent to *in_email*.
  */
 MINIMOD_LIB void
 minimod_email_request(
@@ -557,6 +641,9 @@ minimod_email_request(
   void *in_userdata);
 
 /* Function: minimod_email_exchange()
+ *
+ * Request an access token by sending *in_code*, which was requested
+ * previously with <minimod_email_request()>, to the server.
  */
 MINIMOD_LIB void
 minimod_email_exchange(
@@ -606,7 +693,9 @@ minimod_get_user_events(
 
 /* Function: minimod_install()
  *
- * Installs a mod to the mod directory.
+ * Install a mod to the mod directory. This will either just download the
+ * ZIP file or, if MINIMOD_INITFLAG_UNZIP was set, decompress the ZIP file
+ * into a directory.
  *
  * Parameters:
  *	in_game_id - Cannot be 0.
@@ -623,7 +712,7 @@ minimod_install(
 
 /* Function: minimod_uninstall()
  *
- * Attempts to uninstall (delete) the specified mod.
+ * Attempt to uninstall (delete) the specified mod.
  */
 MINIMOD_LIB bool
 minimod_uninstall(uint64_t in_game_id, uint64_t in_mod_id);
@@ -645,6 +734,12 @@ MINIMOD_LIB bool
 minimod_is_downloading(uint64_t in_game_id, uint64_t in_mod_id);
 
 /* Function: minimod_enum_installed_mods()
+ *
+ * Enumerate all currently installed mods.
+ *
+ * Parameters:
+ *  in_game_id - Can either specify a game-id to limit the enumeration
+ *		or 0 to enumerate all installed mods.
  */
 MINIMOD_LIB void
 minimod_enum_installed_mods(
@@ -653,6 +748,14 @@ minimod_enum_installed_mods(
   void *in_userdata);
 
 /* Function: minimod_get_installed_mod()
+ *
+ * Get the cached information for a installed mod.
+ * Since mod-data (descriptions, names, &c.) may change as the mod evolves,
+ * minimod stores the mod-information at the time of installing. This
+ * function accesses this data.
+ *
+ * Returns:
+ *  false if the specified mod is not installed.
  */
 MINIMOD_LIB bool
 minimod_get_installed_mod(
@@ -665,6 +768,8 @@ minimod_get_installed_mod(
 /* Topic: Ratings */
 
 /* Function: minimod_rate()
+ *
+ * Rate a mod as the currently authenticated user.
  *
  * Params:
  *	in_rating - Accepts any integer other than 0. Positive value is
@@ -680,6 +785,8 @@ minimod_rate(
   void *in_userdata);
 
 /* Function: minimod_get_ratings()
+ *
+ * Retrieve all ratings of currently authenticated user.
  */
 MINIMOD_LIB void
 minimod_get_ratings(
@@ -691,6 +798,8 @@ minimod_get_ratings(
 /* Topic: Subscriptions */
 
 /* Function: minimod_get_subscriptions()
+ *
+ * Retrieve all subscriptions of the currently authenticated user.
  */
 MINIMOD_LIB void
 minimod_get_subscriptions(
@@ -699,6 +808,11 @@ minimod_get_subscriptions(
   void *in_userdata);
 
 /* Function: minimod_subscribe()
+ *
+ * Subscribe to a mod.
+ *
+ * See:
+ *  <minimod_unsubscribe()>
  */
 MINIMOD_LIB bool
 minimod_subscribe(
@@ -708,6 +822,11 @@ minimod_subscribe(
   void *in_userdata);
 
 /* Function: minimod_unsubscribe()
+ *
+ * Unsubscribe from a mod.
+ *
+ * See:
+ *  <minimod_subscribe()>
  */
 MINIMOD_LIB bool
 minimod_unsubscribe(
