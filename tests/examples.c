@@ -32,10 +32,12 @@ sys_sleep(uint32_t ms)
 }
 #endif
 
-// just init
-// ---------
+
+// ===================================================================
+// JUST INIT+DEINIT
+// -------------------------------------------------------------------
 static void
-test_1(void)
+test_init(void)
 {
 	printf("\n= Simple init()/deinit() test\n");
 	minimod_init(API_KEY_TEST, NULL, 0, MINIMOD_CURRENT_ABI);
@@ -44,10 +46,11 @@ test_1(void)
 }
 
 
-// get all games
-// -------------
+// ===================================================================
+// GET GAMES
+// -------------------------------------------------------------------
 static void
-get_games_callback(
+get_all_games_callback(
   void *udata,
   size_t ngames,
   struct minimod_game const *games,
@@ -69,13 +72,13 @@ get_games_callback(
 
 
 static void
-test_2(void)
+test_get_all_games(void)
 {
 	printf("\n= Requesting list of live games on mod.io\n");
 	minimod_init(API_KEY_LIVE, NULL, 0, MINIMOD_CURRENT_ABI);
 
 	int nrequests_completed = 0;
-	minimod_get_games(NULL, get_games_callback, &nrequests_completed);
+	minimod_get_games(NULL, get_all_games_callback, &nrequests_completed);
 
 	while (nrequests_completed == 0)
 	{
@@ -86,9 +89,11 @@ test_2(void)
 }
 
 
-// get all mods
+// ===================================================================
+// GET MODS
+// -------------------------------------------------------------------
 static void
-get_mods_callback(
+on_get_all_mods(
   void *udata,
   size_t nmods,
   struct minimod_mod const *mods,
@@ -105,7 +110,7 @@ get_mods_callback(
 
 
 static void
-test_3(uint64_t game_id)
+test_get_all_mods(uint64_t game_id)
 {
 	printf("\n= Requesting list of mods for game X on test-mod.io\n");
 	minimod_init(
@@ -119,7 +124,7 @@ test_3(uint64_t game_id)
 	  NULL,
 	  GAME_ID_TEST,
 	  0,
-	  get_mods_callback,
+	  on_get_all_mods,
 	  &nrequests_completed);
 
 	while (nrequests_completed < 1)
@@ -139,7 +144,7 @@ test_3(uint64_t game_id)
 	  NULL,
 	  game_id,
 	  0,
-	  get_mods_callback,
+	  on_get_all_mods,
 	  &nrequests_completed);
 
 	while (nrequests_completed < 1)
@@ -151,8 +156,9 @@ test_3(uint64_t game_id)
 }
 
 
-// authentication
-// --------------
+// ===================================================================
+// AUTHENTICATION
+// -------------------------------------------------------------------
 static void
 on_email_request(void *in_udata, bool in_success)
 {
@@ -170,7 +176,7 @@ on_email_exchange(void *in_udata, char const *in_token, size_t in_bytes)
 
 
 static bool
-test_4(void)
+test_authentication(void)
 {
 	printf("\n= Email authentication workflow\n");
 	minimod_init(
@@ -254,8 +260,9 @@ test_4(void)
 }
 
 
-// me
-// --
+// ===================================================================
+// ME
+// -------------------------------------------------------------------
 static void
 on_get_users(
   void *in_udata,
@@ -273,7 +280,7 @@ on_get_users(
 
 
 static void
-test_5(void)
+test_me(void)
 {
 	printf("\n= Get Me\n");
 	minimod_init(
@@ -294,8 +301,9 @@ test_5(void)
 }
 
 
-// modfiles
-// --------
+// ===================================================================
+// MODFILES
+// -------------------------------------------------------------------
 static void
 on_get_modfiles(
   void *in_udata,
@@ -316,7 +324,7 @@ on_get_modfiles(
 
 
 static void
-test_6(void)
+test_get_modfiles(void)
 {
 	printf("\n= Get Modfiles\n");
 	minimod_init(
@@ -337,6 +345,9 @@ test_6(void)
 }
 
 
+// ===================================================================
+// INSTALLATION &c.
+// -------------------------------------------------------------------
 static void
 on_installed(
   void *in_udata,
@@ -380,7 +391,7 @@ on_installed_mod(
 
 
 static void
-test_8(void)
+test_installation(void)
 {
 	printf("\n= Installing Mod\n");
 	minimod_init(
@@ -423,6 +434,9 @@ test_8(void)
 }
 
 
+// ===================================================================
+// RATINGS
+// -------------------------------------------------------------------
 static void
 on_get_ratings(
   void *in_udata,
@@ -444,7 +458,7 @@ on_rated(void *in_udata, bool in_success)
 
 
 static void
-test_9(void)
+test_rating(void)
 {
 	printf("\n= Rating\n");
 	minimod_init(
@@ -475,6 +489,9 @@ test_9(void)
 }
 
 
+// ===================================================================
+// SUBSCRIPTIONS
+// -------------------------------------------------------------------
 static void
 on_subscriptions(
   void *udata,
@@ -496,7 +513,7 @@ on_subscriptions(
 
 
 static void
-test_10(void)
+test_subscription(void)
 {
 	printf("\n= Get Subscriptions\n");
 	minimod_init(
@@ -517,7 +534,9 @@ test_10(void)
 }
 
 
-// get_mod_events
+// ===================================================================
+// MOD EVENTS
+// -------------------------------------------------------------------
 static void
 on_mod_events(
   void *in_userdata,
@@ -540,7 +559,7 @@ on_mod_events(
 
 
 static void
-test_11(void)
+test_mod_events(void)
 {
 	printf("\n= Get all mod events for game:\n");
 	minimod_init(
@@ -561,7 +580,9 @@ test_11(void)
 }
 
 
-// get_user_events
+// ===================================================================
+// USER EVENTS
+// -------------------------------------------------------------------
 static void
 on_user_events(
   void *in_userdata,
@@ -584,7 +605,7 @@ on_user_events(
 
 
 static void
-test_12(void)
+test_user_events(void)
 {
 	printf("\n= Get all user events:\n");
 	minimod_init(
@@ -605,7 +626,9 @@ test_12(void)
 }
 
 
-// get_dependencies
+// ===================================================================
+// DEPENDENCIES
+// -------------------------------------------------------------------
 static void
 on_dependencies(
   void *in_userdata,
@@ -623,7 +646,7 @@ on_dependencies(
 
 
 static void
-test_13(void)
+test_dependencies(void)
 {
 	printf("\n= Get dependencies:\n");
 	minimod_init(
@@ -649,18 +672,18 @@ main(void)
 {
 	printf("[test] Starting\n");
 
-	test_1();
-	test_2();
-	test_3(1);
-	test_4();
-	test_5();
-	test_6();
-	test_8();
-	test_9();
-	test_10();
-	test_11();
-	test_12();
-	test_13();
+	test_init();
+	test_get_all_games();
+	test_get_all_mods(1);
+	test_authentication();
+	test_me();
+	test_get_modfiles();
+	test_installation();
+	test_rating();
+	test_subscription();
+	test_mod_events();
+	test_user_events();
+	test_dependencies();
 
 	printf("[test] Done\n");
 
