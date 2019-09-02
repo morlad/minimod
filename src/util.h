@@ -7,7 +7,7 @@
  *
  * Topic: Introduction
  *
- * Some utility functions used by minimod and netw.
+ * Some utility functions used by minimod and netw internally.
  */
 
 #ifndef __cplusplus
@@ -32,8 +32,15 @@ extern "C" {
 
 /* Section: API */
 
-
 /* Enum: fsu_pathtype
+ *
+ * Types of directory entries.
+ *
+ * FSU_PATHTYPE_NONE - no directory entry found
+ * FSU_PATHTYPE_FILE - regular file
+ * FSU_PATHTYPE_DIR - directory
+ * FSU_PATHTYPE_OTHER - there is a directory entry, but it is neither a
+ *	directory nor a file. i.e. pipe
  */
 enum fsu_pathtype
 {
@@ -43,8 +50,16 @@ enum fsu_pathtype
 	FSU_PATHTYPE_OTHER,
 };
 
-
-/** Callback: fsu_enum_dir_callback()
+/* Callback: fsu_enum_dir_callback()
+ *
+ * Called by <fsu_enum_dir()> for every entry in a directory.
+ *
+ * Paramters:
+ *	root - Path of the enumerated directory, ending with '/'.
+ *		i.e. "/home/johnd/games/"
+ *	name - Name of the directory entry
+ *	is_dir - true if this entry is a directory, false otherwise
+ *	in_userdata - in_userdata passed to <fsu_enum_dir()>
  */
 typedef void (*fsu_enum_dir_callback)(
   char const *root,
@@ -52,14 +67,15 @@ typedef void (*fsu_enum_dir_callback)(
   bool is_dir,
   void *in_userdata);
 
-
 /* Function: fsu_ptype()
  *
  * Check if a path points at a directory, file, nothing or something else.
+ *
+ * Returns:
+ *	Any of <fsu_pathtype>.
  */
 enum fsu_pathtype
 fsu_ptype(char const *path);
-
 
 /* Function: fsu_fsize()
  *
@@ -71,7 +87,6 @@ fsu_ptype(char const *path);
 int64_t
 fsu_fsize(char const *path);
 
-
 /* Function: fsu_fopen()
  *
  *	fopen()-wrapper that does 2 things
@@ -81,14 +96,12 @@ fsu_fsize(char const *path);
 FILE *
 fsu_fopen(char const *path, char const *mode);
 
-
 /* Function: fsu_mkdir()
  *
  *	Create directory. Recursively up to the last '/'.
  */
 bool
 fsu_mkdir(char const *path);
-
 
 /* Function: fsu_rmdir()
  *
@@ -97,14 +110,12 @@ fsu_mkdir(char const *path);
 bool
 fsu_rmdir(char const *path);
 
-
 /* Function: fsu_rmdir_recursive()
  *
  *	TL;DR: rm -rf
  */
 bool
 fsu_rmdir_recursive(char const *path);
-
 
 /* Function: fsu_mvfile()
  *
@@ -113,7 +124,6 @@ fsu_rmdir_recursive(char const *path);
 bool
 fsu_mvfile(char const *from, char const *to, bool in_replace);
 
-
 /* Function: fsu_rmfile()
  *
  *	Remove file.
@@ -121,8 +131,13 @@ fsu_mvfile(char const *from, char const *to, bool in_replace);
 bool
 fsu_rmfile(char const *path);
 
-
 /* Function: fsu_enum_dir()
+ *
+ * Enumerate a directory by calling in_callback function for every
+ * entry in in_dir.
+ *
+ * Note:
+ *	No dot-files are enumerated. (That are files, with a name starting with '.')
  *
  * Parameters:
  *	in_dir - Needs to end with '/' and be a valid directory.
@@ -133,7 +148,6 @@ fsu_enum_dir(
   fsu_enum_dir_callback in_callback,
   void *in_userdata);
 
-
 /* Function: sys_sleep()
  *
  * Sleep thread for certain amount of milliseconds.
@@ -141,13 +155,19 @@ fsu_enum_dir(
 void
 sys_sleep(uint32_t ms);
 
-
+/* Function: sys_seconds()
+ *
+ * Gets the number of seconds elapsed from some arbitrary point in time.
+ * 
+ * Attention:
+ *  Do not rely on it being the unix-epoch!
+ */
 time_t
 sys_seconds(void);
 
-
 #ifndef UTIL_HAS_THREADS_H
-
+// if there is no system/compiler provided implementation of C11's threads.h
+// use this barebones mtx-functions to provide the required functionality.
 #ifdef _WIN32
 typedef CRITICAL_SECTION mtx_t;
 #else
@@ -187,7 +207,6 @@ mtx_destroy(mtx_t *mutex);
 size_t
 sys_wchar_from_utf8(char const *in, wchar_t *out, size_t chars);
 
-
 /* Function: sys_utf8_from_wchar()
  *
  * Convert wchar_t to utf8
@@ -199,7 +218,6 @@ sys_wchar_from_utf8(char const *in, wchar_t *out, size_t chars);
  */
 size_t
 sys_utf8_from_wchar(wchar_t const *in, char *out, size_t bytes);
-
 
 // add missing functions to win32
 int

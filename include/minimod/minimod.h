@@ -42,8 +42,7 @@ extern "C" {
 
 /* Section: API */
 
-/*
- * Enum: minimod_initflag
+/* Enum: minimod_initflag
  *
  * Some flags to configure how minimod operates. To be used when
  * calling <minimod_init()>.
@@ -59,9 +58,7 @@ enum minimod_initflag
 	MINIMOD_INITFLAG_UNZIP = 2,
 };
 
-
-/*
- * Enum: minimod_err
+/* Enum: minimod_err
  *
  * Return values of <minimod_init()>.
  *
@@ -80,9 +77,26 @@ enum minimod_err
 	MINIMOD_ERR_NET,
 };
 
-
-/*
- * Enum: minimod_eventtype
+/* Enum: minimod_eventtype
+ *
+ * Different event types of the mod.io API.
+ *
+ * MINIMOD_EVENTTYPE_UNKNOWN - APIs event type string is unknown
+ *
+ * https://docs.mod.io/#get-user-events
+ *
+ * MINIMOD_EVENTTYPE_SUBSCRIBE - "USER_SUBSCRIBE"
+ * MINIMOD_EVENTTYPE_UNSUBSCRIBE - "USER_UNSUBSCRIBE"
+ * MINIMOD_EVENTTYPE_TEAM_JOIN - "USER_TEAM_JOIN"
+ * MINIMOD_EVENTTYPE_TEAM_LEAVE - "USER_TEAM_LEAVE"
+ *
+ * https://docs.mod.io/#events
+ *
+ * MINIMOD_EVENTTYPE_MOD_AVAILABLE - "MOD_AVAILABLE"
+ * MINIMOD_EVENTTYPE_MOD_UNAVAILABLE - "MOD_UNAVAILABLE"
+ * MINIMOD_EVENTTYPE_MOD_EDITED - "MOD_EDITED"
+ * MINIMOD_EVENTTYPE_MOD_DELETED - "MOD_DELETED"
+ * MINIMOD_EVENTTYPE_MODFILE_CHANGED - "MODFILE_CHANGED"
  */
 enum minimod_eventtype
 {
@@ -98,9 +112,7 @@ enum minimod_eventtype
 	MINIMOD_EVENTTYPE_MODFILE_CHANGED,
 };
 
-
-/*
- * Struct: minimod_game
+/* Struct: minimod_game
  *
  * https://docs.mod.io/#game-object
  *
@@ -113,9 +125,7 @@ struct minimod_game
 	void const *more;
 };
 
-
-/*
- * Struct: minimod_stats
+/* Struct: minimod_stats
  *
  * https://docs.mod.io/#stats-object
  *
@@ -131,9 +141,7 @@ struct minimod_stats
 	void const *more;
 };
 
-
-/*
- * Struct: minimod_user
+/* Struct: minimod_user
  *
  * https://docs.mod.io/#user-object
  *
@@ -146,9 +154,7 @@ struct minimod_user
 	void const *more;
 };
 
-
-/*
- * Struct: minimod_mod
+/* Struct: minimod_mod
  *
  * https://docs.mod.io/#mod-object
  *
@@ -164,9 +170,7 @@ struct minimod_mod
 	struct minimod_stats stats;
 };
 
-
-/*
- * Struct: minimod_modfile
+/* Struct: minimod_modfile
  *
  * https://docs.mod.io/#modfile-object
  *
@@ -181,11 +185,11 @@ struct minimod_modfile
 	void const *more;
 };
 
-
-/*
- * Struct: minimod_rating
+/* Struct: minimod_rating
  *
  * https://docs.mod.io/#rating-object
+ *
+ * more - Allows access to more data (<[More Is Less]>)
  */
 struct minimod_rating
 {
@@ -196,12 +200,12 @@ struct minimod_rating
 	void const *more;
 };
 
-
-/*
- * Struct: minimod_event
+/* Struct: minimod_event
  *
- * https://docs.mod.io/#user-event-object
+ * https://docs.mod.io/#user-event-object and
  * https://docs.mod.io/#mod-event-object
+ *
+ * more - Allows access to more data (<[More Is Less]>)
  */
 struct minimod_event
 {
@@ -215,9 +219,9 @@ struct minimod_event
 	char _padding[4];
 };
 
-
-/*
- * Struct: minimod_pagination
+/* Struct: minimod_pagination
+ *
+ * https://docs.mod.io/#pagination
  */
 struct minimod_pagination
 {
@@ -225,7 +229,6 @@ struct minimod_pagination
 	uint64_t limit;
 	uint64_t total;
 };
-
 
 /* Topic: [More Is Less]
 
@@ -258,7 +261,7 @@ get_games_callback(void *udata, size_t ngames, struct minimod_game const *games,
 		printf("- %s {%" PRIu64 "}\n", games[i].name, games[i].id);
 		// access name_id in the underlying JSON object to generate the game's URL
 		printf("\t+ https://%s.mod.io\n", minimod_get_more_string(games[i].more, "name_id"));
-		// access even more data to show when the game got added to mod.io
+		// access even more data to show when the game was added to mod.io
 		time_t added = (time_t)minimod_get_more_int(games[i].more, "date_added");
 		printf("\t+ date added: %s\n", ctime(&added));
 	}
@@ -266,9 +269,7 @@ get_games_callback(void *udata, size_t ngames, struct minimod_game const *games,
 	(end)
 */
 
-
-/*
- * Callback: minimod_get_games_callback()
+/* Callback: minimod_get_games_callback()
  */
 typedef void (*minimod_get_games_callback)(
   void *userdata,
@@ -276,9 +277,7 @@ typedef void (*minimod_get_games_callback)(
   struct minimod_game const *games,
   struct minimod_pagination const *pagi);
 
-
-/*
- * Callback: minimod_get_mods_callback()
+/* Callback: minimod_get_mods_callback()
  */
 typedef void (*minimod_get_mods_callback)(
   void *userdata,
@@ -286,9 +285,7 @@ typedef void (*minimod_get_mods_callback)(
   struct minimod_mod const *mods,
   struct minimod_pagination const *pagi);
 
-
-/*
- * Callback: minimod_get_modfiles_callback()
+/* Callback: minimod_get_modfiles_callback()
  */
 typedef void (*minimod_get_modfiles_callback)(
   void *userdata,
@@ -296,9 +293,7 @@ typedef void (*minimod_get_modfiles_callback)(
   struct minimod_modfile const *modfiles,
   struct minimod_pagination const *pagi);
 
-
-/*
- * Callback: minimod_get_users_callback()
+/* Callback: minimod_get_users_callback()
  */
 typedef void (*minimod_get_users_callback)(
   void *userdata,
@@ -306,24 +301,21 @@ typedef void (*minimod_get_users_callback)(
   struct minimod_user const *users,
   struct minimod_pagination const *pagi);
 
-
-/*
- * Callback: minimod_email_request_callback()
+/* Callback: minimod_email_request_callback()
  */
 typedef void (*minimod_email_request_callback)(void *userdata, bool success);
 
-
-/*
- * Callback: minimod_email_exchange_callback()
+/* Callback: minimod_email_exchange_callback()
+ *
+ * If the authorization attempt failed token is NULL and ntoken_bytes is 0.
+ * Otherwise token is a pointer to the access-token of ntoken_bytes.
  */
 typedef void (*minimod_email_exchange_callback)(
   void *userdata,
   char const *token,
   size_t ntoken_bytes);
 
-
-/*
- * Callback: minimod_install_callback()
+/* Callback: minimod_install_callback()
  */
 typedef void (*minimod_install_callback)(
   void *in_userdata,
@@ -331,11 +323,11 @@ typedef void (*minimod_install_callback)(
   uint64_t in_game_id,
   uint64_t in_mod_id);
 
-
-/*
- * Callback: minimod_enum_installed_mods_callback()
+/* Callback: minimod_enum_installed_mods_callback()
  *
  * Called once for each currently installed mod.
+ * in_path is either the path to the ZIP file or directory where the mod
+ * was extracted, if minimod was told to do so (See <minimod_initflag>)
  */
 typedef void (*minimod_enum_installed_mods_callback)(
   void *in_userdata,
@@ -343,9 +335,7 @@ typedef void (*minimod_enum_installed_mods_callback)(
   uint64_t in_mod_id,
   char const *in_path);
 
-
-/*
- * Callback: minimod_get_events_callback()
+/* Callback: minimod_get_events_callback()
  *
  * Used in <minimod_get_user_events()> and <minimod_get_mod_events()>
  */
@@ -355,9 +345,7 @@ typedef void (*minimod_get_events_callback)(
   struct minimod_event const *events,
   struct minimod_pagination const *pagi);
 
-
-/*
- * Callback: minimod_get_dependencies_callback()
+/* Callback: minimod_get_dependencies_callback()
  *
  * Used in <minimod_get_dependencies()>
  */
@@ -367,14 +355,11 @@ typedef void (*minimod_get_dependencies_callback)(
   uint64_t const *dependencies,
   struct minimod_pagination const *pagi);
 
-/*
- * Callback: minimod_rate_callback()
+/* Callback: minimod_rate_callback()
  */
 typedef void (*minimod_rate_callback)(void *userdata, bool success);
 
-
-/*
- * Callback: minimod_get_ratings_callback()
+/* Callback: minimod_get_ratings_callback()
  */
 typedef void (*minimod_get_ratings_callback)(
   void *userdata,
@@ -382,18 +367,14 @@ typedef void (*minimod_get_ratings_callback)(
   struct minimod_rating const *ratings,
   struct minimod_pagination const *pagi);
 
-
-/*
- * Callback: minimod_subscription_change_callback()
+/* Callback: minimod_subscription_change_callback()
  */
 typedef void (*minimod_subscription_change_callback)(
   void *userdata,
   uint64_t mod_id,
   int change);
 
-
-/*
- * Function: minimod_init()
+/* Function: minimod_init()
  *
  * Not surprisingly this needs to be called before any other minimod_*
  * functions can be (successfully) called.
@@ -419,16 +400,12 @@ minimod_init(
   unsigned int in_flags,
   uint32_t in_abi_version);
 
-
-/*
- * Function: minimod_deinit()
+/* Function: minimod_deinit()
  */
 MINIMOD_LIB void
 minimod_deinit(void);
 
-
-/*
- * Function: minimod_set_debugtesting()
+/* Function: minimod_set_debugtesting()
  *
  * Set max_delay to 0 to disable latency-simulation.
  * min_delay needs to be <= max_delay.
@@ -461,8 +438,7 @@ minimod_set_debugtesting(int error_rate, int min_delay, int max_delay);
 	(end)
  */
 
-/*
- * Function: minimod_get_games()
+/* Function: minimod_get_games()
  *
  *	Retrieve all available games on the mod.io environment selected
  *	during minimod_init().
@@ -476,9 +452,7 @@ minimod_get_games(
   minimod_get_games_callback in_callback,
   void *in_userdata);
 
-
-/*
- * Function: minimod_get_mods()
+/* Function: minimod_get_mods()
  *
  * Retrieve a list of mods for *in_game_id*.
  *
@@ -494,9 +468,7 @@ minimod_get_mods(
   minimod_get_mods_callback in_callback,
   void *in_userdata);
 
-
-/*
- * Function: minimod_get_modfiles()
+/* Function: minimod_get_modfiles()
  *
  * Retrieve a list of available modfiles for a certain mod.
  *
@@ -517,9 +489,7 @@ minimod_get_modfiles(
   minimod_get_modfiles_callback in_callback,
   void *in_userdata);
 
-
-/*
- * Function: minimod_get_mod_events()
+/* Function: minimod_get_mod_events()
  *
  * Get events for the specified mod.
  *
@@ -556,9 +526,7 @@ minimod_get_mod_events(
   minimod_get_events_callback in_callback,
   void *in_userdata);
 
-
-/*
- * Function: minimod_get_dependencies()
+/* Function: minimod_get_dependencies()
  */
 MINIMOD_LIB void
 minimod_get_dependencies(
@@ -570,22 +538,17 @@ minimod_get_dependencies(
 
 /* Topic: ¶ Authentication */
 
-/*
- * Function: minimod_is_authenticated()
+/* Function: minimod_is_authenticated()
  */
 MINIMOD_LIB bool
 minimod_is_authenticated(void);
 
-
-/*
- * Function: minimod_deauthenticate()
+/* Function: minimod_deauthenticate()
  */
 MINIMOD_LIB void
 minimod_deauthenticate(void);
 
-
-/*
- * Function: minimod_email_request()
+/* Function: minimod_email_request()
  */
 MINIMOD_LIB void
 minimod_email_request(
@@ -593,9 +556,7 @@ minimod_email_request(
   minimod_email_request_callback in_callback,
   void *in_userdata);
 
-
-/*
- * Function: minimod_email_exchange()
+/* Function: minimod_email_exchange()
  */
 MINIMOD_LIB void
 minimod_email_exchange(
@@ -606,8 +567,7 @@ minimod_email_exchange(
 
 /* Topic: ¶ Me */
 
-/*
- * Function: minimod_get_me()
+/* Function: minimod_get_me()
  *
  * Fetch information about the currently authenticated user.
  *
@@ -617,9 +577,7 @@ minimod_email_exchange(
 MINIMOD_LIB bool
 minimod_get_me(minimod_get_users_callback in_callback, void *in_userdata);
 
-
-/*
- * Function: minimod_get_user_events()
+/* Function: minimod_get_user_events()
  *
  * Get events for the currently authenticated user.
  *
@@ -646,8 +604,7 @@ minimod_get_user_events(
 
 /* Topic: ¶ Installation */
 
-/*
- * Function: minimod_install()
+/* Function: minimod_install()
  *
  * Installs a mod to the mod directory.
  *
@@ -664,18 +621,14 @@ minimod_install(
   minimod_install_callback in_callback,
   void *in_userdata);
 
-
-/*
- * Function: minimod_uninstall()
+/* Function: minimod_uninstall()
  *
  * Attempts to uninstall (delete) the specified mod.
  */
 MINIMOD_LIB bool
 minimod_uninstall(uint64_t in_game_id, uint64_t in_mod_id);
 
-
-/*
- * Function: minimod_is_installed()
+/* Function: minimod_is_installed()
  *
  * Returns:
  *	true if the specified mod is installed.
@@ -683,9 +636,7 @@ minimod_uninstall(uint64_t in_game_id, uint64_t in_mod_id);
 MINIMOD_LIB bool
 minimod_is_installed(uint64_t in_game_id, uint64_t in_mod_id);
 
-
-/*
- * Function: minimod_is_downloading()
+/* Function: minimod_is_downloading()
  *
  * Returns:
  *	true if the mod is currently downloading (or being extracted)
@@ -693,9 +644,7 @@ minimod_is_installed(uint64_t in_game_id, uint64_t in_mod_id);
 MINIMOD_LIB bool
 minimod_is_downloading(uint64_t in_game_id, uint64_t in_mod_id);
 
-
-/*
- * Function: minimod_enum_installed_mods()
+/* Function: minimod_enum_installed_mods()
  */
 MINIMOD_LIB void
 minimod_enum_installed_mods(
@@ -703,9 +652,7 @@ minimod_enum_installed_mods(
   minimod_enum_installed_mods_callback in_callback,
   void *in_userdata);
 
-
-/*
- * Function: minimod_get_installed_mod()
+/* Function: minimod_get_installed_mod()
  */
 MINIMOD_LIB bool
 minimod_get_installed_mod(
@@ -717,8 +664,7 @@ minimod_get_installed_mod(
 
 /* Topic: ¶ Ratings */
 
-/*
- * Function: minimod_rate()
+/* Function: minimod_rate()
  *
  * Params:
  *	in_rating - Accepts any integer other than 0. Positive value is
@@ -733,9 +679,7 @@ minimod_rate(
   minimod_rate_callback in_callback,
   void *in_userdata);
 
-
-/*
- * Function: minimod_get_ratings()
+/* Function: minimod_get_ratings()
  */
 MINIMOD_LIB void
 minimod_get_ratings(
@@ -746,8 +690,7 @@ minimod_get_ratings(
 
 /* Topic: ¶ Subscriptions */
 
-/*
- * Function: minimod_get_subscriptions()
+/* Function: minimod_get_subscriptions()
  */
 MINIMOD_LIB void
 minimod_get_subscriptions(
@@ -755,9 +698,7 @@ minimod_get_subscriptions(
   minimod_get_mods_callback in_callback,
   void *in_userdata);
 
-
-/*
- * Function: minimod_subscribe()
+/* Function: minimod_subscribe()
  */
 MINIMOD_LIB bool
 minimod_subscribe(
@@ -766,9 +707,7 @@ minimod_subscribe(
   minimod_subscription_change_callback in_callback,
   void *in_userdata);
 
-
-/*
- * Function: minimod_unsubscribe()
+/* Function: minimod_unsubscribe()
  */
 MINIMOD_LIB bool
 minimod_unsubscribe(
@@ -780,8 +719,7 @@ minimod_unsubscribe(
 
 /* Topic: ¶ 'more' */
 
-/*
- * Function: minimod_get_more_string()
+/* Function: minimod_get_more_string()
  *
  * Access data from JSON objects not 1:1 mapped to minimod-structs.
  * See <[More Is Less]>
@@ -789,9 +727,7 @@ minimod_unsubscribe(
 MINIMOD_LIB char const *
 minimod_get_more_string(void const *in_more, char const *in_name);
 
-
-/*
- * Function: minimod_get_more_int()
+/* Function: minimod_get_more_int()
  *
  * Access data from JSON objects not 1:1 mapped to minimod-structs.
  * See <[More Is Less]>
@@ -799,9 +735,7 @@ minimod_get_more_string(void const *in_more, char const *in_name);
 MINIMOD_LIB int64_t
 minimod_get_more_int(void const *in_more, char const *in_name);
 
-
-/*
- * Function: minimod_get_more_float()
+/* Function: minimod_get_more_float()
  *
  * Access data from JSON objects not 1:1 mapped to minimod-structs.
  * See <[More Is Less]>
@@ -809,9 +743,7 @@ minimod_get_more_int(void const *in_more, char const *in_name);
 MINIMOD_LIB double
 minimod_get_more_float(void const *in_more, char const *in_name);
 
-
-/*
- * Function: minimod_get_more_bool()
+/* Function: minimod_get_more_bool()
  *
  * Access data from JSON objects not 1:1 mapped to minimod-structs.
  * See <[More Is Less]>
@@ -819,11 +751,9 @@ minimod_get_more_float(void const *in_more, char const *in_name);
 MINIMOD_LIB bool
 minimod_get_more_bool(void const *in_more, char const *in_name);
 
-
 #ifdef __cplusplus
 } // extern "C"
 #endif
-
 
 /* Section: Examples */
 
@@ -838,7 +768,7 @@ lists the games when the response from the server got processed.
 #include <stdio.h>
 
 void
-get_games_callback(void *udata, size_t ngames, struct minimod_game const *games)
+get_games_callback(void *udata, size_t ngames, struct minimod_game const *games, struct minimod_pagination const *pagi)
 {
 	for (size_t i = 0; i < ngames; ++i)
 	{
@@ -853,11 +783,7 @@ get_games_callback(void *udata, size_t ngames, struct minimod_game const *games)
 int
 main(void)
 {
-	minimod_init(
-		MINIMOD_ENVIRONMENT_LIVE, // choose mod.io's live or test environment
-		0, // your game's ID on mod.io
-		YOUR_API_KEY, // your API key
-		".modio"); // local path for mods + data
+	minimod_init(YOUR_API_KEY, NULL, 0, MINIMOD_CURRENT_ABI);
 
 	printf("List of games on mod.io\n");
 

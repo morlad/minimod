@@ -171,6 +171,12 @@ netw_download_to(
   void *in_userdata);
 
 /* Function: netw_get_header()
+ *
+ * Can be used to access a HTTP header field during a callback.
+ *
+ * Returns:
+ *	Value of the requested HTTP header field. NULL if no header with
+ *	that name is part of the response.
  */
 char const *
 netw_get_header(struct netw_header const *header, char const *name);
@@ -240,7 +246,7 @@ netw_percent_encode(char const *in_input, size_t in_len, size_t *out_len);
  * #include "netw.h"
  *
  * static void
- * on_recv(void *in_userdata, void const *in_data, size_t in_bytes, int in_error)
+ * on_recv(void *in_userdata, void const *in_data, size_t in_bytes, int in_error, struct netw_header const *in_header)
  * {
  *     // in_error is the HTTP status code. 200 signals success.
  *     if (in_error == 200)
@@ -254,7 +260,7 @@ netw_percent_encode(char const *in_input, size_t in_len, size_t *out_len);
  * }
  *
  * int
- * main()
+ * main(void)
  * {
  *     // initialize netw
  *     if (!netw_init())
