@@ -1,13 +1,18 @@
 # minimod
 A lightweight C library to wrap the https://mod.io API.
 
-- No dependencies on other libraries during runtime other than the system libraries and libcurl under Linux and FreeBSD.
-- Small filesize of the library
-- Works on Windows, MacOS, Linux and FreeBSD
+It supports the '*consuming*' part of the API only, it does not support uploading new mods (and related tasks).
 
-## Examples
+- No dependencies on non-system libraries during runtime, other than libcurl under Linux and FreeBSD.
+- Works on Windows, macOS, Linux and FreeBSD
+- Small filesize of the library (~200 KiB for macOS)
+- Allows installed mods to remain in their ZIP form or unzip them
+- Includes functionality to simulate high latency connections and server failures
+- API documentation in `/docs` folder
+- Many examples in `/tests/examples.c`
+- (GNU)make based build on all platforms, using GCC under Linux and clang everywhere else
 
-### Print all games currently on mod.io
+## Example: Print all games currently on mod.io
 ```c
 #include "minimod/minimod.h"
 #include <stdio.h>
@@ -27,7 +32,7 @@ void get_games_callback(void *udata, size_t ngames, struct minimod_game const *g
 int main(void)
 {
 	minimod_init(
-		"823b4a823b08dc09283fe203a", // your API key
+		MODIO_API_KEY, // your API key
 		".modio", // local path for mods + data
 		0, // flags like: use test-environment, unzip mods locally, ...
 		MINIMOD_CURRENT_ABI); // used to detect incompatible ABIs
@@ -90,14 +95,14 @@ A similar approach is taken in other functions, like `minimod_get_mod_events`:
 `game_id`, `mod_id`, `date_cutoff`.
 
 ### Low on dependencies
-On Windows minimod only uses system libraries (*kernel32.dll* and *winhttp.dll*)
+On **Windows** minimod only uses system libraries (*kernel32.dll* and *winhttp.dll*)
 and links the C runtime statically, thus it is not necessary to bundle/install
 a specific version of the msvcrt with your product. Just copy and use the DLL.
 
-minimod on macOS only uses system libraries and frameworks, so it is just
+minimod on **macOS** only uses system libraries and frameworks, so it is just
 about copying the *dylib* along with your project to use it.
 
-The Linux and FreeBSD builds of minimod require [libcurl](https://curl.haxx.se/libcurl/) to be available,
+The **Linux** and **FreeBSD** builds of minimod require [libcurl](https://curl.haxx.se/libcurl/) to be available,
 since there is no system library to make HTTPS requests.
 
 #### Source Dependencies
@@ -111,7 +116,7 @@ minimod depends on 2 other MIT licensed libraries when compiling:
 Depending on how an application integrates mods, it is either possible
 to use them directly as ZIP file or they need to be unpacked.
 minimod supports both by selecting the modus operandi during initialisation
-by setting `minimod_init()`'s `MINIMOD_INITFLAG_UNZIP` flag
+by setting `minimod_init()`'s `MINIMOD_INITFLAG_UNZIP` flag.
 
 ### Testing & Debugging
 minimod includes the awkwardly named function `minimod_set_debugtesting()`,
