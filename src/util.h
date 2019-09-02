@@ -1,4 +1,4 @@
-// vi: ft=c noexpandtab tabstop=4 softtabstop=4 shiftwidth=0
+// vi: filetype=c
 #pragma once
 #ifndef MINIMOD_UTIL_H_INCLUDED
 #define MINIMOD_UTIL_H_INCLUDED

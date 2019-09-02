@@ -1,5 +1,3 @@
-# vi: noexpandtab tabstop=4 softtabstop=4 shiftwidth=0
-
 # CONFIG
 # ------
 # destination of the build output (object files and executables)
