@@ -382,4 +382,4 @@ format:
 
 docs:
 	$(Q)$(ensure_selfdir)
-	$(Q)$(NDOCS) -i src -i include -p docs.cfg -o html docs
+	$(Q)$(NDOCS) -i src -i include -p docs.cfg -s Default minimod -o html docs

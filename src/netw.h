@@ -192,7 +192,7 @@ netw_get_header(struct netw_header const *header, char const *name);
 void
 netw_set_error_rate(int in_percentage);
 
-/* Function: netw_set_delay(in_min, in_max)
+/* Function: netw_set_delay()
  *
  * Set range for random delays before a response is received.
  * Set both values to 0 to deactive this feature.

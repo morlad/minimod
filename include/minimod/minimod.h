@@ -418,7 +418,7 @@ minimod_deinit(void);
 MINIMOD_LIB void
 minimod_set_debugtesting(int error_rate, int min_delay, int max_delay);
 
-/* Topic: ¶ Queries */
+/* Topic: Queries */
 
 /* Topic: [Filtering Sorting Pagination]
 
@@ -536,7 +536,7 @@ minimod_get_dependencies(
   void *in_userdata);
 
 
-/* Topic: ¶ Authentication */
+/* Topic: Authentication */
 
 /* Function: minimod_is_authenticated()
  */
@@ -565,7 +565,7 @@ minimod_email_exchange(
   void *in_userdata);
 
 
-/* Topic: ¶ Me */
+/* Topic: Me */
 
 /* Function: minimod_get_me()
  *
@@ -602,7 +602,7 @@ minimod_get_user_events(
   void *in_userdata);
 
 
-/* Topic: ¶ Installation */
+/* Topic: Installation */
 
 /* Function: minimod_install()
  *
@@ -662,7 +662,7 @@ minimod_get_installed_mod(
   void *in_userdata);
 
 
-/* Topic: ¶ Ratings */
+/* Topic: Ratings */
 
 /* Function: minimod_rate()
  *
@@ -688,7 +688,7 @@ minimod_get_ratings(
   void *in_userdata);
 
 
-/* Topic: ¶ Subscriptions */
+/* Topic: Subscriptions */
 
 /* Function: minimod_get_subscriptions()
  */
@@ -717,7 +717,7 @@ minimod_unsubscribe(
   void *in_userdata);
 
 
-/* Topic: ¶ 'more' */
+/* Topic: 'more' */
 
 /* Function: minimod_get_more_string()
  *
@@ -761,7 +761,7 @@ minimod_get_more_bool(void const *in_more, char const *in_name);
 
 Initialize minimod and execute request to fetch list of games from
 mod.io server. Wait for the asynchronous response from the API and
-lists the games when the response from the server got processed.
+list the games when the response from the server was received.
 
 (start code)
 #include "minimod/minimod.h"
