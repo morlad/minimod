@@ -3,8 +3,8 @@ A lightweight C library to wrap the https://mod.io API.
 
 It supports the '*consuming*' part of the API only, it does not support uploading new mods (and related tasks).
 
-- No dependencies on non-system libraries during runtime, other than libcurl under Linux and FreeBSD.
 - Works on Windows, macOS, Linux and FreeBSD
+- No dependencies on non-system libraries during runtime, other than libcurl under Linux and FreeBSD.
 - Small filesize of the library (~200 KiB for macOS)
 - Allows installed mods to remain in their ZIP form or unzip them
 - Includes functionality to simulate high latency connections and server failures
@@ -70,9 +70,9 @@ but the API's new features can be exploited immediately.
 ### Caching
 minimod does no caching of server responses internally. This would increase
 the complexity of the code as well as introduce performance penalties
-because of more memory allocations. After all, minimod knows nothing about
-how often a query will happen, and which data of the response is actually
-used by the client app.
+because of more memory allocations, processing overhead &c.
+After all, minimod knows nothing about how often a query will happen,
+and which data of the response is actually used by the client app.
 
 So it is up to the client code to handle the caching, if, what and when it
 is the right thing to do.
