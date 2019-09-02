@@ -56,11 +56,7 @@ Instead of having every minimod-struct map all of the (currently) available
 data of the underlying JSON object, they only contain a subset of it.
 
 However, the structs include a *more* field, which can be used together
-with the *minimod_get_more*-functions to access more fields.
-- `minimod_get_more_string()`
-- `minimod_get_more_int()`
-- `minimod_get_more_bool()`
-- `minimod_get_more_float()`
+with the `minimod_get_more_(string|int|bool|float)`-functions to access more fields.
 
 This way neither memory nor time is spent on extracting/converting
 fields of the underlying JSON object, which may not even be required
