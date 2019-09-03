@@ -23,7 +23,7 @@ ENABLE_LOG = 0
 
 # INTERNAL CONFIG
 # ---------------
-QAJSON4C_VERSION = tags/1.1.1
+QAJSON4C_VERSION = master
 
 Q = @
 
@@ -36,7 +36,7 @@ MIN_MACOS_VERSION = 10.9
 
 # OS DETECTION
 # ------------
-ifdef ComSpec
+ifeq ($(OS),Windows_NT)
 	os = windows
 else
 	uname_s = $(shell uname -s)
@@ -55,9 +55,12 @@ endif
 # MACROS/HELPERS
 # --------------
 ifeq ($(os),windows)
-	DEVNULL = NUL
 	CC = "$(LLVM_PATH)\bin\clang.exe"
 	LINKER = "$(LLVM_PATH)\bin\lld-link.exe"
+endif
+
+ifdef ComSpec
+	DEVNULL = NUL
 	ensure_dir=mkdir $(subst /,\,$(@D)) 2> $(DEVNULL) || exit 0
 	ensure_selfdir=mkdir $(subst /,\,$@) 2> $(DEVNULL) || exit 0
 	RM = del
@@ -266,14 +269,14 @@ endif
 
 ifeq ($(os),windows)
 TARGET_ARCH += -gcodeview
-LDFLAGS += /NOLOGO /MACHINE:X64 /NODEFAULTLIB /INCREMENTAL:NO
+LDFLAGS += -NOLOGO -MACHINE:X64 -NODEFAULTLIB -INCREMENTAL:NO
 LDLIBS += libucrt.lib
 LDLIBS += libvcruntime.lib
 LDLIBS += libcmt.lib
 LDLIBS += kernel32.lib
-$(LIB_PATH): LDFLAGS += /SUBSYSTEM:WINDOWS
+$(LIB_PATH): LDFLAGS += -SUBSYSTEM:WINDOWS
 $(LIB_PATH): LDLIBS += winhttp.lib
-$(TEST_PATH): LDFLAGS += /SUBSYSTEM:CONSOLE
+$(TEST_PATH): LDFLAGS += -SUBSYSTEM:CONSOLE
 $(TEST_PATH): LDLIBS += $(subst .dll,.lib,$(LIB_PATH))
 endif
 
@@ -311,7 +314,7 @@ ifdef Q
 endif
 	$(Q)$(ensure_dir)
 ifeq ($(os),windows)
-	$(Q)$(LINKER) $(LDFLAGS) /OUT:$@ $(filter %.o,$^) $(filter %.res,$^) $(LDLIBS)
+	$(Q)$(LINKER) $(LDFLAGS) -OUT:$@ $(filter %.o,$^) $(filter %.res,$^) $(LDLIBS)
 else
 	$(Q)$(CC) $(TARGET_ARCH) $(LDFLAGS) $(filter %.o,$^) $(LIB_PATH) $(LDLIBS) $(OUTPUT_OPTION)
 endif
@@ -328,7 +331,7 @@ ifeq ($(os),macos)
 	$(Q)$(CC) -dynamiclib $(TARGET_ARCH) $(LDFLAGS) $(filter %.o,$^) $(LDLIBS) $(OUTPUT_OPTION) -Wl,-install_name,@loader_path/$(notdir $@)
 endif
 ifeq ($(os),windows)
-	$(Q)$(LINKER) /DLL $(LDFLAGS) $(LDLIBS) $(filter %.o,$^) /OUT:$(subst /,\,$@)
+	$(Q)$(LINKER) -DLL $(LDFLAGS) $(LDLIBS) $(filter %.o,$^) -OUT:$@
 endif
 ifeq ($(os),linux)
 	$(Q)$(CC) -shared $(TARGET_ARCH) $(LDFLAGS) $(filter %.o,$^) $(LDLIBS) $(OUTPUT_OPTION)
@@ -341,9 +344,9 @@ endif
 
 deps/qajson4c/src/qajson4c/qajson4c.h: Makefile
 ifdef Q
-	@echo Updating dependency: DeHecht/qajson4c @ $(QAJSON4C_VERSION)
+	@echo Updating dependency: morlad/qajson4c @ $(QAJSON4C_VERSION)
 endif
-	$(Q)$(call CONDITIONAL_CLONE,https://github.com/DeHecht/qajson4c.git,deps/qajson4c)
+	$(Q)$(call CONDITIONAL_CLONE,https://github.com/morlad/qajson4c.git,deps/qajson4c)
 	$(Q)git -C deps/qajson4c fetch --all --tags --quiet
 	$(Q)git -C deps/qajson4c checkout $(QAJSON4C_VERSION) --quiet
 	$(Q)$(call TOUCH,$@)

@@ -1,22 +1,17 @@
 language: c
 
-os:
-  - osx
-  - windows
-  - linux
-
-compiler:
-  - gcc
-  - clang
+env:
+  - LIB="C:\Program Files (x86)\Windows Kits\10\Lib\10.0.17134.0\ucrt\x64;C:\Program Files (x86)\Windows Kits\10\Lib\10.0.17134.0\um\x64;C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Tools\MSVC\14.16.27023\lib\x64"
 
 script:
-  - make
+  - if [ "$TRAVIS_OS_NAME" == "windows" ] ; then mingw32-make ; else make ; fi
 
 matrix:
   include:
-    - os: osx
-      compiler: clang
     - os: windows
+      compiler: clang
+    - os: osx
+      osx_image: xcode10.3
       compiler: clang
     - os: linux
       compiler: gcc
