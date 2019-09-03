@@ -112,6 +112,28 @@ enum minimod_eventtype
 	MINIMOD_EVENTTYPE_MODFILE_CHANGED,
 };
 
+/* Enum: minimod_mod_status
+ *
+ * https://docs.mod.io/#status-amp-visibility
+ *
+ * MINIMOD_MODSTATUS_NOT_ACCEPTED - Not accepted and not shown when browsing
+ * MINIMOD_MODSTATUS_ACCEPTED - Accepted and shown
+ * MINIMOD_MODSTATUS_ARCHIVED - Accepted and shown,
+ *  but flagged as out-of-date or incompatible
+ * MINIMOD_MODSTATUS_DELETED - Only shown through /me endpoints
+ *  (i.e. subscriptions, ratings, events, ...)
+ *
+ * See:
+ *  <minimod_mod>
+ */
+enum minimod_modstatus
+{
+	MINIMOD_MODSTATUS_NOT_ACCEPTED = 0,
+	MINIMOD_MODSTATUS_ACCEPTED = 1,
+	MINIMOD_MODSTATUS_ARCHIVED = 2,
+	MINIMOD_MODSTATUS_DELETED = 3,
+};
+
 /* Struct: minimod_game
  *
  * https://docs.mod.io/#game-object
@@ -163,11 +185,16 @@ struct minimod_user
 struct minimod_mod
 {
 	uint64_t id;
-	char const *name;
+	uint64_t game_id;
 	uint64_t modfile_id;
+	uint64_t date_updated;
+	char const *name;
+	char const *summary;
 	void const *more;
 	struct minimod_user submitted_by;
 	struct minimod_stats stats;
+	enum minimod_modstatus status;
+	char _padding[4];
 };
 
 /* Struct: minimod_modfile
@@ -179,6 +206,8 @@ struct minimod_mod
 struct minimod_modfile
 {
 	uint64_t id;
+	uint64_t mod_id;
+	uint64_t date_added;
 	char const *md5;
 	char const *url;
 	uint64_t filesize;

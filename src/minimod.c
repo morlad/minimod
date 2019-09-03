@@ -280,6 +280,9 @@ populate_modfile(struct minimod_modfile *modfile, QAJ4C_Value const *node)
 	ASSERT(QAJ4C_is_object(node));
 
 	modfile->id = QAJ4C_get_uint64(QAJ4C_object_get(node, "id"));
+	modfile->mod_id = QAJ4C_get_uint64(QAJ4C_object_get(node, "mod_id"));
+	modfile->date_added =
+	  QAJ4C_get_uint64(QAJ4C_object_get(node, "date_added"));
 	modfile->filesize = QAJ4C_get_uint64(QAJ4C_object_get(node, "filesize"));
 
 	QAJ4C_Value const *filehash = QAJ4C_object_get(node, "filehash");
@@ -299,7 +302,12 @@ populate_mod(struct minimod_mod *mod, QAJ4C_Value const *node)
 	ASSERT(QAJ4C_is_object(node));
 
 	mod->id = QAJ4C_get_uint(QAJ4C_object_get(node, "id"));
+	mod->game_id = QAJ4C_get_uint(QAJ4C_object_get(node, "game_id"));
+	mod->date_updated = QAJ4C_get_uint(QAJ4C_object_get(node, "date_updated"));
 	mod->name = QAJ4C_get_string(QAJ4C_object_get(node, "name"));
+	mod->summary = QAJ4C_get_string(QAJ4C_object_get(node, "summary"));
+	mod->status =
+	  (enum minimod_modstatus)(QAJ4C_get_int(QAJ4C_object_get(node, "status")));
 	mod->more = node;
 
 	// modfile
