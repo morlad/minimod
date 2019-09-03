@@ -8,7 +8,7 @@ It supports the '*consuming*' part of the API only, it does not support uploadin
 - Small filesize of the library (~200 KiB for macOS)
 - Allows installed mods to remain in their ZIP form or unzip them
 - Includes functionality to simulate high latency connections and server failures
-- API documentation in `/docs` folder
+- API documentation in [`/docs`](https://morlad.github.io/minimod) folder
 - Many examples in `/tests/examples.c`
 - (GNU)make based build on all platforms, using GCC under Linux and clang everywhere else
 
