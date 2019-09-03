@@ -1,0 +1,22 @@
+language: c
+
+os:
+  - osx
+  - windows
+  - linux
+
+compiler:
+  - gcc
+  - clang
+
+script:
+  - make
+
+matrix:
+  include:
+    - os: osx
+      compiler: clang
+    - os: windows
+      compiler: clang
+    - os: linux
+      compiler: gcc
