@@ -235,7 +235,7 @@ populate_game(struct minimod_game *game, QAJ4C_Value const *node)
 	ASSERT(game);
 	ASSERT(QAJ4C_is_object(node));
 
-	game->id = QAJ4C_get_uint(QAJ4C_object_get(node, "id"));
+	game->id = QAJ4C_get_uint64(QAJ4C_object_get(node, "id"));
 	game->name = QAJ4C_get_string(QAJ4C_object_get(node, "name"));
 	game->more = node;
 }
@@ -301,9 +301,9 @@ populate_mod(struct minimod_mod *mod, QAJ4C_Value const *node)
 	ASSERT(mod);
 	ASSERT(QAJ4C_is_object(node));
 
-	mod->id = QAJ4C_get_uint(QAJ4C_object_get(node, "id"));
-	mod->game_id = QAJ4C_get_uint(QAJ4C_object_get(node, "game_id"));
-	mod->date_updated = QAJ4C_get_uint(QAJ4C_object_get(node, "date_updated"));
+	mod->id = QAJ4C_get_uint64(QAJ4C_object_get(node, "id"));
+	mod->game_id = QAJ4C_get_uint64(QAJ4C_object_get(node, "game_id"));
+	mod->date_updated = QAJ4C_get_uint64(QAJ4C_object_get(node, "date_updated"));
 	mod->name = QAJ4C_get_string(QAJ4C_object_get(node, "name"));
 	mod->summary = QAJ4C_get_string(QAJ4C_object_get(node, "summary"));
 	mod->status =
@@ -403,9 +403,9 @@ populate_event(struct minimod_event *event, QAJ4C_Value const *node)
 static void
 populate_rating(struct minimod_rating *rating, QAJ4C_Value const *node)
 {
-	rating->game_id = QAJ4C_get_uint(QAJ4C_object_get(node, "game_id"));
-	rating->mod_id = QAJ4C_get_uint(QAJ4C_object_get(node, "mod_id"));
-	rating->date = QAJ4C_get_uint(QAJ4C_object_get(node, "date_added"));
+	rating->game_id = QAJ4C_get_uint64(QAJ4C_object_get(node, "game_id"));
+	rating->mod_id = QAJ4C_get_uint64(QAJ4C_object_get(node, "mod_id"));
+	rating->date = QAJ4C_get_uint64(QAJ4C_object_get(node, "date_added"));
 	rating->rating = QAJ4C_get_int(QAJ4C_object_get(node, "rating"));
 }
 
@@ -413,9 +413,9 @@ populate_rating(struct minimod_rating *rating, QAJ4C_Value const *node)
 static void
 populate_pagination(struct minimod_pagination *pagi, QAJ4C_Value const *node)
 {
-	pagi->offset = QAJ4C_get_uint(QAJ4C_object_get(node, "result_offset"));
-	pagi->limit = QAJ4C_get_uint(QAJ4C_object_get(node, "result_limit"));
-	pagi->total = QAJ4C_get_uint(QAJ4C_object_get(node, "result_total"));
+	pagi->offset = QAJ4C_get_uint64(QAJ4C_object_get(node, "result_offset"));
+	pagi->limit = QAJ4C_get_uint64(QAJ4C_object_get(node, "result_limit"));
+	pagi->total = QAJ4C_get_uint64(QAJ4C_object_get(node, "result_total"));
 }
 
 
