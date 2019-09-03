@@ -17,7 +17,6 @@
 #define API_KEY_TEST "64a70c497c922857c435c1578562a118"
 #define GAME_ID_TEST 347
 #define MOD_ID_TEST 1889
-#define MODFILE_ID_TEST 1904
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -405,7 +404,7 @@ test_installation(void)
 
 	// install the mod
 	int wait = 1;
-	minimod_install(GAME_ID_TEST, MOD_ID_TEST, MODFILE_ID_TEST, on_installed, &wait);
+	minimod_install(GAME_ID_TEST, MOD_ID_TEST, 0, on_installed, &wait);
 
 	while (wait)
 	{
