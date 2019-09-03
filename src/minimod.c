@@ -1704,7 +1704,7 @@ minimod_install(
 
 	LOG("install: get_modfiles");
 	minimod_get_modfiles(
-	  NULL,
+    "_sort=-date_added&_limit=1",
 	  in_game_id,
 	  in_mod_id,
 	  in_modfile_id,
