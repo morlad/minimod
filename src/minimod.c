@@ -303,11 +303,12 @@ populate_mod(struct minimod_mod *mod, QAJ4C_Value const *node)
 
 	mod->id = QAJ4C_get_uint64(QAJ4C_object_get(node, "id"));
 	mod->game_id = QAJ4C_get_uint64(QAJ4C_object_get(node, "game_id"));
-	mod->date_updated = QAJ4C_get_uint64(QAJ4C_object_get(node, "date_updated"));
+	mod->date_updated =
+	  QAJ4C_get_uint64(QAJ4C_object_get(node, "date_updated"));
 	mod->name = QAJ4C_get_string(QAJ4C_object_get(node, "name"));
 	mod->summary = QAJ4C_get_string(QAJ4C_object_get(node, "summary"));
-	mod->status =
-	  (enum minimod_modstatus)(QAJ4C_get_int(QAJ4C_object_get(node, "status")));
+	mod->status = (enum minimod_modstatus)(
+	  QAJ4C_get_int(QAJ4C_object_get(node, "status")));
 	mod->more = node;
 
 	// modfile
@@ -1712,7 +1713,7 @@ minimod_install(
 
 	LOG("install: get_modfiles");
 	minimod_get_modfiles(
-    "_sort=-date_added&_limit=1",
+	  "_sort=-date_added&_limit=1",
 	  in_game_id,
 	  in_mod_id,
 	  in_modfile_id,

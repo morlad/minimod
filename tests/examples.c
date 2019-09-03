@@ -142,12 +142,7 @@ test_get_all_mods(uint64_t game_id)
 	minimod_init(API_KEY_LIVE, NULL, 0, MINIMOD_CURRENT_ABI);
 
 	nrequests_completed = 0;
-	minimod_get_mods(
-	  NULL,
-	  game_id,
-	  0,
-	  on_get_all_mods,
-	  &nrequests_completed);
+	minimod_get_mods(NULL, game_id, 0, on_get_all_mods, &nrequests_completed);
 
 	while (nrequests_completed < 1)
 	{
@@ -336,7 +331,13 @@ test_get_modfiles(void)
 	  MINIMOD_CURRENT_ABI);
 
 	int wait = 1;
-	minimod_get_modfiles(NULL, GAME_ID_TEST, MOD_ID_TEST, 0, on_get_modfiles, &wait);
+	minimod_get_modfiles(
+	  NULL,
+	  GAME_ID_TEST,
+	  MOD_ID_TEST,
+	  0,
+	  on_get_modfiles,
+	  &wait);
 
 	while (wait)
 	{
@@ -422,7 +423,11 @@ test_installation(void)
 	// get data for the installed mod
 	printf("== Get installed mods:\n");
 	wait = 1;
-	minimod_get_installed_mod(GAME_ID_TEST, MOD_ID_TEST, on_installed_mod, &wait);
+	minimod_get_installed_mod(
+	  GAME_ID_TEST,
+	  MOD_ID_TEST,
+	  on_installed_mod,
+	  &wait);
 	while (wait)
 	{
 		sys_sleep(10);
@@ -481,7 +486,12 @@ test_rating(void)
 	printf("mod-rating is %i\n", rating);
 
 	int wait = 1;
-	minimod_rate(GAME_ID_TEST, MOD_ID_TEST, rating == 1 ? -1 : 1, on_rated, &wait);
+	minimod_rate(
+	  GAME_ID_TEST,
+	  MOD_ID_TEST,
+	  rating == 1 ? -1 : 1,
+	  on_rated,
+	  &wait);
 	while (wait)
 	{
 		sys_sleep(10);
@@ -658,7 +668,11 @@ test_dependencies(void)
 	  MINIMOD_CURRENT_ABI);
 
 	int wait = 1;
-	minimod_get_dependencies(GAME_ID_TEST, MOD_ID_TEST, on_dependencies, &wait);
+	minimod_get_dependencies(
+	  GAME_ID_TEST,
+	  MOD_ID_TEST,
+	  on_dependencies,
+	  &wait);
 
 	while (wait)
 	{
