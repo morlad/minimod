@@ -1041,7 +1041,7 @@ minimod_deinit()
 }
 
 
-MINIMOD_LIB void
+void
 minimod_set_debugtesting(int error_rate, int min_delay, int max_delay)
 {
 	netw_set_error_rate(error_rate);
