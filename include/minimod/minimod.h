@@ -506,6 +506,9 @@ minimod_set_debugtesting(int error_rate, int min_delay, int max_delay);
  *
  *	Parameters:
  *		in_filter - Can be NULL, otherwise see <[Filtering Sorting Pagination]>
+ *
+ *	See:
+ *	  https://docs.mod.io/#get-all-games
  */
 MINIMOD_LIB void
 minimod_get_games(
@@ -523,6 +526,9 @@ minimod_get_games(
  *		in_game_id - ID of the game for which a list of mods shall be retrieved
  *		in_mod_id - ID for the specific mod to retrieve data about, or 0
  *			to get all mods for the game.
+ *
+ *	See:
+ *	  https://docs.mod.io/#get-all-mods
  */
 MINIMOD_LIB void
 minimod_get_mods(
@@ -536,13 +542,16 @@ minimod_get_mods(
  *
  * Retrieve a list of available modfiles for a certain mod.
  *
- *	Parameters:
+ * Parameters:
  *		in_filter - Can be NULL, otherwise see <[Filtering Sorting Pagination]>
  *		in_game_id - ID of the game for which the mod was made
  *		in_mod_id - ID of the mod for which available modfiles shall be retrieved
  *		in_modfile_id - Either 0 to request a list of all available modfiles
  *			for the specified mod, or an actual modfile-ID to request only
  *			information for this specific modfile_id
+ *
+ * See:
+ *  https://docs.mod.io/#get-all-modfiles
  */
 MINIMOD_LIB void
 minimod_get_modfiles(
@@ -580,6 +589,9 @@ minimod_get_modfiles(
  *		on_check_for_updates,
  *		NULL);
  * (end)
+ *
+ * See:
+ *  https://docs.mod.io/#get-all-mod-events
  */
 MINIMOD_LIB void
 minimod_get_mod_events(
@@ -597,6 +609,9 @@ minimod_get_mod_events(
  * Parameters:
  *  in_game_id - id of the game to which the mod belongs
  *  in_mod_id - id of the mod
+ *
+ * See:
+ *  https://docs.mod.io/#get-all-mod-dependencies
  */
 MINIMOD_LIB void
 minimod_get_dependencies(
@@ -633,6 +648,9 @@ minimod_deauthenticate(void);
 /* Function: minimod_email_request()
  *
  * Request an authentication code to be sent to *in_email*.
+ *
+ * See:
+ *  <minimod_email_exchange()>, https://docs.mod.io/#authenticate-via-email
  */
 MINIMOD_LIB void
 minimod_email_request(
@@ -644,6 +662,9 @@ minimod_email_request(
  *
  * Request an access token by sending *in_code*, which was requested
  * previously with <minimod_email_request()>, to the server.
+ *
+ * See:
+ *  <minimod_email_request()>, https://docs.mod.io/#authenticate-via-email
  */
 MINIMOD_LIB void
 minimod_email_exchange(
@@ -679,6 +700,9 @@ minimod_get_me(minimod_get_users_callback in_callback, void *in_userdata);
  *
  * Returns:
  *	false if no user is currently authenticated.
+ *
+ * See:
+ *  https://docs.mod.io/#get-user-events
  */
 MINIMOD_LIB bool
 minimod_get_user_events(
@@ -775,6 +799,9 @@ minimod_get_installed_mod(
  *	in_rating - Accepts any integer other than 0. Positive value is
  *		a positive rating, while a negative value indicates a negative
  *		rating. Shocking, is it not?
+ *
+ * See:
+ *  https://docs.mod.io/#ratings
  */
 MINIMOD_LIB void
 minimod_rate(
@@ -787,6 +814,9 @@ minimod_rate(
 /* Function: minimod_get_ratings()
  *
  * Retrieve all ratings of currently authenticated user.
+ *
+ * See:
+ *  https://docs.mod.io/#get-user-ratings
  */
 MINIMOD_LIB void
 minimod_get_ratings(
@@ -800,6 +830,9 @@ minimod_get_ratings(
 /* Function: minimod_get_subscriptions()
  *
  * Retrieve all subscriptions of the currently authenticated user.
+ *
+ * See:
+ *  https://docs.mod.io/#get-user-subscriptions
  */
 MINIMOD_LIB void
 minimod_get_subscriptions(
@@ -812,7 +845,7 @@ minimod_get_subscriptions(
  * Subscribe to a mod.
  *
  * See:
- *  <minimod_unsubscribe()>
+ *  <minimod_unsubscribe()>, https://docs.mod.io/#subscribe
  */
 MINIMOD_LIB bool
 minimod_subscribe(
@@ -826,7 +859,7 @@ minimod_subscribe(
  * Unsubscribe from a mod.
  *
  * See:
- *  <minimod_subscribe()>
+ *  <minimod_subscribe()>, https://docs.mod.io/#subscribe
  */
 MINIMOD_LIB bool
 minimod_unsubscribe(
