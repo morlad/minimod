@@ -1,5 +1,4 @@
 #include "netw.h"
-#include "util.h"
 
 #include <Windows.h>
 #include <stdio.h>
@@ -73,6 +72,68 @@ is_random_server_error(void)
 		return true;
 	}
 	return false;
+}
+
+
+/*
+ * Paramters:
+ *  out_chars - set to the number of characters in the resulting
+ *    string. Multiply by 2 to get the number of bytes.
+ *    Add another 1 char (2 bytes) on top of that for the terminating NUL.
+ */
+static char *
+utf8_from_utf16(wchar_t const *in_utf16, size_t *out_chars)
+{
+	if (!in_utf16)
+	{
+		return NULL;
+	}
+	// return value is the number of bytes required to hold the string,
+	// including the terminating NUL iff NUL was part of the input.
+	int r = WideCharToMultiByte(CP_UTF8, 0, in_utf16, -1, NULL, 0, NULL, NULL);
+	// at least a NUL character should be written
+	if (r < 1)
+	{
+		return NULL;
+	}
+	char *utf8 = malloc((size_t)r);
+	r = WideCharToMultiByte(CP_UTF8, 0, in_utf16, -1, utf8, r, NULL, NULL);
+	if (out_chars)
+	{
+		*out_chars = (size_t)r;
+	}
+	return utf8;
+}
+
+
+/*
+ * Paramters:
+ *  out_chars - set to the number of characters in the resulting
+ *    string.
+ *    Add another 1 char on top of that for the terminating NUL.
+ */
+static wchar_t *
+utf16_from_utf8(char const *in_utf8, size_t *out_chars)
+{
+	if (!in_utf8)
+	{
+		return NULL;
+	}
+	// return value is the number of CHARS required to hold the string.
+	// including the terminating NUL iff NUL was part of the input.
+	int r = MultiByteToWideChar(CP_UTF8, 0, in_utf8, -1, NULL, 0);
+	// at least a NUL character should be written
+	if (r < 1)
+	{
+		return NULL;
+	}
+	wchar_t *utf16 = malloc((size_t)r * sizeof *utf16);
+	r = MultiByteToWideChar(CP_UTF8, 0, in_utf8, -1, utf16, r);
+	if (out_chars)
+	{
+		*out_chars = (size_t)r;
+	}
+	return utf16;
 }
 
 
@@ -371,10 +432,7 @@ task_handler(LPVOID context)
 	  WINHTTP_NO_HEADER_INDEX);
 	ASSERT(ok == TRUE);
 
-	// convert wchar to utf8
-	size_t utf8_len = sys_utf8_from_wchar(header_buffer, NULL, 0);
-	char *header_utf8 = malloc(utf8_len);
-	sys_utf8_from_wchar(header_buffer, header_utf8, utf8_len);
+	char *header_utf8 = utf8_from_utf16(header_buffer, NULL);
 	free(header_buffer);
 
 	struct netw_header hdr = { 0 };
@@ -521,10 +579,8 @@ netw_request(
 	}
 
 	// convert/extract URI information
-	size_t urilen = sys_wchar_from_utf8(in_uri, NULL, 0);
-	wchar_t *uri = malloc(sizeof *uri * urilen);
-	sys_wchar_from_utf8(in_uri, uri, urilen);
-
+	size_t urilen = 0;
+	wchar_t *uri = utf16_from_utf8(in_uri, &urilen);
 	URL_COMPONENTS url_components = {
 		.dwStructSize = sizeof url_components,
 		.dwHostNameLength = (DWORD)-1,
@@ -544,11 +600,7 @@ netw_request(
 	if (in_headers)
 	{
 		char *header = combine_headers(in_headers, NULL);
-
-		size_t headerlen = sys_wchar_from_utf8(header, NULL, 0);
-		task->header = malloc(sizeof *(task->header) * headerlen);
-		sys_wchar_from_utf8(header, task->header, headerlen);
-
+		task->header = utf16_from_utf8(header, NULL);
 		free(header);
 	}
 
@@ -598,10 +650,8 @@ netw_download_to(
 	}
 
 	// convert/extract URI information
-	size_t urilen = sys_wchar_from_utf8(in_uri, NULL, 0);
-	wchar_t *uri = malloc(sizeof *uri * urilen);
-	sys_wchar_from_utf8(in_uri, uri, urilen);
-
+	size_t urilen = 0;
+	wchar_t *uri = utf16_from_utf8(in_uri, &urilen);
 	URL_COMPONENTS url_components = {
 		.dwStructSize = sizeof url_components,
 		.dwHostNameLength = (DWORD)-1,
@@ -621,11 +671,7 @@ netw_download_to(
 	if (in_headers)
 	{
 		char *header = combine_headers(in_headers, NULL);
-
-		size_t headerlen = sys_wchar_from_utf8(header, NULL, 0);
-		task->header = malloc(sizeof *(task->header) * headerlen);
-		sys_wchar_from_utf8(header, task->header, headerlen);
-
+		task->header = utf16_from_utf8(header, NULL);
 		free(header);
 	}
 
