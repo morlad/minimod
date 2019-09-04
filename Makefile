@@ -19,6 +19,7 @@ ENABLE_SANITIZERS = 0
 # path to NaturalDocs for 'docs'-target
 NDOCS = ~/bin/NaturalDocs-1.52/NaturalDocs
 
+# enable verbose debug logging to stdout
 ENABLE_LOG = 0
 
 # INTERNAL CONFIG
