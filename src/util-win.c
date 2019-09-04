@@ -567,6 +567,7 @@ sys_seconds(void)
 int
 mtx_init(mtx_t *mutex, int type)
 {
+	ASSERT(type == mtx_plain);
 	InitializeCriticalSection(mutex);
 	return 0;
 }

@@ -1621,7 +1621,7 @@ on_install_get_mod(
   void *in_userdata,
   size_t in_nmods,
   struct minimod_mod const *in_mods,
-  struct minimod_pagination const *pagi)
+  struct minimod_pagination const *UNUSED(pagi))
 {
 	ASSERT(in_nmods <= 1);
 	struct install_request *req = in_userdata;
@@ -1656,7 +1656,7 @@ on_install_get_modfile(
   void *in_userdata,
   size_t nmodfiles,
   struct minimod_modfile const *modfiles,
-  struct minimod_pagination const *pagi)
+  struct minimod_pagination const *UNUSED(pagi))
 {
 	ASSERT(nmodfiles == 1);
 	struct install_request *req = in_userdata;

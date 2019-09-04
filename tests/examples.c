@@ -10,6 +10,12 @@
 #define STR_IMPL_(X) #X
 #define STR(X) STR_IMPL_(X)
 
+#if defined(_MSC_VER) && !defined(__clang__)
+#define UNUSED(X) __pragma(warning(suppress : 4100)) X
+#else
+#define UNUSED(X) __attribute__((unused)) X
+#endif
+
 // CONFIG
 // ------
 #define API_KEY_LIVE "4cb29b99f25a2f0d1ba30c5a71419e5b"
@@ -165,7 +171,7 @@ on_email_request(void *in_udata, bool in_success)
 
 
 static void
-on_email_exchange(void *in_udata, char const *in_token, size_t in_bytes)
+on_email_exchange(void *in_udata, char const *in_token, size_t UNUSED(in_bytes))
 {
 	printf("Authentication %s.\n", in_token ? "successful" : "failed");
 	*((int *)in_udata) = in_token ? 1 : -1;
@@ -369,7 +375,7 @@ on_installed(
 
 static void
 installed_mod_enumerator(
-  void *in_userdata,
+  void *UNUSED(in_userdata),
   uint64_t in_game_id,
   uint64_t in_mod_id,
   char const *in_path)
