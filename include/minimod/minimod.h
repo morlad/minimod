@@ -492,6 +492,15 @@ minimod_init(
 MINIMOD_LIB void
 minimod_deinit(void);
 
+/* Function: minimod_is_ratelimited()
+ *
+ * Returns:
+ *  A negative value when the API is not currently rate-limited.
+ *  Otherwise it returns the seconds until the limiting expires.
+ */
+MINIMOD_LIB int64_t
+minimod_is_ratelimited(void);
+
 /* Function: minimod_set_debugtesting()
  *
  * Enable random delays in server responses and a chance for failed

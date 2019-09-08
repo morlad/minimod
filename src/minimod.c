@@ -1042,6 +1042,13 @@ minimod_deinit()
 }
 
 
+int64_t
+minimod_is_ratelimited(void)
+{
+	return l_mmi.rate_limited_until - sys_seconds();
+}
+
+
 void
 minimod_set_debugtesting(int error_rate, int min_delay, int max_delay)
 {
