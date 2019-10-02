@@ -34,7 +34,7 @@
 #endif
 #endif
 
-#define MINIMOD_CURRENT_ABI 1
+#define MINIMOD_CURRENT_ABI 2
 
 #ifdef __cplusplus
 extern "C" {
@@ -308,7 +308,7 @@ struct minimod_pagination
  * See:
  *	<minimod_get_games()>
  */
-typedef void (*minimod_get_games_callback)(
+typedef uint64_t (*minimod_get_games_callback)(
   void *userdata,
   size_t ngames,
   struct minimod_game const *games,
