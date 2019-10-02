@@ -96,6 +96,7 @@ struct task
 	uint64_t meta64;
 	int32_t meta32;
 	uint32_t flags;
+	char *filter;
 };
 
 
@@ -147,6 +148,8 @@ alloc_task(void)
 static void
 free_task(struct task *task)
 {
+	free(task->filter);
+	task->filter = NULL;
 	free(task);
 }
 
@@ -488,11 +491,28 @@ handle_get_games(
 
 		struct minimod_pagination pagi;
 		populate_pagination(&pagi, document);
+		uint64_t old_offset = pagi.offset;
 
 		task->callback.fptr
 		  .get_games(task->callback.userdata, ngames, games, &pagi);
 
 		free(games);
+
+		if (pagi.offset != old_offset)
+		{
+			char *pagination;
+			asprintf(
+			  &pagination,
+			  "%s&_limit=%" PRIu64 "&_offset=%" PRIu64,
+			  task->filter ? task->filter : "",
+			  pagi.limit,
+			  pagi.offset);
+			minimod_get_games(
+			  pagination,
+			  task->callback.fptr.get_games,
+			  task->callback.userdata);
+			free(pagination);
+		}
 	}
 
 	free_task(task);
@@ -1080,6 +1100,7 @@ minimod_get_games(
 	struct task *task = alloc_task();
 	task->callback.fptr.get_games = in_callback;
 	task->callback.userdata = in_udata;
+	task->filter = in_filter ? strdup(in_filter) : NULL;
 	if (!netw_request(
 	      NETW_VERB_GET,
 	      path,

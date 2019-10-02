@@ -62,8 +62,9 @@ get_all_games_callback(
   void *udata,
   size_t ngames,
   struct minimod_game const *games,
-  struct minimod_pagination const *pagi)
+  struct minimod_pagination *pagi)
 {
+	printf("-- PAGE --\n");
 	for (size_t i = 0; i < ngames; ++i)
 	{
 		printf("- %s {%" PRIu64 "}\n", games[i].name, games[i].id);
@@ -75,7 +76,14 @@ get_all_games_callback(
 		printf("\t+ date added: %s\n", ctime(&added));
 	}
 
-	*((int *)udata) = 1;
+	if (pagi->offset + ngames < pagi->total)
+	{
+		pagi->offset += ngames;
+	}
+	else
+	{
+		*((int *)udata) = 1;
+	}
 }
 
 
@@ -86,7 +94,10 @@ test_get_all_games(void)
 	minimod_init(API_KEY_LIVE, NULL, 0, MINIMOD_CURRENT_ABI);
 
 	int nrequests_completed = 0;
-	minimod_get_games(NULL, get_all_games_callback, &nrequests_completed);
+	minimod_get_games(
+	  "_limit=2&_offset=1",
+	  get_all_games_callback,
+	  &nrequests_completed);
 
 	while (nrequests_completed == 0)
 	{
