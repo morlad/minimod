@@ -1,7 +1,7 @@
 #include "minimod/minimod.h"
 #undef minimod_init
 
-#include "netw.h"
+#include "netw/netw.h"
 #include "util.h"
 
 #pragma GCC diagnostic push

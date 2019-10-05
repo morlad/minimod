@@ -25,6 +25,7 @@ ENABLE_LOG = 0
 # INTERNAL CONFIG
 # ---------------
 QAJSON4C_VERSION = master
+NETW_VERSION = master
 
 Q = @
 
@@ -112,30 +113,30 @@ all: library
 # SOURCE FILES
 # ------------
 lib_srcs += src/minimod.c
-lib_srcs += src/netw.c
+lib_srcs += deps/netw/netw.c
 
 ifeq ($(os),macos)
 lib_srcs += src/util-posix.c
 ifeq ($(USE_LIBCURL_ON_MACOS),0)
-lib_srcs += src/netw-macos.m
+lib_srcs += deps/netw/netw-macos.m
 else
-lib_srcs += src/netw-libcurl.c
+lib_srcs += deps/netw/netw-libcurl.c
 endif
 endif
 
 ifeq ($(os),windows)
 lib_srcs += src/util-win.c
-lib_srcs += src/netw-win.c
+lib_srcs += deps/netw/netw-win.c
 endif
 
 ifeq ($(os),linux)
 lib_srcs += src/util-posix.c
-lib_srcs += src/netw-libcurl.c
+lib_srcs += deps/netw/netw-libcurl.c
 endif
 
 ifeq ($(os),freebsd)
 lib_srcs += src/util-posix.c
-lib_srcs += src/netw-libcurl.c
+lib_srcs += deps/netw/netw-libcurl.c
 endif
 
 lib_srcs += deps/qajson4c/src/qajson4c/qajson4c.c
@@ -152,13 +153,13 @@ test_objs += $(subst .c,.o,$(addprefix $(OUTPUT_DIR)/,$(filter %.c,$(test_srcs))
 
 # HEADER DEPENDENCIES
 # -------------------
-$(OUTPUT_DIR)/src/minimod.o: include/minimod/minimod.h src/netw.h src/util.h deps/qajson4c/src/qajson4c/qajson4c.h
+$(OUTPUT_DIR)/src/minimod.o: include/minimod/minimod.h deps/netw/netw.h src/util.h deps/qajson4c/src/qajson4c/qajson4c.h
 $(OUTPUT_DIR)/deps/qajson4c/src/qajson4c/%.o: deps/qajson4c/src/qajson4c/qajson4c.h
 $(OUTPUT_DIR)/deps/miniz/miniz.o: deps/miniz/miniz.h
 $(OUTPUT_DIR)/src/util.o: src/util.h
-$(OUTPUT_DIR)/src/netw.o: src/netw.h
-$(OUTPUT_DIR)/src/netw-macos.o: src/netw.h
-$(OUTPUT_DIR)/src/netw-win.o: src/netw.h src/util.h
+$(OUTPUT_DIR)/deps/netw/netw.o: deps/netw/netw.h
+$(OUTPUT_DIR)/deps/netw/netw-macos.o: deps/netw/netw.h
+$(OUTPUT_DIR)/deps/netw/netw-win.o: deps/netw/netw.h
 $(test_objs): include/minimod/minimod.h
 
 
@@ -225,7 +226,7 @@ $(OUTPUT_DIR)/tests/%.o: CPPFLAGS += -Iinclude
 $(OUTPUT_DIR)/deps/miniz/miniz.o: CPPFLAGS += -DMINIZ_USE_UNALIGNED_LOADS_AND_STORES=0
 
 ifeq ($(os),macos)
-$(OUTPUT_DIR)/src/netw-libcurl.o: NOWARNINGS += -Wno-disabled-macro-expansion
+$(OUTPUT_DIR)/deps/netw/netw-libcurl.o: NOWARNINGS += -Wno-disabled-macro-expansion
 endif
 
 ifeq ($(os),windows)
@@ -239,9 +240,9 @@ $(OUTPUT_DIR)/deps/miniz/miniz.o: CPPFLAGS += -D_LARGEFILE64_SOURCE=1
 endif
 
 ifeq ($(os),freebsd)
-$(OUTPUT_DIR)/src/netw-libcurl.o: CPPFLAGS += -I/usr/local/include
-$(OUTPUT_DIR)/src/netw-libcurl.o: NOWARNINGS += -Wno-disabled-macro-expansion
-$(OUTPUT_DIR)/src/netw-libcurl.o: NOWARNINGS += -Wno-error-reserved-id-macro
+$(OUTPUT_DIR)/deps/netw/netw-libcurl.o: CPPFLAGS += -I/usr/local/include
+$(OUTPUT_DIR)/deps/netw/netw-libcurl.o: NOWARNINGS += -Wno-disabled-macro-expansion
+$(OUTPUT_DIR)/deps/netw/netw-libcurl.o: NOWARNINGS += -Wno-error-reserved-id-macro
 $(OUTPUT_DIR)/src/minimod.o: NOWARNINGS += -Wno-error-padded
 endif
 
@@ -282,7 +283,7 @@ $(TEST_PATH): LDLIBS += $(subst .dll,.lib,$(LIB_PATH))
 endif
 
 ifeq ($(os),linux)
-# do not add exoprts from included static libs
+# do not add exports from included static libs
 # to this shared library's list of exports.
 LDFLAGS += -Wl,--exclude-libs,ALL
 LDLIBS += -lpthread
@@ -350,6 +351,15 @@ endif
 	$(Q)$(call CONDITIONAL_CLONE,https://github.com/morlad/qajson4c.git,deps/qajson4c)
 	$(Q)git -C deps/qajson4c fetch --all --tags --quiet
 	$(Q)git -C deps/qajson4c checkout $(QAJSON4C_VERSION) --quiet
+	$(Q)$(call TOUCH,$@)
+
+deps/netw/netw.h: Makefile
+ifdef Q
+	@echo Updating dependency: morlad/netw @ $(NETW_VERSION)
+endif
+	$(Q)$(call CONDITIONAL_CLONE,https://github.com/morlad/netw.git,deps/netw)
+	$(Q)git -C deps/netw fetch --all --tags --quiet
+	$(Q)git -C deps/netw checkout $(NETW_VERSION) --quiet
 	$(Q)$(call TOUCH,$@)
 
 

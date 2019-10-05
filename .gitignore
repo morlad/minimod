@@ -1,5 +1,6 @@
 build/
 deps/qajson4c/
+deps/netw/
 deps/miniz/examples/
 _minimod/
 .minimod/

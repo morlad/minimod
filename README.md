@@ -103,9 +103,11 @@ since there is no system library to make HTTPS requests.
 
 #### Source Dependencies
 minimod depends on 2 other MIT licensed libraries when compiling:
-- [miniz](https://github.com/richgel999/miniz) to handle compression and ZIP files.
+- [richgel999/miniz](https://github.com/richgel999/miniz) to handle compression and ZIP files.
 	Its amalgamated source is included in this repo.
-- [qajson4c](https://github.com/DeHecht/qajson4c) to parse JSON.
+- [DeHecht/qajson4c](https://github.com/morlad/qajson4c) to parse JSON.
+	Its repository is cloned automatically during the build process.
+- [morlad/netw](https://github.com/morlad/netw) for cross-platform HTTPS connectivity.
 	Its repository is cloned automatically during the build process.
 
 ### Unzip or Not
