@@ -102,7 +102,7 @@ The **Linux** and **FreeBSD** builds of minimod require [libcurl](https://curl.h
 since there is no system library to make HTTPS requests.
 
 #### Source Dependencies
-minimod depends on 2 other MIT licensed libraries when compiling:
+minimod depends on 3 other MIT licensed libraries when compiling:
 - [richgel999/miniz](https://github.com/richgel999/miniz) to handle compression and ZIP files.
 	Its amalgamated source is included in this repo.
 - [DeHecht/qajson4c](https://github.com/morlad/qajson4c) to parse JSON.
