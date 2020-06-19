@@ -2052,7 +2052,7 @@ minimod_is_downloading(uint64_t in_game_id, uint64_t in_mod_id)
 }
 
 
-void
+bool
 minimod_rate(
   uint64_t in_game_id,
   uint64_t in_mod_id,
@@ -2062,7 +2062,10 @@ minimod_rate(
 {
 	ASSERT(in_game_id > 0);
 	ASSERT(in_rating != 0);
-	ASSERT(minimod_is_authenticated());
+	if (!minimod_is_authenticated())
+	{
+		return false;
+	}
 
 	char *path = NULL;
 	asprintf(
@@ -2100,16 +2103,20 @@ minimod_rate(
 	}
 
 	free(path);
+	return true;
 }
 
 
-void
+bool
 minimod_get_ratings(
   char const *in_filter,
   minimod_get_ratings_callback in_callback,
   void *in_udata)
 {
-	ASSERT(minimod_is_authenticated());
+	if (!minimod_is_authenticated())
+	{
+		return false;
+	}
 
 	char *path = NULL;
 	asprintf(
@@ -2143,16 +2150,20 @@ minimod_get_ratings(
 	}
 
 	free(path);
+	return true;
 }
 
 
-void
+bool
 minimod_get_subscriptions(
   char const *in_filter,
   minimod_get_mods_callback in_callback,
   void *in_udata)
 {
-	ASSERT(minimod_is_authenticated());
+	if (!minimod_is_authenticated())
+	{
+		return false;
+	}
 
 	char *path = NULL;
 	asprintf(
@@ -2186,6 +2197,7 @@ minimod_get_subscriptions(
 	}
 
 	free(path);
+	return true;
 }
 
 

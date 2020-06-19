@@ -34,7 +34,7 @@
 #endif
 #endif
 
-#define MINIMOD_CURRENT_ABI 1
+#define MINIMOD_CURRENT_ABI 2
 
 #ifdef __cplusplus
 extern "C" {
@@ -854,10 +854,13 @@ minimod_get_installed_mod(
  *		a positive rating, while a negative value indicates a negative
  *		rating. Shocking, is it not?
  *
+ * Returns:
+ *	false if no user is currently authenticated.
+ *
  * See:
  *  https://docs.mod.io/#ratings
  */
-MINIMOD_LIB void
+MINIMOD_LIB bool
 minimod_rate(
   uint64_t in_game_id,
   uint64_t in_mod_id,
@@ -869,10 +872,13 @@ minimod_rate(
  *
  * Retrieve all ratings of currently authenticated user.
  *
+ * Returns:
+ *	false if no user is currently authenticated.
+ *
  * See:
  *  https://docs.mod.io/#get-user-ratings
  */
-MINIMOD_LIB void
+MINIMOD_LIB bool
 minimod_get_ratings(
   char const *in_filter,
   minimod_get_ratings_callback in_callback,
@@ -885,10 +891,13 @@ minimod_get_ratings(
  *
  * Retrieve all subscriptions of the currently authenticated user.
  *
+ * Returns:
+ *	false if no user is currently authenticated.
+ *
  * See:
  *  https://docs.mod.io/#get-user-subscriptions
  */
-MINIMOD_LIB void
+MINIMOD_LIB bool
 minimod_get_subscriptions(
   char const *in_filter,
   minimod_get_mods_callback in_callback,
