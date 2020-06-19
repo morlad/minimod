@@ -113,6 +113,7 @@ all: library
 # SOURCE FILES
 # ------------
 lib_srcs += src/minimod.c
+lib_srcs += src/util.c
 lib_srcs += deps/netw/netw.c
 
 ifeq ($(os),macos)
@@ -392,7 +393,7 @@ cloc-by-file:
 	$(Q)cloc . --by-file --quiet --exclude-dir=deps,build,docs,docs.cfg
 
 format:
-	$(Q)clang-format -i tests/*.c src/*.c src/*.m src/*.h include/minimod/*.h
+	$(Q)clang-format -i tests/*.c src/*.c src/*.h include/minimod/*.h
 
 docs:
 	$(Q)$(ensure_selfdir)

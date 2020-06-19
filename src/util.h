@@ -32,6 +32,22 @@ extern "C" {
 
 /* Section: API */
 
+/* Function: enc_base64()
+ *
+ * Encode *in_srcbytes* bytes from *in_src* into *out_dst* buffer, of size
+ * *in_dstbytes*.
+ *
+ * Returns always the number of bytes required in out_dst.
+ * If out_dst is NULL or in_dstbytes is smaller than the required size
+ * nothing is written to out_dst.
+ */
+size_t
+enc_base64(
+  void const *in_src,
+  size_t in_srcbytes,
+  void *out_dst,
+  size_t in_dstbytes);
+
 /* Enum: fsu_pathtype
  *
  * Types of directory entries.

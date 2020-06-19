@@ -70,7 +70,7 @@ struct callback
 		minimod_get_games_callback get_games;
 		minimod_get_mods_callback get_mods;
 		minimod_email_request_callback email_request;
-		minimod_email_exchange_callback email_exchange;
+		minimod_access_token_callback access_token;
 		minimod_get_users_callback get_users;
 		minimod_get_modfiles_callback get_modfiles;
 		minimod_install_callback install;
@@ -787,7 +787,7 @@ handle_email_request(
 
 
 static void
-handle_email_exchange(
+handle_token_exchange(
   void *in_udata,
   void const *in_data,
   size_t in_len,
@@ -798,7 +798,7 @@ handle_email_exchange(
 	handle_generic_errors(error, header, task->flags & TASK_FLAG_AUTH_TOKEN);
 	if (error != 200)
 	{
-		task->callback.fptr.email_exchange(task->callback.userdata, NULL, 0);
+		task->callback.fptr.access_token(task->callback.userdata, NULL, 0);
 		free_task(task);
 		return;
 	}
@@ -820,10 +820,7 @@ handle_email_exchange(
 	fwrite(tok, tok_bytes, 1, f);
 	fclose(f);
 
-	task->callback.fptr.email_exchange(
-	  task->callback.userdata,
-	  tok,
-	  tok_bytes);
+	task->callback.fptr.access_token(task->callback.userdata, tok, tok_bytes);
 
 	read_token();
 
@@ -1178,8 +1175,6 @@ minimod_email_request(
 	free(email);
 	LOG("payload: %s (%i)", payload, nbytes);
 
-	ASSERT(nbytes > 0);
-
 	struct task *task = alloc_task();
 	task->callback.fptr.email_request = in_callback;
 	task->callback.userdata = in_udata;
@@ -1203,7 +1198,7 @@ minimod_email_request(
 void
 minimod_email_exchange(
   char const *in_code,
-  minimod_email_exchange_callback in_callback,
+  minimod_access_token_callback in_callback,
   void *in_udata)
 {
 	char *path;
@@ -1225,10 +1220,8 @@ minimod_email_exchange(
 	  in_code);
 	LOG("payload: %s (%i)", payload, nbytes);
 
-	ASSERT(nbytes > 0);
-
 	struct task *task = alloc_task();
-	task->callback.fptr.email_exchange = in_callback;
+	task->callback.fptr.access_token = in_callback;
 	task->callback.userdata = in_udata;
 	if (!netw_request(
 	      NETW_VERB_POST,
@@ -1236,7 +1229,55 @@ minimod_email_exchange(
 	      headers,
 	      payload,
 	      (size_t)nbytes,
-	      handle_email_exchange,
+	      handle_token_exchange,
+	      task))
+	{
+		free_task(task);
+	}
+
+	free(payload);
+	free(path);
+}
+
+
+void
+minimod_steam_auth(
+  void const *in_ticket,
+  size_t in_ticketbytes,
+  minimod_access_token_callback in_callback,
+  void *in_udata)
+{
+	char *path;
+	asprintf(&path, "%s/external/steamauth", endpoints[l_mmi.env]);
+
+	char const *const headers[] = {
+		// clang-format off
+		"Accept", "application/json",
+		"Content-Type", "application/x-www-form-urlencoded",
+		NULL
+		// clang-format on
+	};
+
+	char b64[256];
+	size_t b64_len = enc_base64(in_ticket, in_ticketbytes, b64, sizeof b64);
+	ASSERT(b64_len <= sizeof b64);
+	char *ticket = netw_percent_encode(b64, b64_len, NULL);
+	char *payload;
+	int nbytes =
+	  asprintf(&payload, "api_key=%s&appdata=%s", l_mmi.api_key, ticket);
+	LOG("payload: %s (%i)", payload, nbytes);
+	free(ticket);
+
+	struct task *task = alloc_task();
+	task->callback.fptr.access_token = in_callback;
+	task->callback.userdata = in_udata;
+	if (!netw_request(
+	      NETW_VERB_POST,
+	      path,
+	      headers,
+	      payload,
+	      (size_t)nbytes,
+	      handle_token_exchange,
 	      task))
 	{
 		free_task(task);

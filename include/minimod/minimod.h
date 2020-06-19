@@ -358,15 +358,15 @@ typedef void (*minimod_get_users_callback)(
  */
 typedef void (*minimod_email_request_callback)(void *userdata, bool success);
 
-/* Callback: minimod_email_exchange_callback()
+/* Callback: minimod_access_token_callback()
  *
  * If the authorization attempt failed *token* is NULL and *ntoken_bytes* is 0.
  * Otherwise *token* is a pointer to the access-token of *ntoken_bytes*.
  *
  * See:
- *  <minimod_email_exchange()>
+ *  <minimod_email_exchange()>, <minimod_steam_auth()>
  */
-typedef void (*minimod_email_exchange_callback)(
+typedef void (*minimod_access_token_callback)(
   void *userdata,
   char const *token,
   size_t ntoken_bytes);
@@ -707,9 +707,25 @@ minimod_email_request(
 MINIMOD_LIB void
 minimod_email_exchange(
   char const *in_code,
-  minimod_email_exchange_callback in_callback,
+  minimod_access_token_callback in_callback,
   void *in_userdata);
 
+/* Function: minimod_steam_auth()
+ *
+ * Request an access token by sending *in_ticket* (of *in_ticketbytes* length),
+ * which was requested previously with
+ * https://partner.steamgames.com/doc/api/ISteamUser#GetEncryptedAppTicket,
+ * to the server.
+ *
+ * See:
+ *  https://docs.mod.io/#authenticate-via-steam
+ */
+MINIMOD_LIB void
+minimod_steam_auth(
+  void const *in_ticket,
+  size_t in_ticketbytes,
+  minimod_access_token_callback in_callback,
+  void *in_userdata);
 
 /* Topic: Me */
 
@@ -882,6 +898,9 @@ minimod_get_subscriptions(
  *
  * Subscribe to a mod.
  *
+ * Returns:
+ *	false if no user is currently authenticated.
+ *
  * See:
  *  <minimod_unsubscribe()>, https://docs.mod.io/#subscribe
  */
@@ -895,6 +914,9 @@ minimod_subscribe(
 /* Function: minimod_unsubscribe()
  *
  * Unsubscribe from a mod.
+ *
+ * Returns:
+ *	false if no user is currently authenticated.
  *
  * See:
  *  <minimod_subscribe()>, https://docs.mod.io/#subscribe
