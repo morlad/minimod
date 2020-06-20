@@ -820,9 +820,9 @@ handle_token_exchange(
 	fwrite(tok, tok_bytes, 1, f);
 	fclose(f);
 
-	task->callback.fptr.access_token(task->callback.userdata, tok, tok_bytes);
-
 	read_token();
+
+	task->callback.fptr.access_token(task->callback.userdata, tok, tok_bytes);
 
 	free_task(task);
 }
