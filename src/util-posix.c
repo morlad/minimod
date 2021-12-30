@@ -20,6 +20,12 @@
 #endif
 #define LOGE(FMT, ...) fprintf(stderr, "[util] " FMT "\n", ##__VA_ARGS__)
 
+#if defined(__aarch64__)
+#define MINIMOD_BREAK __asm__ volatile("brk 0");
+#else
+#define MINIMOD_BREAK __asm__ volatile("int $0x03");
+#endif
+
 #define ASSERT(in_condition)                      \
 	do                                            \
 	{                                             \
@@ -30,7 +36,7 @@
 			  __FILE__,                           \
 			  __LINE__,                           \
 			  #in_condition);                     \
-			__asm__ volatile("int $0x03");        \
+			MINIMOD_BREAK                         \
 			__builtin_unreachable();              \
 		}                                         \
 	} while (__LINE__ == -1)
