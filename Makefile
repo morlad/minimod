@@ -22,6 +22,13 @@ NDOCS = ~/bin/NaturalDocs-1.52/NaturalDocs
 # enable verbose debug logging to stdout
 ENABLE_LOG = 0
 
+# by default netw is downloaded automatically to deps/ and the current
+# master version is used.
+# if you want to use another version of netw (e.g. a local dev version)
+# you can redirect this Makefile to another directory by setting
+# the environment variable NETW_PATH.
+NETW_PATH ?= deps/netw
+
 # INTERNAL CONFIG
 # ---------------
 QAJSON4C_VERSION = master
@@ -115,30 +122,30 @@ all: library
 # ------------
 lib_srcs += src/minimod.c
 lib_srcs += src/util.c
-lib_srcs += deps/netw/netw.c
+lib_srcs += $(NETW_PATH)/netw.c
 
 ifeq ($(os),macos)
 lib_srcs += src/util-posix.c
 ifeq ($(USE_LIBCURL_ON_MACOS),0)
-lib_srcs += deps/netw/netw-macos.m
+lib_srcs += $(NETW_PATH)/netw-macos.m
 else
-lib_srcs += deps/netw/netw-libcurl.c
+lib_srcs += $(NETW_PATH)/netw-libcurl.c
 endif
 endif
 
 ifeq ($(os),windows)
 lib_srcs += src/util-win.c
-lib_srcs += deps/netw/netw-win.c
+lib_srcs += $(NETW_PATH)/netw-win.c
 endif
 
 ifeq ($(os),linux)
 lib_srcs += src/util-posix.c
-lib_srcs += deps/netw/netw-libcurl.c
+lib_srcs += $(NETW_PATH)/netw-libcurl.c
 endif
 
 ifeq ($(os),freebsd)
 lib_srcs += src/util-posix.c
-lib_srcs += deps/netw/netw-libcurl.c
+lib_srcs += $(NETW_PATH)/netw-libcurl.c
 endif
 
 lib_srcs += deps/qajson4c/src/qajson4c/qajson4c.c
@@ -155,13 +162,13 @@ test_objs += $(subst .c,.o,$(addprefix $(OUTPUT_DIR)/,$(filter %.c,$(test_srcs))
 
 # HEADER DEPENDENCIES
 # -------------------
-$(OUTPUT_DIR)/src/minimod.o: include/minimod/minimod.h deps/netw/netw.h src/util.h deps/qajson4c/src/qajson4c/qajson4c.h
+$(OUTPUT_DIR)/src/minimod.o: include/minimod/minimod.h $(NETW_PATH)/netw.h src/util.h deps/qajson4c/src/qajson4c/qajson4c.h
 $(OUTPUT_DIR)/deps/qajson4c/src/qajson4c/%.o: deps/qajson4c/src/qajson4c/qajson4c.h
 $(OUTPUT_DIR)/deps/miniz/miniz.o: deps/miniz/miniz.h
 $(OUTPUT_DIR)/src/util.o: src/util.h
-$(OUTPUT_DIR)/deps/netw/netw.o: deps/netw/netw.h
-$(OUTPUT_DIR)/deps/netw/netw-macos.o: deps/netw/netw.h
-$(OUTPUT_DIR)/deps/netw/netw-win.o: deps/netw/netw.h
+$(OUTPUT_DIR)/$(NETW_PATH)/netw.o: $(NETW_PATH)/netw.h
+$(OUTPUT_DIR)/$(NETW_PATH)/netw-macos.o: $(NETW_PATH)/netw.h
+$(OUTPUT_DIR)/$(NETW_PATH)/netw-win.o: $(NETW_PATH)/netw.h
 $(test_objs): include/minimod/minimod.h
 
 
@@ -228,7 +235,7 @@ $(OUTPUT_DIR)/tests/%.o: CPPFLAGS += -Iinclude
 $(OUTPUT_DIR)/deps/miniz/miniz.o: CPPFLAGS += -DMINIZ_USE_UNALIGNED_LOADS_AND_STORES=0
 
 ifeq ($(os),macos)
-$(OUTPUT_DIR)/deps/netw/netw-libcurl.o: NOWARNINGS += -Wno-disabled-macro-expansion
+$(OUTPUT_DIR)/$(NETW_PATH)/netw-libcurl.o: NOWARNINGS += -Wno-disabled-macro-expansion
 $(OUTPUT_DIR)/$(NETW_PATH)/netw-macos.o: CPPFLAGS += -DNETW_DELEGATE_NAME=$(NETW_DELEGATE_NAME)
 endif
 
@@ -243,9 +250,9 @@ $(OUTPUT_DIR)/deps/miniz/miniz.o: CPPFLAGS += -D_LARGEFILE64_SOURCE=1
 endif
 
 ifeq ($(os),freebsd)
-$(OUTPUT_DIR)/deps/netw/netw-libcurl.o: CPPFLAGS += -I/usr/local/include
-$(OUTPUT_DIR)/deps/netw/netw-libcurl.o: NOWARNINGS += -Wno-disabled-macro-expansion
-$(OUTPUT_DIR)/deps/netw/netw-libcurl.o: NOWARNINGS += -Wno-error-reserved-id-macro
+$(OUTPUT_DIR)/$(NETW_PATH)/netw-libcurl.o: CPPFLAGS += -I/usr/local/include
+$(OUTPUT_DIR)/$(NETW_PATH)/netw-libcurl.o: NOWARNINGS += -Wno-disabled-macro-expansion
+$(OUTPUT_DIR)/$(NETW_PATH)/netw-libcurl.o: NOWARNINGS += -Wno-error-reserved-id-macro
 $(OUTPUT_DIR)/src/minimod.o: NOWARNINGS += -Wno-error-padded
 endif
 
