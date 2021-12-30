@@ -255,10 +255,10 @@ endif
 
 # LINKER OPTIONS
 # --------------
-TARGET_ARCH = -m64 -g -march=core2
+TARGET_ARCH = -g
 
 ifeq ($(os),macos)
-TARGET_ARCH += -arch x86_64 -mmacosx-version-min=$(MIN_MACOS_VERSION)
+TARGET_ARCH += -mmacosx-version-min=$(MIN_MACOS_VERSION)
 $(LIB_PATH): LDLIBS += -framework Foundation
 ifneq ($(USE_LIBCURL_ON_MACOS),0)
 $(LIB_PATH): LDLIBS += -lcurl
