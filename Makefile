@@ -26,6 +26,7 @@ ENABLE_LOG = 0
 # ---------------
 QAJSON4C_VERSION = master
 NETW_VERSION = master
+NETW_DELEGATE_NAME = minimodNetwDelegate
 
 Q = @
 
@@ -228,6 +229,7 @@ $(OUTPUT_DIR)/deps/miniz/miniz.o: CPPFLAGS += -DMINIZ_USE_UNALIGNED_LOADS_AND_ST
 
 ifeq ($(os),macos)
 $(OUTPUT_DIR)/deps/netw/netw-libcurl.o: NOWARNINGS += -Wno-disabled-macro-expansion
+$(OUTPUT_DIR)/$(NETW_PATH)/netw-macos.o: CPPFLAGS += -DNETW_DELEGATE_NAME=$(NETW_DELEGATE_NAME)
 endif
 
 ifeq ($(os),windows)
