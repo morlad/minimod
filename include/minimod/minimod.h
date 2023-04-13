@@ -850,9 +850,9 @@ minimod_get_installed_mod(
  * Rate a mod as the currently authenticated user.
  *
  * Params:
- *	in_rating - Accepts any integer other than 0. Positive value is
- *		a positive rating, while a negative value indicates a negative
- *		rating. Shocking, is it not?
+ *	in_rating - Positive value is a positive rating, while a negative
+ *		value indicates a negative rating. Shocking, is it not?
+ *		Use 0 to remove any previously set rating by the user.
  *
  * Returns:
  *	false if no user is currently authenticated.

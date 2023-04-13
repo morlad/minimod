@@ -2066,7 +2066,6 @@ minimod_rate(
   void *in_userdata)
 {
 	ASSERT(in_game_id > 0);
-	ASSERT(in_rating != 0);
 	if (!minimod_is_authenticated())
 	{
 		return false;
@@ -2089,7 +2088,9 @@ minimod_rate(
 		// clang-format on
 	};
 
-	char const *data = in_rating == 1 ? "rating=1" : "rating=-1";
+	char const *data = in_rating > 0 ? "rating=1"
+	  : in_rating < 0                ? "rating=-1"
+	                                 : "rating=0";
 
 	struct task *task = alloc_task();
 	task->flags |= TASK_FLAG_AUTH_TOKEN;
