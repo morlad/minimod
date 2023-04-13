@@ -171,7 +171,10 @@ on_email_request(void *in_udata, bool in_success)
 
 
 static void
-on_email_exchange(void *in_udata, char const *in_token, size_t UNUSED(in_bytes))
+on_email_exchange(
+  void *in_udata,
+  char const *in_token,
+  size_t UNUSED(in_bytes))
 {
 	printf("Authentication %s.\n", in_token ? "successful" : "failed");
 	*((int *)in_udata) = in_token ? 1 : -1;
