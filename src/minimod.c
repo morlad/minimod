@@ -434,10 +434,9 @@ handle_generic_errors(
 {
 	if (error == 429) // too many requests
 	{
-		char const *retry_after =
-		  netw_get_header(header, "X-RateLimit-RetryAfter");
+		char const *retry_after = netw_get_header(header, "Retry-After");
 		long retry_after_l = strtol(retry_after, NULL, 10);
-		LOG("X-RateLimit-RetryAfter: %li seconds", retry_after_l);
+		LOG("Retry-After: %li seconds", retry_after_l);
 		l_mmi.rate_limited_until = sys_seconds() + retry_after_l;
 	}
 	if (error == 401)
