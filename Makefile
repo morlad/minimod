@@ -41,7 +41,8 @@ OPT = -O2
 OPT += -fstrict-aliasing
 
 # macos only:
-MIN_MACOS_VERSION = 10.9
+MIN_MACOS_VERSION_ARM = 11
+MIN_MACOS_VERSION_X64 = 10.9
 
 
 # OS DETECTION
@@ -156,37 +157,33 @@ test_srcs += tests/examples.c
 
 # OBJECT FILES
 # ------------
+ifeq ($(os),macos)
+lib_objs += $(subst .c,.x64.o,$(addprefix $(OUTPUT_DIR)/,$(filter %.c,$(lib_srcs))))
+lib_objs += $(subst .m,.x64.o,$(addprefix $(OUTPUT_DIR)/,$(filter %.m,$(lib_srcs))))
+lib_objs += $(subst .c,.arm64.o,$(addprefix $(OUTPUT_DIR)/,$(filter %.c,$(lib_srcs))))
+lib_objs += $(subst .m,.arm64.o,$(addprefix $(OUTPUT_DIR)/,$(filter %.m,$(lib_srcs))))
+else
 lib_objs += $(subst .c,.o,$(addprefix $(OUTPUT_DIR)/,$(filter %.c,$(lib_srcs))))
 lib_objs += $(subst .m,.o,$(addprefix $(OUTPUT_DIR)/,$(filter %.m,$(lib_srcs))))
+endif
 test_objs += $(subst .c,.o,$(addprefix $(OUTPUT_DIR)/,$(filter %.c,$(test_srcs))))
 
 # HEADER DEPENDENCIES
 # -------------------
-$(OUTPUT_DIR)/src/minimod.o: include/minimod/minimod.h $(NETW_PATH)/netw.h src/util.h deps/qajson4c/src/qajson4c/qajson4c.h
+$(OUTPUT_DIR)/src/minimod.%o: include/minimod/minimod.h $(NETW_PATH)/netw.h src/util.h deps/qajson4c/src/qajson4c/qajson4c.h
 $(OUTPUT_DIR)/deps/qajson4c/src/qajson4c/%.o: deps/qajson4c/src/qajson4c/qajson4c.h
-$(OUTPUT_DIR)/deps/miniz/miniz.o: deps/miniz/miniz.h
-$(OUTPUT_DIR)/src/util.o: src/util.h
-$(OUTPUT_DIR)/$(NETW_PATH)/netw.o: $(NETW_PATH)/netw.h
-$(OUTPUT_DIR)/$(NETW_PATH)/netw-macos.o: $(NETW_PATH)/netw.h
-$(OUTPUT_DIR)/$(NETW_PATH)/netw-win.o: $(NETW_PATH)/netw.h
+$(OUTPUT_DIR)/deps/miniz/miniz.%o: deps/miniz/miniz.h
+$(OUTPUT_DIR)/src/util.%o: src/util.h
+$(OUTPUT_DIR)/$(NETW_PATH)/netw.%o: $(NETW_PATH)/netw.h
+$(OUTPUT_DIR)/$(NETW_PATH)/netw-macos.%o: $(NETW_PATH)/netw.h
+$(OUTPUT_DIR)/$(NETW_PATH)/netw-win.%o: $(NETW_PATH)/netw.h
 $(test_objs): include/minimod/minimod.h
 
 
 # WARNINGS
 # --------
-WARNINGS += -Werror
-
-# basically GCC vs clang
-ifneq ($(os),linux)
-WARNINGS += -Weverything
-NOWARNINGS += -Wno-error-unused-parameter
-NOWARNINGS += -Wno-error-unused-function
-NOWARNINGS += -Wno-error-unused-variable
-else
 WARNINGS += -Wall
-NOWARNINGS += -Wno-unused-result
-NOWARNINGS += -Wno-unused-function
-endif
+WARNINGS += -Wextra
 
 
 # COMPILER OPTIONS
@@ -232,11 +229,11 @@ $(lib_objs): CPPFLAGS += -DMZ_ZIP_NO_ENCRYPTION
 $(OUTPUT_DIR)/src/%.o: CPPFLAGS += -Iinclude -Ideps/miniz -Ideps
 $(OUTPUT_DIR)/tests/%.o: CPPFLAGS += -Iinclude
 
-$(OUTPUT_DIR)/deps/miniz/miniz.o: CPPFLAGS += -DMINIZ_USE_UNALIGNED_LOADS_AND_STORES=0
+$(OUTPUT_DIR)/deps/miniz/miniz.%o: CPPFLAGS += -DMINIZ_USE_UNALIGNED_LOADS_AND_STORES=0
 
 ifeq ($(os),macos)
-$(OUTPUT_DIR)/$(NETW_PATH)/netw-libcurl.o: NOWARNINGS += -Wno-disabled-macro-expansion
-$(OUTPUT_DIR)/$(NETW_PATH)/netw-macos.o: CPPFLAGS += -DNETW_DELEGATE_NAME=$(NETW_DELEGATE_NAME)
+$(OUTPUT_DIR)/$(NETW_PATH)/netw-libcurl.%o: NOWARNINGS += -Wno-disabled-macro-expansion
+$(OUTPUT_DIR)/$(NETW_PATH)/netw-macos.%o: CPPFLAGS += -DNETW_DELEGATE_NAME=$(NETW_DELEGATE_NAME)
 endif
 
 ifeq ($(os),windows)
@@ -267,7 +264,6 @@ endif
 TARGET_ARCH = -g
 
 ifeq ($(os),macos)
-TARGET_ARCH += -mmacosx-version-min=$(MIN_MACOS_VERSION)
 $(LIB_PATH): LDLIBS += -framework Foundation
 ifneq ($(USE_LIBCURL_ON_MACOS),0)
 $(LIB_PATH): LDLIBS += -lcurl
@@ -340,7 +336,10 @@ ifdef Q
 endif
 	$(Q)$(ensure_dir)
 ifeq ($(os),macos)
-	$(Q)$(CC) -dynamiclib $(TARGET_ARCH) $(LDFLAGS) $(filter %.o,$^) $(LDLIBS) $(OUTPUT_OPTION) -Wl,-install_name,@loader_path/$(notdir $@)
+	$(Q)$(CC) -dynamiclib -target x86_64-apple-macos$(MIN_MACOS_VERSION_X64) $(TARGET_ARCH) $(LDFLAGS) $(filter %.x64.o,$^) $(LDLIBS) $(OUTPUT_OPTION).x64 -Wl,-install_name,@loader_path/$(notdir $@)
+	$(Q)$(CC) -dynamiclib -target arm64-apple-macos$(MIN_MACOS_VERSION_ARM) $(TARGET_ARCH) $(LDFLAGS) $(filter %.arm64.o,$^) $(LDLIBS) $(OUTPUT_OPTION).arm64 -Wl,-install_name,@loader_path/$(notdir $@)
+	$(Q)lipo -create -output $@ $@.x64 $@.arm64
+	$(Q)rm -f $@.x64 $@.arm64
 endif
 ifeq ($(os),windows)
 	$(Q)$(LINKER) -DLL $(LDFLAGS) $(LDLIBS) $(filter %.o,$^) -OUT:$@
@@ -389,6 +388,37 @@ endif
 	$(Q)$(ensure_dir)
 	$(Q)$(CC) $(CPPFLAGS) $(OBJCFLAGS) $(TARGET_ARCH) -c $(OUTPUT_OPTION) $<
 
+ifeq ($(os),macos)
+
+$(OUTPUT_DIR)/%.x64.o: %.c
+ifdef Q
+	@echo CC x64 $<
+endif
+	$(Q)$(ensure_dir)
+	$(Q)$(CC) $(CPPFLAGS) $(CFLAGS) -target x86_64-apple-macos$(MIN_MACOS_VERSION_X64) $(TARGET_ARCH) -c $(OUTPUT_OPTION) $<
+
+$(OUTPUT_DIR)/%.arm64.o: %.c
+ifdef Q
+	@echo CC arm64 $<
+endif
+	$(Q)$(ensure_dir)
+	$(Q)$(CC) $(CPPFLAGS) $(CFLAGS) -target arm64-apple-macos$(MIN_MACOS_VERSION_ARM) $(TARGET_ARCH) -c $(OUTPUT_OPTION) $<
+
+$(OUTPUT_DIR)/%.x64.o: %.m
+ifdef Q
+	@echo Objective-C x64 $<
+endif
+	$(Q)$(ensure_dir)
+	$(Q)$(CC) $(CPPFLAGS) $(OBJCFLAGS) -target x86_64-apple-macos$(MIN_MACOS_VERSION_X64) $(TARGET_ARCH) -c $(OUTPUT_OPTION) $<
+
+$(OUTPUT_DIR)/%.arm64.o: %.m
+ifdef Q
+	@echo Objective-C arm64 $<
+endif
+	$(Q)$(ensure_dir)
+	$(Q)$(CC) $(CPPFLAGS) $(OBJCFLAGS) -target arm64-apple-macos$(MIN_MACOS_VERSION_ARM) $(TARGET_ARCH) -c $(OUTPUT_OPTION) $<
+
+endif
 
 # MISC TARGETS
 # ------------

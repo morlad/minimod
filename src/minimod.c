@@ -1028,7 +1028,7 @@ minimod_init(
 
 
 void
-minimod_deinit()
+minimod_deinit(void)
 {
 	netw_deinit();
 
